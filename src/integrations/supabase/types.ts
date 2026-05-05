@@ -14,12 +14,226 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      certificates: {
+        Row: {
+          certificate_code: string
+          course_id: string
+          course_title: string
+          id: string
+          issued_at: string
+          issued_to_name: string
+          user_id: string
+        }
+        Insert: {
+          certificate_code: string
+          course_id: string
+          course_title: string
+          id?: string
+          issued_at?: string
+          issued_to_name: string
+          user_id: string
+        }
+        Update: {
+          certificate_code?: string
+          course_id?: string
+          course_title?: string
+          id?: string
+          issued_at?: string
+          issued_to_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          is_system: boolean
+          source_playlist_id: string | null
+          source_playlist_url: string | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          is_system?: boolean
+          source_playlist_id?: string | null
+          source_playlist_url?: string | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          is_system?: boolean
+          source_playlist_id?: string | null
+          source_playlist_url?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      email_logs: {
+        Row: {
+          created_at: string
+          email_type: string
+          error: string | null
+          id: string
+          metadata: Json | null
+          recipient_email: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email_type: string
+          error?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient_email: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          email_type?: string
+          error?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient_email?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      mcq_attempts: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          module_id: string
+          passed: boolean
+          score: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          answers: Json
+          created_at?: string
+          id?: string
+          module_id: string
+          passed: boolean
+          score: number
+          total: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          module_id?: string
+          passed?: boolean
+          score?: number
+          total?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcq_attempts_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcq_questions: {
+        Row: {
+          correct_index: number
+          created_at: string
+          explanation: string | null
+          id: string
+          module_id: string
+          options: Json
+          position: number
+          question: string
+        }
+        Insert: {
+          correct_index: number
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          module_id: string
+          options: Json
+          position: number
+          question: string
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          module_id?: string
+          options?: Json
+          position?: number
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcq_questions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       module_progress: {
         Row: {
           completed: boolean
           completed_at: string | null
           created_at: string
           id: string
+          mcq_passed: boolean
           module_id: string
           percent_watched: number
           updated_at: string
@@ -31,6 +245,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          mcq_passed?: boolean
           module_id: string
           percent_watched?: number
           updated_at?: string
@@ -42,6 +257,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          mcq_passed?: boolean
           module_id?: string
           percent_watched?: number
           updated_at?: string
@@ -60,55 +276,128 @@ export type Database = {
       }
       modules: {
         Row: {
+          course_id: string
           created_at: string
           duration_seconds: number
           id: string
           position: number
+          thumbnail_url: string | null
           title: string
           youtube_video_id: string
         }
         Insert: {
+          course_id: string
           created_at?: string
           duration_seconds?: number
           id?: string
           position: number
+          thumbnail_url?: string | null
           title: string
           youtube_video_id: string
         }
         Update: {
+          course_id?: string
           created_at?: string
           duration_seconds?: number
           id?: string
           position?: number
+          thumbnail_url?: string | null
           title?: string
           youtube_video_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          module_id: string
+          timestamp_seconds: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          module_id: string
+          timestamp_seconds?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          module_id?: string
+          timestamp_seconds?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
           avatar_url: string | null
+          certificate_name: string | null
           created_at: string
+          current_streak: number
           email: string | null
           id: string
           last_active: string
+          last_attendance_date: string | null
+          longest_streak: number
           name: string | null
+          preferred_language: string
+          total_gems: number
+          total_xp: number
         }
         Insert: {
           avatar_url?: string | null
+          certificate_name?: string | null
           created_at?: string
+          current_streak?: number
           email?: string | null
           id: string
           last_active?: string
+          last_attendance_date?: string | null
+          longest_streak?: number
           name?: string | null
+          preferred_language?: string
+          total_gems?: number
+          total_xp?: number
         }
         Update: {
           avatar_url?: string | null
+          certificate_name?: string | null
           created_at?: string
+          current_streak?: number
           email?: string | null
           id?: string
           last_active?: string
+          last_attendance_date?: string | null
+          longest_streak?: number
           name?: string | null
+          preferred_language?: string
+          total_gems?: number
+          total_xp?: number
         }
         Relationships: []
       }
@@ -138,6 +427,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_progress: {
+        Args: { _gems: number; _user_id: string; _xp: number }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -148,6 +441,29 @@ export type Database = {
       is_module_unlocked: {
         Args: { _module_id: string; _user_id: string }
         Returns: boolean
+      }
+      issue_certificate: {
+        Args: { _course_id: string }
+        Returns: {
+          certificate_code: string
+          course_id: string
+          course_title: string
+          id: string
+          issued_at: string
+          issued_to_name: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "certificates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      mark_attendance: { Args: never; Returns: Json }
+      submit_mcq: {
+        Args: { _answers: Json; _module_id: string }
+        Returns: Json
       }
       update_module_progress: {
         Args: {
@@ -160,6 +476,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           id: string
+          mcq_passed: boolean
           module_id: string
           percent_watched: number
           updated_at: string
