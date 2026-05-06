@@ -359,13 +359,19 @@ export type Database = {
           certificate_name: string | null
           created_at: string
           current_streak: number
+          daily_goal_minutes: number
           email: string | null
           id: string
           last_active: string
           last_attendance_date: string | null
           longest_streak: number
           name: string | null
+          notify_completion: boolean
+          notify_email: boolean
+          notify_inactivity: boolean
           preferred_language: string
+          profile_public: boolean
+          study_reminders_enabled: boolean
           total_gems: number
           total_xp: number
         }
@@ -374,13 +380,19 @@ export type Database = {
           certificate_name?: string | null
           created_at?: string
           current_streak?: number
+          daily_goal_minutes?: number
           email?: string | null
           id: string
           last_active?: string
           last_attendance_date?: string | null
           longest_streak?: number
           name?: string | null
+          notify_completion?: boolean
+          notify_email?: boolean
+          notify_inactivity?: boolean
           preferred_language?: string
+          profile_public?: boolean
+          study_reminders_enabled?: boolean
           total_gems?: number
           total_xp?: number
         }
@@ -389,13 +401,19 @@ export type Database = {
           certificate_name?: string | null
           created_at?: string
           current_streak?: number
+          daily_goal_minutes?: number
           email?: string | null
           id?: string
           last_active?: string
           last_attendance_date?: string | null
           longest_streak?: number
           name?: string | null
+          notify_completion?: boolean
+          notify_email?: boolean
+          notify_inactivity?: boolean
           preferred_language?: string
+          profile_public?: boolean
+          study_reminders_enabled?: boolean
           total_gems?: number
           total_xp?: number
         }
@@ -461,6 +479,7 @@ export type Database = {
         }
       }
       mark_attendance: { Args: never; Returns: Json }
+      reset_my_progress: { Args: never; Returns: undefined }
       submit_mcq: {
         Args: { _answers: Json; _module_id: string }
         Returns: Json
