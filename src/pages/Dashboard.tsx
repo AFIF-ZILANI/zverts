@@ -6,6 +6,10 @@ import { CircularProgress } from "@/components/zerod/CircularProgress";
 import { ModuleCard } from "@/components/zerod/ModuleCard";
 import { WeeklyActivityChart } from "@/components/zerod/WeeklyActivityChart";
 import { StatCard } from "@/components/zerod/StatCard";
+import { ContinueWatching } from "@/components/zerod/ContinueWatching";
+import { DailyChallenge } from "@/components/zerod/DailyChallenge";
+import { BadgesGrid } from "@/components/zerod/BadgesGrid";
+import { AnalyticsPanel } from "@/components/zerod/AnalyticsPanel";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock, CheckSquare, Flame, Calendar, ArrowRight } from "lucide-react";
@@ -102,6 +106,9 @@ const Dashboard = () => {
           <div className="text-muted-foreground font-mono text-sm">Loading your progress…</div>
         ) : (
           <>
+            {/* Continue watching */}
+            <ContinueWatching userId={user.id} />
+
             {/* Top: progress + stats */}
             <div className="grid lg:grid-cols-3 gap-6 mb-6">
               <div className="lg:col-span-1 rounded-2xl border border-border bg-gradient-card p-8 shadow-card flex flex-col items-center justify-center">
@@ -124,6 +131,17 @@ const Dashboard = () => {
                 </div>
               </div>
               <WeeklyActivityChart data={weekly} />
+            </div>
+
+            {/* Daily challenge + Analytics */}
+            <div className="grid lg:grid-cols-2 gap-6 mb-6">
+              <DailyChallenge userId={user.id} />
+              <AnalyticsPanel userId={user.id} />
+            </div>
+
+            {/* Badges */}
+            <div className="mb-10">
+              <BadgesGrid userId={user.id} />
             </div>
 
             {/* Modules grid */}
