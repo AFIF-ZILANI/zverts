@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          code: string
+          id: string
+          metadata: Json | null
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          id?: string
+          metadata?: Json | null
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          metadata?: Json | null
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           created_at: string
@@ -112,6 +136,39 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      daily_challenges: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          module_id: string | null
+          passed: boolean
+          score: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          module_id?: string | null
+          passed?: boolean
+          score?: number
+          total?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          module_id?: string | null
+          passed?: boolean
+          score?: number
+          total?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -445,10 +502,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_achievement: {
+        Args: { _code: string; _gems?: number; _user_id: string; _xp?: number }
+        Returns: boolean
+      }
       award_progress: {
         Args: { _gems: number; _user_id: string; _xp: number }
         Returns: undefined
       }
+      check_achievements: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -480,6 +542,10 @@ export type Database = {
       }
       mark_attendance: { Args: never; Returns: Json }
       reset_my_progress: { Args: never; Returns: undefined }
+      submit_daily_challenge: {
+        Args: { _module_id: string; _score: number; _total: number }
+        Returns: Json
+      }
       submit_mcq: {
         Args: { _answers: Json; _module_id: string }
         Returns: Json
