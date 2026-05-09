@@ -23,14 +23,16 @@ const Courses = () => {
   const [preview, setPreview] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [mine, setMine] = useState<Course[]>([]);
-  const [system, setSystem] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     if (!user) return;
-    const { data } = await supabase.from("courses").select("*").or(`user_id.eq.${user.id},is_system.eq.true`).order("created_at", { ascending: false });
-    setMine((data ?? []).filter(c => c.user_id === user.id));
-    setSystem((data ?? []).filter(c => c.is_system));
+    const { data } = await supabase
+      .from("courses")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    setMine(data ?? []);
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
@@ -116,14 +118,6 @@ const Courses = () => {
           <div className="text-muted-foreground font-mono text-sm mt-12">{t("common.loading")}</div>
         ) : (
           <>
-            {system.length > 0 && (
-              <div className="mt-12">
-                <h2 className="font-display text-2xl mb-4">ZeroD Foundations</h2>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {system.map(c => <Card key={c.id} c={c} owned={false} />)}
-                </div>
-              </div>
-            )}
             <div className="mt-12">
               <h2 className="font-display text-2xl mb-4">{t("courses.mine")}</h2>
               {mine.length === 0 ? (
