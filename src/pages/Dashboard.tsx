@@ -58,10 +58,12 @@ const Dashboard = () => {
   if (authLoading) return null;
   if (!user) return <Navigate to="/auth" replace />;
 
-  const progByMod = new Map(progress.map(p => [p.module_id, p]));
-  const completedCount = progress.filter(p => p.completed).length;
+  const visibleModuleIds = new Set(modules.map((module) => module.id));
+  const visibleProgress = progress.filter((entry) => visibleModuleIds.has(entry.module_id));
+  const progByMod = new Map(visibleProgress.map(p => [p.module_id, p]));
+  const completedCount = visibleProgress.filter(p => p.completed).length;
   const overallPct = modules.length ? (completedCount / modules.length) * 100 : 0;
-  const totalWatch = progress.reduce((sum, p) => sum + p.watch_time_seconds, 0);
+  const totalWatch = visibleProgress.reduce((sum, p) => sum + p.watch_time_seconds, 0);
 
   const courseSections = useMemo(() => {
     return courses.map((course) => {
@@ -92,7 +94,7 @@ const Dashboard = () => {
   const weekly = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today); d.setDate(d.getDate() - (6 - i)); d.setHours(0,0,0,0);
     const next = new Date(d); next.setDate(next.getDate() + 1);
-    const minutes = progress
+    const minutes = visibleProgress
       .filter(p => { const u = new Date(p.updated_at); return u >= d && u < next; })
       .reduce((s, p) => s + Math.round(p.watch_time_seconds / 60), 0);
     return { day: days[d.getDay()], minutes };
