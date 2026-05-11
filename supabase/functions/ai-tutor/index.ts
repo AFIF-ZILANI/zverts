@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     if (!user) return json({ error: "Unauthorized" }, 401);
 
-    const { module_id, messages, language = "en", mode = "chat" } = await req.json();
+    const { module_id, messages, language = "en", mode = "chat", model = "smart" } = await req.json();
     if (!module_id || !Array.isArray(messages)) return json({ error: "module_id and messages required" }, 400);
 
     const { data: mod } = await supabase.from("modules")
@@ -40,32 +40,49 @@ ${langLine}
 Be concise, accurate, and well structured.
 Always answer in a real study format using this order when relevant:
 1. Short direct answer
-2. Key points
+2. Key points (bullets)
 3. Simple example or explanation
 4. What to study next
-Use markdown headings, bullets, and short paragraphs. Use code blocks for code.
+
+FORMATTING RULES (strict):
+- Use markdown: headings (##, ###), bullet lists, and short paragraphs.
+- For ALL math, use LaTeX: inline math as $...$ and display math as $$...$$ on its own lines. Never use \\[...\\] for display math output — use $$...$$.
+- For code, use fenced blocks with the language tag, e.g. \`\`\`python ... \`\`\` (supported: js, ts, python, cpp, c, java, html, css, json, bash, sql).
+- Use **bold** for emphasis sparingly. Use tables when comparing things.
+
 Only answer about THIS module or its parent course; if asked something unrelated, gently redirect.`;
 
     if (mode === "summary") {
       system += `\nTask: Produce a 5-7 bullet point summary of the key concepts likely covered in this lesson based on the title.`;
     } else if (mode === "mcq") {
-      system += `\nTask: Generate exactly 5 multiple-choice questions about this lesson's likely content. Format STRICTLY as:
+      system += `\nTask: Generate exactly 5 multiple-choice questions about this lesson's likely content.
+Output ONLY the questions in this STRICT format (no preamble, no closing text):
 **Q1.** question text
 - A) option
 - B) option
 - C) option
 - D) option
-**Answer:** B — short explanation`;
+**Answer:** B — short explanation
+
+(repeat for Q2..Q5, separated by a blank line)`;
     }
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) return json({ error: "AI not configured" }, 500);
 
+    const MODEL_MAP: Record<string, string> = {
+      fast: "google/gemini-2.5-flash-lite",
+      smart: "google/gemini-2.5-flash",
+      pro: "google/gemini-2.5-pro",
+      reasoning: "openai/gpt-5-mini",
+    };
+    const gatewayModel = MODEL_MAP[model] ?? MODEL_MAP.smart;
+
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: gatewayModel,
         messages: [{ role: "system", content: system }, ...messages],
         stream: true,
       }),
