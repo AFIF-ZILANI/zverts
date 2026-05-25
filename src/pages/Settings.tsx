@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Trash2, LogOut, Lock, Globe, BookOpen, Bell, User as UserIcon, Trophy, ShieldAlert, RotateCcw, Pencil } from "lucide-react";
+import { SmartNotificationSettings } from "@/components/app/SmartNotificationSettings";
 
 type Profile = {
   name: string | null; email: string | null; avatar_url: string | null;
