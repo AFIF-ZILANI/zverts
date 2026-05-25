@@ -257,6 +257,7 @@ const Settings = () => {
               ))}
               <Button onClick={saveProfile} disabled={busy} className="bg-gradient-lime text-primary-foreground hover:opacity-90 shadow-glow">{t("common.save")}</Button>
             </div>
+            <SmartNotificationSettings />
           </TabsContent>
 
           {/* PROGRESS */}
