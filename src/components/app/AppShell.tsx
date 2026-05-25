@@ -1,7 +1,7 @@
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, BookOpen, User as UserIcon, Trophy, Shield, Compass, Menu, X } from "lucide-react";
+import { LogOut, LayoutDashboard, BookOpen, User as UserIcon, Trophy, Shield, Compass, Menu, X, Sparkles } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import { ThemeToggle, LanguageToggle } from "./ThemeToggle";
 import { useTranslation } from "react-i18next";
