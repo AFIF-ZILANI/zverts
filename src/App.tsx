@@ -43,6 +43,12 @@ const Quiz = lazyWithRetry(() => import("./pages/Quiz.tsx"));
 const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard.tsx"));
 const Admin = lazyWithRetry(() => import("./pages/Admin.tsx"));
 const Certificate = lazyWithRetry(() => import("./pages/Certificate.tsx"));
+const BuyPackage = lazyWithRetry(() => import("./pages/BuyPackage.tsx"));
+const Payment = lazyWithRetry(() => import("./pages/Payment.tsx"));
+const PaymentHistory = lazyWithRetry(() => import("./pages/PaymentHistory.tsx"));
+const AdminPayments = lazyWithRetry(() => import("./pages/admin/Payments.tsx"));
+const AdminUsers = lazyWithRetry(() => import("./pages/admin/Users.tsx"));
+const AdminManagement = lazyWithRetry(() => import("./pages/admin/AdminManagement.tsx"));
 
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
 const Info = lazyWithRetry(() => import("./pages/Info.tsx"));
