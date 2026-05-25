@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import zvertLogo from "@/assets/zvert-logo.png";
+import { SiteFooter } from "./SiteFooter";
 
 export const AppShell = ({ children }: { children: ReactNode }) => {
   const { user, signOut } = useAuth();
@@ -118,19 +119,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         )}
       </header>
       <main className="flex-1">{children}</main>
-      <footer className="border-t border-border/60 py-8">
-        <div className="container text-xs text-muted-foreground font-mono flex items-center justify-between">
-          <span>© ZverT</span>
-          <a
-            href="https://tauhidrana.vercel.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-primary transition-colors underline-offset-4 hover:underline"
-          >
-            {t("footer.credit")}
-          </a>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 };
