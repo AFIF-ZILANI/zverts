@@ -52,10 +52,13 @@ Deno.serve(async (req) => {
       return json({ error: `YouTube API: ${plJson.error.message}` }, 400);
     }
     if (!plJson.items?.length) return json({ error: "Playlist not found or is private" }, 404);
-    const playlistTitle = plJson.items?.[0]?.snippet?.title ?? "Imported playlist";
-    const playlistDesc = plJson.items?.[0]?.snippet?.description ?? null;
-    const playlistThumb = plJson.items?.[0]?.snippet?.thumbnails?.high?.url
-      ?? plJson.items?.[0]?.snippet?.thumbnails?.medium?.url ?? null;
+    const snippet = plJson.items?.[0]?.snippet ?? {};
+    const playlistTitle = snippet.title ?? "Imported playlist";
+    const playlistDesc = snippet.description ?? null;
+    const playlistThumb = snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url ?? null;
+    const authorName = snippet.channelTitle ?? null;
+    const authorChannelId = snippet.channelId ?? null;
+    const authorChannelUrl = authorChannelId ? `https://www.youtube.com/channel/${authorChannelId}` : null;
 
     // playlist items (paginate up to 200)
     const items: any[] = [];
