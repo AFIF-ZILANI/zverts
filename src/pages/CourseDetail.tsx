@@ -12,7 +12,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-interface Course { id: string; title: string; description: string | null; user_id: string | null; is_public: boolean; is_system: boolean; }
+interface Course { id: string; title: string; description: string | null; user_id: string | null; is_public: boolean; is_system: boolean; author_name?: string | null; author_channel_url?: string | null; }
 interface Module { id: string; position: number; title: string; duration_seconds: number; youtube_video_id: string; thumbnail_url: string | null; }
 interface Progress { module_id: string; percent_watched: number; completed: boolean; mcq_passed: boolean; }
 
