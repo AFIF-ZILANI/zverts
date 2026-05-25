@@ -153,9 +153,7 @@ const Settings = () => {
             <TabsTrigger value="prefs"><BookOpen className="h-3.5 w-3.5 mr-1.5" />Learning</TabsTrigger>
             <TabsTrigger value="notifications"><Bell className="h-3.5 w-3.5 mr-1.5" />Notifications</TabsTrigger>
             <TabsTrigger value="progress"><Trophy className="h-3.5 w-3.5 mr-1.5" />Progress</TabsTrigger>
-            <TabsTrigger value="courses"><BookOpen className="h-3.5 w-3.5 mr-1.5" />My courses</TabsTrigger>
             <TabsTrigger value="privacy"><Globe className="h-3.5 w-3.5 mr-1.5" />Privacy</TabsTrigger>
-            <TabsTrigger value="danger" className="data-[state=active]:text-destructive"><ShieldAlert className="h-3.5 w-3.5 mr-1.5" />Danger</TabsTrigger>
           </TabsList>
 
           {/* PROFILE */}
@@ -280,21 +278,6 @@ const Settings = () => {
             </div>
           </TabsContent>
 
-          {/* COURSES */}
-          <TabsContent value="courses">
-            <div className="rounded-2xl border border-border bg-gradient-card p-6 shadow-card">
-              {courses.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">You haven't created any courses yet. <Link to="/courses" className="text-primary underline">Create one</Link>.</p>
-              ) : (
-                <div className="space-y-2">
-                  {courses.map(c => (
-                    <CourseRow key={c.id} c={c} onRename={renameCourse} onToggle={toggleCoursePublic} onDelete={deleteCourse} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
           {/* PRIVACY */}
           <TabsContent value="privacy">
             <div className="rounded-2xl border border-border bg-gradient-card p-8 shadow-card space-y-5">
@@ -310,41 +293,6 @@ const Settings = () => {
             </div>
           </TabsContent>
 
-          {/* DANGER */}
-          <TabsContent value="danger">
-            <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-8 space-y-6">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <div className="font-medium">Reset all progress</div>
-                  <p className="text-sm text-muted-foreground">Wipes gems, XP, streak, completions, quiz attempts, attendance and certificates. Your courses are kept.</p>
-                </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild><Button variant="outline"><RotateCcw className="h-4 w-4 mr-2" />Reset</Button></AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Reset all progress?</AlertDialogTitle>
-                      <AlertDialogDescription>This cannot be undone. You'll start over from zero gems and XP.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={resetProgress}>Reset progress</AlertDialogAction></AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-              <div className="flex items-center justify-between gap-4 border-t border-destructive/30 pt-6">
-                <div>
-                  <div className="font-medium text-destructive">Delete account</div>
-                  <p className="text-sm text-muted-foreground">Permanently removes your account, profile, courses, progress and certificates.</p>
-                </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild><Button variant="destructive"><Trash2 className="h-4 w-4 mr-2" />Delete account</Button></AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Delete your account?</AlertDialogTitle>
-                      <AlertDialogDescription>This is permanent. Everything you've created and earned will be deleted.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={deleteAccount}>Delete forever</AlertDialogAction></AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-          </TabsContent>
         </Tabs>
       </section>
     </AppShell>
