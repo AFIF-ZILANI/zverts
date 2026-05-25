@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -31,14 +32,16 @@ const Auth = () => {
 
   const signInGoogle = async () => {
     setGoogleBusy(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/dashboard` },
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: `${window.location.origin}/dashboard`,
     });
-    if (error) {
-      toast.error(error.message || "Sign-in failed");
+    if (result.error) {
+      toast.error(result.error.message || "Sign-in failed");
       setGoogleBusy(false);
+      return;
     }
+    if (result.redirected) return;
+    navigate("/dashboard");
   };
 
   const handleEmailLogin = async () => {
