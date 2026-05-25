@@ -64,6 +64,8 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
     if (active) store.updateChat(active.id, { model: m });
   };
 
+  const [streamingText, setStreamingText] = useState<string>("");
+
   const send = async (override?: { text: string; mode?: "chat" | "summary" | "mcq" }) => {
     const text = override?.text ?? input.trim();
     if (!text || busy) return;
@@ -74,15 +76,18 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
     store.setMessages(id, next);
     setInput("");
     setBusy(true);
+    setStreamingText("");
 
     let acc = "";
-    let assistantStarted = false;
-    const upsert = (chunk: string) => {
-      acc += chunk;
-      const list: Msg[] = assistantStarted
-        ? next.concat({ role: "assistant", content: acc })
-        : (assistantStarted = true, next.concat({ role: "assistant", content: acc }));
-      store.setMessages(id, list);
+    let pendingFlush = false;
+    const flush = () => {
+      pendingFlush = false;
+      setStreamingText(acc);
+    };
+    const scheduleFlush = () => {
+      if (pendingFlush) return;
+      pendingFlush = true;
+      requestAnimationFrame(flush);
     };
 
     try {
@@ -98,9 +103,9 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
         },
         body: JSON.stringify({ module_id: moduleId, messages: next, language: lang, mode, model }),
       });
-      if (resp.status === 429) { toast.error("Rate limit — wait a moment"); setBusy(false); return; }
-      if (resp.status === 402) { toast.error("AI credits exhausted"); setBusy(false); return; }
-      if (!resp.ok || !resp.body) { toast.error("AI unavailable"); setBusy(false); return; }
+      if (resp.status === 429) { toast.error("Rate limit — wait a moment"); setBusy(false); setStreamingText(""); return; }
+      if (resp.status === 402) { toast.error("AI credits exhausted"); setBusy(false); setStreamingText(""); return; }
+      if (!resp.ok || !resp.body) { toast.error("AI unavailable"); setBusy(false); setStreamingText(""); return; }
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -119,14 +124,21 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
           if (js === "[DONE]") { done = true; break; }
           try {
             const p = JSON.parse(js);
-            const c = p.choices?.[0]?.delta?.content;
-            if (c) upsert(c);
+            const ch = p.choices?.[0]?.delta?.content;
+            if (ch) { acc += ch; scheduleFlush(); }
           } catch { buf = line + "\n" + buf; break; }
         }
       }
+      // Final commit to store (persists to localStorage once)
+      if (acc) {
+        store.setMessages(id, next.concat({ role: "assistant", content: acc }));
+      }
+      setStreamingText("");
     } catch (e) {
       console.error(e);
       toast.error("Stream error");
+      if (acc) store.setMessages(id, next.concat({ role: "assistant", content: acc }));
+      setStreamingText("");
     } finally {
       setBusy(false);
     }
