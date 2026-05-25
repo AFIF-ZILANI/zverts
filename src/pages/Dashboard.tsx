@@ -55,9 +55,6 @@ const Dashboard = () => {
     })();
   }, [user]);
 
-  if (authLoading) return null;
-  if (!user) return <Navigate to="/auth" replace />;
-
   const visibleModuleIds = new Set(modules.map((module) => module.id));
   const visibleProgress = progress.filter((entry) => visibleModuleIds.has(entry.module_id));
   const progByMod = new Map(visibleProgress.map(p => [p.module_id, p]));
@@ -84,7 +81,11 @@ const Dashboard = () => {
 
       return { course, cards };
     });
-  }, [courses, modules, progByMod]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courses, modules, progress]);
+
+  if (authLoading) return null;
+  if (!user) return <Navigate to="/auth" replace />;
 
   const nextModule = courseSections.flatMap((section) => section.cards).find((m) => m.state === "available" || m.state === "in_progress");
 
