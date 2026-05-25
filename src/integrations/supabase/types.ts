@@ -59,6 +59,33 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          target_user: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_user?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_user?: string | null
+        }
+        Relationships: []
+      }
       certificates: {
         Row: {
           certificate_code: string
@@ -547,17 +574,76 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          credits: number
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          package_type: Database["public"]["Enums"]["package_type"]
+          rejected_at: string | null
+          rejected_by: string | null
+          sender_number: string
+          status: Database["public"]["Enums"]["payment_status"]
+          trx_id: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          credits: number
+          id?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          package_type: Database["public"]["Enums"]["package_type"]
+          rejected_at?: string | null
+          rejected_by?: string | null
+          sender_number: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          trx_id: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          credits?: number
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          package_type?: Database["public"]["Enums"]["package_type"]
+          rejected_at?: string | null
+          rejected_by?: string | null
+          sender_number?: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          trx_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          ai_enabled: boolean
           avatar_url: string | null
           certificate_name: string | null
+          convert_credits: number
           created_at: string
           current_streak: number
           daily_goal_minutes: number
           email: string | null
+          free_playlist_used: number
           id: string
+          is_paid_user: boolean
           last_active: string
           last_attendance_date: string | null
+          locked: boolean
           longest_streak: number
           name: string | null
           notify_completion: boolean
@@ -567,18 +653,24 @@ export type Database = {
           profile_public: boolean
           study_reminders_enabled: boolean
           total_gems: number
+          total_paid: number
           total_xp: number
         }
         Insert: {
+          ai_enabled?: boolean
           avatar_url?: string | null
           certificate_name?: string | null
+          convert_credits?: number
           created_at?: string
           current_streak?: number
           daily_goal_minutes?: number
           email?: string | null
+          free_playlist_used?: number
           id: string
+          is_paid_user?: boolean
           last_active?: string
           last_attendance_date?: string | null
+          locked?: boolean
           longest_streak?: number
           name?: string | null
           notify_completion?: boolean
@@ -588,18 +680,24 @@ export type Database = {
           profile_public?: boolean
           study_reminders_enabled?: boolean
           total_gems?: number
+          total_paid?: number
           total_xp?: number
         }
         Update: {
+          ai_enabled?: boolean
           avatar_url?: string | null
           certificate_name?: string | null
+          convert_credits?: number
           created_at?: string
           current_streak?: number
           daily_goal_minutes?: number
           email?: string | null
+          free_playlist_used?: number
           id?: string
+          is_paid_user?: boolean
           last_active?: string
           last_attendance_date?: string | null
+          locked?: boolean
           longest_streak?: number
           name?: string | null
           notify_completion?: boolean
@@ -609,6 +707,7 @@ export type Database = {
           profile_public?: boolean
           study_reminders_enabled?: boolean
           total_gems?: number
+          total_paid?: number
           total_xp?: number
         }
         Relationships: []
@@ -681,6 +780,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_adjust_credits: {
+        Args: { _delta: number; _reason: string; _target: string }
+        Returns: undefined
+      }
+      admin_list_users: {
+        Args: { _limit?: number; _search?: string }
+        Returns: {
+          ai_enabled: boolean
+          convert_credits: number
+          created_at: string
+          email: string
+          free_playlist_used: number
+          id: string
+          is_paid_user: boolean
+          last_active: string
+          locked: boolean
+          name: string
+          total_paid: number
+        }[]
+      }
+      admin_set_locked: {
+        Args: { _locked: boolean; _reason?: string; _target: string }
+        Returns: undefined
+      }
+      admin_set_role: {
+        Args: {
+          _email: string
+          _grant: boolean
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: Json
+      }
+      approve_payment: { Args: { _payment_id: string }; Returns: Json }
       award_achievement: {
         Args: { _code: string; _gems?: number; _user_id: string; _xp?: number }
         Returns: boolean
@@ -690,6 +822,7 @@ export type Database = {
         Returns: undefined
       }
       check_achievements: { Args: never; Returns: Json }
+      consume_conversion: { Args: never; Returns: Json }
       dismiss_notification: { Args: { _id: string }; Returns: undefined }
       dispatch_notification: {
         Args: {
@@ -749,6 +882,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      list_admin_users: {
+        Args: never
+        Returns: {
+          email: string
+          name: string
+          roles: string[]
+          user_id: string
+        }[]
+      }
       list_public_profiles: {
         Args: { _limit?: number }
         Returns: {
@@ -772,6 +914,10 @@ export type Database = {
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_attendance: { Args: never; Returns: Json }
       mark_notification_read: { Args: { _id: string }; Returns: undefined }
+      reject_payment: {
+        Args: { _note?: string; _payment_id: string }
+        Returns: Json
+      }
       reset_my_progress: { Args: never; Returns: undefined }
       submit_daily_challenge: {
         Args: { _module_id: string; _score: number; _total: number }
@@ -780,6 +926,15 @@ export type Database = {
       submit_mcq: {
         Args: { _answers: Json; _module_id: string }
         Returns: Json
+      }
+      submit_payment: {
+        Args: {
+          _method: Database["public"]["Enums"]["payment_method"]
+          _package: Database["public"]["Enums"]["package_type"]
+          _sender_number: string
+          _trx_id: string
+        }
+        Returns: string
       }
       unread_notification_count: { Args: never; Returns: number }
       update_module_progress: {
@@ -848,6 +1003,9 @@ export type Database = {
         | "unfinished_lesson"
         | "quiz_reminder"
       notification_priority: "critical" | "high" | "normal" | "low"
+      package_type: "single" | "mini" | "pro"
+      payment_method: "bkash" | "nagad" | "rocket"
+      payment_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1006,6 +1164,9 @@ export const Constants = {
         "quiz_reminder",
       ],
       notification_priority: ["critical", "high", "normal", "low"],
+      package_type: ["single", "mini", "pro"],
+      payment_method: ["bkash", "nagad", "rocket"],
+      payment_status: ["pending", "approved", "rejected"],
     },
   },
 } as const
