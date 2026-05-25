@@ -9,20 +9,41 @@ import { ThemeProvider } from "./components/zerod/ThemeProvider";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 
-const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
-const Learn = lazy(() => import("./pages/Learn.tsx"));
-const ModulePlayer = lazy(() => import("./pages/ModulePlayer.tsx"));
-const Courses = lazy(() => import("./pages/Courses.tsx"));
-const CourseDetail = lazy(() => import("./pages/CourseDetail.tsx"));
-const Profile = lazy(() => import("./pages/Profile.tsx"));
-const Settings = lazy(() => import("./pages/Settings.tsx"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword.tsx"));
-const Quiz = lazy(() => import("./pages/Quiz.tsx"));
-const Leaderboard = lazy(() => import("./pages/Leaderboard.tsx"));
-const Admin = lazy(() => import("./pages/Admin.tsx"));
-const Certificate = lazy(() => import("./pages/Certificate.tsx"));
-const Explore = lazy(() => import("./pages/Explore.tsx"));
-const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+// Lazy import with auto-reload on stale chunk errors (after deploys / vite restarts)
+const lazyWithRetry = <T extends { default: React.ComponentType<any> }>(
+  factory: () => Promise<T>,
+) =>
+  lazy(async () => {
+    try {
+      return await factory();
+    } catch (err: any) {
+      const msg = String(err?.message || "");
+      if (msg.includes("Failed to fetch dynamically imported module") || msg.includes("Importing a module script failed")) {
+        const key = "__chunk_reload__";
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, "1");
+          window.location.reload();
+          return new Promise<T>(() => {});
+        }
+      }
+      throw err;
+    }
+  });
+
+const Dashboard = lazyWithRetry(() => import("./pages/Dashboard.tsx"));
+const Learn = lazyWithRetry(() => import("./pages/Learn.tsx"));
+const ModulePlayer = lazyWithRetry(() => import("./pages/ModulePlayer.tsx"));
+const Courses = lazyWithRetry(() => import("./pages/Courses.tsx"));
+const CourseDetail = lazyWithRetry(() => import("./pages/CourseDetail.tsx"));
+const Profile = lazyWithRetry(() => import("./pages/Profile.tsx"));
+const Settings = lazyWithRetry(() => import("./pages/Settings.tsx"));
+const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword.tsx"));
+const Quiz = lazyWithRetry(() => import("./pages/Quiz.tsx"));
+const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard.tsx"));
+const Admin = lazyWithRetry(() => import("./pages/Admin.tsx"));
+const Certificate = lazyWithRetry(() => import("./pages/Certificate.tsx"));
+const Explore = lazyWithRetry(() => import("./pages/Explore.tsx"));
+const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
