@@ -47,7 +47,7 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, busy]);
+  }, [messages.length, busy]);
 
   // Reset per-chat feedback on switch
   useEffect(() => { setFeedback({}); }, [store.activeId]);
