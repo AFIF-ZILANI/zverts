@@ -2,9 +2,9 @@
 // Stored client-side because the form needs to display them; the actual approval
 // is admin-controlled server-side (no auto-verification with these numbers).
 export const MERCHANT_NUMBERS = {
-  bkash: "01XXXXXXXXX",
-  nagad: "01XXXXXXXXX",
-  rocket: "01XXXXXXXXX",
+  bkash: "01319711956",
+  nagad: "01319711956",
+  rocket: "01319711956",
 } as const;
 
 export type PackageKey = "single" | "mini" | "pro";
