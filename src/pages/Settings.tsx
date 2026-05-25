@@ -153,9 +153,7 @@ const Settings = () => {
             <TabsTrigger value="prefs"><BookOpen className="h-3.5 w-3.5 mr-1.5" />Learning</TabsTrigger>
             <TabsTrigger value="notifications"><Bell className="h-3.5 w-3.5 mr-1.5" />Notifications</TabsTrigger>
             <TabsTrigger value="progress"><Trophy className="h-3.5 w-3.5 mr-1.5" />Progress</TabsTrigger>
-            <TabsTrigger value="courses"><BookOpen className="h-3.5 w-3.5 mr-1.5" />My courses</TabsTrigger>
             <TabsTrigger value="privacy"><Globe className="h-3.5 w-3.5 mr-1.5" />Privacy</TabsTrigger>
-            <TabsTrigger value="danger" className="data-[state=active]:text-destructive"><ShieldAlert className="h-3.5 w-3.5 mr-1.5" />Danger</TabsTrigger>
           </TabsList>
 
           {/* PROFILE */}
