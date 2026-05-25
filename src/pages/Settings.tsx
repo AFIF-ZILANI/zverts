@@ -278,21 +278,6 @@ const Settings = () => {
             </div>
           </TabsContent>
 
-          {/* COURSES */}
-          <TabsContent value="courses">
-            <div className="rounded-2xl border border-border bg-gradient-card p-6 shadow-card">
-              {courses.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">You haven't created any courses yet. <Link to="/courses" className="text-primary underline">Create one</Link>.</p>
-              ) : (
-                <div className="space-y-2">
-                  {courses.map(c => (
-                    <CourseRow key={c.id} c={c} onRename={renameCourse} onToggle={toggleCoursePublic} onDelete={deleteCourse} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
           {/* PRIVACY */}
           <TabsContent value="privacy">
             <div className="rounded-2xl border border-border bg-gradient-card p-8 shadow-card space-y-5">
