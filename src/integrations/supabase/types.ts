@@ -499,7 +499,80 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      mcq_questions_public: {
+        Row: {
+          id: string | null
+          module_id: string | null
+          options: Json | null
+          position: number | null
+          question: string | null
+        }
+        Insert: {
+          id?: string | null
+          module_id?: string | null
+          options?: Json | null
+          position?: number | null
+          question?: string | null
+        }
+        Update: {
+          id?: string | null
+          module_id?: string | null
+          options?: Json | null
+          position?: number | null
+          question?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcq_questions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles_public: {
+        Row: {
+          avatar_url: string | null
+          certificate_name: string | null
+          created_at: string | null
+          current_streak: number | null
+          id: string | null
+          last_active: string | null
+          longest_streak: number | null
+          name: string | null
+          profile_public: boolean | null
+          total_gems: number | null
+          total_xp: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          certificate_name?: string | null
+          created_at?: string | null
+          current_streak?: number | null
+          id?: string | null
+          last_active?: string | null
+          longest_streak?: number | null
+          name?: string | null
+          profile_public?: boolean | null
+          total_gems?: number | null
+          total_xp?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          certificate_name?: string | null
+          created_at?: string | null
+          current_streak?: number | null
+          id?: string | null
+          last_active?: string | null
+          longest_streak?: number | null
+          name?: string | null
+          profile_public?: boolean | null
+          total_gems?: number | null
+          total_xp?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       award_achievement: {
@@ -511,6 +584,10 @@ export type Database = {
         Returns: undefined
       }
       check_achievements: { Args: never; Returns: Json }
+      grade_and_submit_daily_challenge: {
+        Args: { _answers: Json }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -522,6 +599,7 @@ export type Database = {
         Args: { _module_id: string; _user_id: string }
         Returns: boolean
       }
+      is_profile_public: { Args: { _uid: string }; Returns: boolean }
       issue_certificate: {
         Args: { _course_id: string }
         Returns: {
@@ -574,6 +652,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      verify_certificate: {
+        Args: { _code: string }
+        Returns: {
+          certificate_code: string
+          course_title: string
+          issued_at: string
+          issued_to_name: string
+        }[]
       }
     }
     Enums: {
