@@ -293,41 +293,6 @@ const Settings = () => {
             </div>
           </TabsContent>
 
-          {/* DANGER */}
-          <TabsContent value="danger">
-            <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-8 space-y-6">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <div className="font-medium">Reset all progress</div>
-                  <p className="text-sm text-muted-foreground">Wipes gems, XP, streak, completions, quiz attempts, attendance and certificates. Your courses are kept.</p>
-                </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild><Button variant="outline"><RotateCcw className="h-4 w-4 mr-2" />Reset</Button></AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Reset all progress?</AlertDialogTitle>
-                      <AlertDialogDescription>This cannot be undone. You'll start over from zero gems and XP.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={resetProgress}>Reset progress</AlertDialogAction></AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-              <div className="flex items-center justify-between gap-4 border-t border-destructive/30 pt-6">
-                <div>
-                  <div className="font-medium text-destructive">Delete account</div>
-                  <p className="text-sm text-muted-foreground">Permanently removes your account, profile, courses, progress and certificates.</p>
-                </div>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild><Button variant="destructive"><Trash2 className="h-4 w-4 mr-2" />Delete account</Button></AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Delete your account?</AlertDialogTitle>
-                      <AlertDialogDescription>This is permanent. Everything you've created and earned will be deleted.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={deleteAccount}>Delete forever</AlertDialogAction></AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-          </TabsContent>
         </Tabs>
       </section>
     </AppShell>
