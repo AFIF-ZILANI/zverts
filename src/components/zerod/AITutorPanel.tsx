@@ -335,13 +335,17 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
               ))}
 
               {busy && messages[messages.length - 1]?.role === "user" && (
-                <div className="flex justify-start">
-                  <div className="bg-muted/70 border border-border/40 rounded-2xl rounded-bl-sm px-3.5 py-3 text-sm">
-                    <div className="flex gap-1">
-                      <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:-0.3s]" />
-                      <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:-0.15s]" />
-                      <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce" />
-                    </div>
+                <div className="flex flex-col gap-1.5 items-start">
+                  <div className="max-w-[88%] rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm bg-muted/70 text-foreground border border-border/40">
+                    {streamingText ? (
+                      <MessageContent content={streamingText} />
+                    ) : (
+                      <div className="flex gap-1 py-1">
+                        <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:-0.3s]" />
+                        <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:-0.15s]" />
+                        <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce" />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
