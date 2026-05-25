@@ -24,19 +24,14 @@ import zvertLogo from "@/assets/zvert-logo.png";
 type LinkItem = { label: string; to: string; icon?: React.ComponentType<{ className?: string }> };
 
 const features: LinkItem[] = [
-  { label: "Mock Exam", to: "/explore", icon: FileText },
-  { label: "Question Bank", to: "/explore", icon: Database },
-  { label: "Live Streams", to: "/explore", icon: Radio },
-  { label: "AI Practice", to: "/dashboard", icon: Sparkles },
-  { label: "Leaderboard", to: "/leaderboard", icon: Trophy },
+  { label: "ZverT AI", to: "/dashboard", icon: Sparkles },
 ];
 
 const categories: LinkItem[] = [
-  { label: "SSC Science", to: "/courses", icon: Atom },
-  { label: "HSC Science", to: "/courses", icon: FlaskConical },
-  { label: "HSC Arts", to: "/courses", icon: Palette },
-  { label: "HSC Commerce", to: "/courses", icon: Briefcase },
-  { label: "BCS / Job Prep", to: "/courses", icon: GraduationCap },
+  { label: "Dashboard", to: "/dashboard", icon: Atom },
+  { label: "Courses", to: "/courses", icon: FlaskConical },
+  { label: "Explore", to: "/explore", icon: Palette },
+  { label: "Leaderboard", to: "/leaderboard", icon: Trophy },
 ];
 
 const support: LinkItem[] = [
@@ -45,6 +40,9 @@ const support: LinkItem[] = [
   { label: "Help Center", to: "/" },
   { label: "Contact", to: "/" },
   { label: "Affiliates", to: "/" },
+  { label: "Community", to: "/" },
+  { label: "Blog", to: "/" },
+  { label: "Careers", to: "/" },
 ];
 
 const legal: LinkItem[] = [
@@ -126,9 +124,9 @@ export const SiteFooter = () => {
               <div className="flex items-start gap-2.5">
                 <MapPin className="h-4 w-4 mt-0.5 text-primary/80 shrink-0" />
                 <span>
-                  House 12, Road 3, Uposhohor
+                  Boalia
                   <br />
-                  Rajshahi 6203, Bangladesh
+                  Rajshahi, Bangladesh
                 </span>
               </div>
               <a
@@ -164,16 +162,13 @@ export const SiteFooter = () => {
             <Column title="Support" items={support} />
           </div>
 
-          {/* App download */}
+          {/* App download — coming soon */}
           <div className="lg:col-span-2">
             <h4 className="text-sm font-display font-semibold tracking-wider uppercase text-foreground/90 mb-4">
               Get the App
             </h4>
             <div className="flex flex-col gap-2.5">
-              <a
-                href="#"
-                className="group flex items-center gap-3 rounded-xl border border-border/60 bg-background/40 backdrop-blur px-3 py-2.5 hover:border-primary/60 hover:bg-primary/5 transition-all"
-              >
+              <div className="relative group flex items-center gap-3 rounded-xl border border-border/60 bg-background/40 backdrop-blur px-3 py-2.5 opacity-70 cursor-not-allowed">
                 <Play className="h-5 w-5 text-primary" />
                 <div className="leading-tight">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -181,11 +176,11 @@ export const SiteFooter = () => {
                   </div>
                   <div className="text-sm font-semibold">Google Play</div>
                 </div>
-              </a>
-              <a
-                href="#"
-                className="group flex items-center gap-3 rounded-xl border border-border/60 bg-background/40 backdrop-blur px-3 py-2.5 hover:border-primary/60 hover:bg-primary/5 transition-all"
-              >
+                <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">
+                  Soon
+                </span>
+              </div>
+              <div className="relative group flex items-center gap-3 rounded-xl border border-border/60 bg-background/40 backdrop-blur px-3 py-2.5 opacity-70 cursor-not-allowed">
                 <Apple className="h-5 w-5 text-primary" />
                 <div className="leading-tight">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -193,28 +188,25 @@ export const SiteFooter = () => {
                   </div>
                   <div className="text-sm font-semibold">App Store</div>
                 </div>
-              </a>
+                <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">
+                  Soon
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Legal strip */}
-        <div className="mt-12 pt-6 border-t border-border/60 grid gap-4 md:grid-cols-2">
-          <div className="text-xs text-muted-foreground font-mono space-y-1">
-            <div>Trade License: TRAD/DNCC/123456/2025</div>
-            <div>E-TIN: 123456789012</div>
-          </div>
-          <div className="flex flex-wrap gap-x-5 gap-y-2 md:justify-end text-xs">
-            {legal.map((l) => (
-              <Link
-                key={l.label}
-                to={l.to}
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                {l.label}
-              </Link>
-            ))}
-          </div>
+        <div className="mt-12 pt-6 border-t border-border/60 flex flex-wrap items-center gap-x-5 gap-y-2 justify-center md:justify-end text-xs">
+          {legal.map((l) => (
+            <Link
+              key={l.label}
+              to={l.to}
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              {l.label}
+            </Link>
+          ))}
         </div>
 
         <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
