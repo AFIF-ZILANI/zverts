@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import zvertLogo from "@/assets/zvert-logo.png";
+import { SiteFooter } from "./SiteFooter";
 
 export const AppShell = ({ children }: { children: ReactNode }) => {
   const { user, signOut } = useAuth();
