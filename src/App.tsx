@@ -28,6 +28,8 @@ const lazyWithRetry = <T extends { default: React.ComponentType<any> }>(
     }
   });
 
+const Index = lazyWithRetry(() => import("./pages/Index.tsx"));
+const Auth = lazyWithRetry(() => import("./pages/Auth.tsx"));
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard.tsx"));
 const Learn = lazyWithRetry(() => import("./pages/Learn.tsx"));
 const ModulePlayer = lazyWithRetry(() => import("./pages/ModulePlayer.tsx"));
