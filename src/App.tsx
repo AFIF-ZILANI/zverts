@@ -80,7 +80,7 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/courses" element={<Courses />} />
                 <Route path="/courses/:id" element={<CourseDetail />} />
-                <Route path="/explore" element={<Explore />} />
+                {/* /explore removed per product decision */}
                 <Route path="/learn" element={<Learn />} />
                 <Route path="/learn/:id" element={<ModulePlayer />} />
                 <Route path="/quiz/:id" element={<Quiz />} />
