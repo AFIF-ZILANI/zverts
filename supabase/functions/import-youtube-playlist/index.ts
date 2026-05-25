@@ -52,10 +52,13 @@ Deno.serve(async (req) => {
       return json({ error: `YouTube API: ${plJson.error.message}` }, 400);
     }
     if (!plJson.items?.length) return json({ error: "Playlist not found or is private" }, 404);
-    const playlistTitle = plJson.items?.[0]?.snippet?.title ?? "Imported playlist";
-    const playlistDesc = plJson.items?.[0]?.snippet?.description ?? null;
-    const playlistThumb = plJson.items?.[0]?.snippet?.thumbnails?.high?.url
-      ?? plJson.items?.[0]?.snippet?.thumbnails?.medium?.url ?? null;
+    const snippet = plJson.items?.[0]?.snippet ?? {};
+    const playlistTitle = snippet.title ?? "Imported playlist";
+    const playlistDesc = snippet.description ?? null;
+    const playlistThumb = snippet.thumbnails?.high?.url ?? snippet.thumbnails?.medium?.url ?? null;
+    const authorName = snippet.channelTitle ?? null;
+    const authorChannelId = snippet.channelId ?? null;
+    const authorChannelUrl = authorChannelId ? `https://www.youtube.com/channel/${authorChannelId}` : null;
 
     // playlist items (paginate up to 200)
     const items: any[] = [];
@@ -98,6 +101,7 @@ Deno.serve(async (req) => {
     const { data: course, error: cErr } = await supabase.from("courses").insert({
       user_id: user.id, title: playlistTitle, description: playlistDesc, thumbnail_url: playlistThumb,
       source_playlist_id: playlistId, source_playlist_url: url, is_public: false, is_system: false,
+      author_name: authorName, author_channel_id: authorChannelId, author_channel_url: authorChannelUrl,
     }).select().single();
     if (cErr) {
       console.error("Course insert error:", cErr);

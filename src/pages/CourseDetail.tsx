@@ -12,7 +12,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-interface Course { id: string; title: string; description: string | null; user_id: string | null; is_public: boolean; is_system: boolean; }
+interface Course { id: string; title: string; description: string | null; user_id: string | null; is_public: boolean; is_system: boolean; author_name?: string | null; author_channel_url?: string | null; }
 interface Module { id: string; position: number; title: string; duration_seconds: number; youtube_video_id: string; thumbnail_url: string | null; }
 interface Progress { module_id: string; percent_watched: number; completed: boolean; mcq_passed: boolean; }
 
@@ -73,10 +73,16 @@ const CourseDetail = () => {
       supabase.from("courses").select("*").eq("id", id).maybeSingle(),
       supabase.from("modules").select("id,position,title,duration_seconds,youtube_video_id,thumbnail_url").eq("course_id", id).order("position"),
     ]);
-    setCourse(c); setTitleVal(c?.title ?? ""); setModules(m ?? []);
+    setCourse(c as Course | null); setTitleVal(c?.title ?? ""); setModules(m ?? []);
     if (user) {
       const { data: p } = await supabase.from("module_progress").select("module_id,percent_watched,completed,mcq_passed").eq("user_id", user.id).in("module_id", (m ?? []).map((x:any) => x.id));
       setProgress(p ?? []);
+    }
+    // Backfill author info on demand for older imported courses
+    if (c && !(c as any).author_name) {
+      supabase.functions.invoke("fetch-playlist-author", { body: { course_id: c.id } }).then(({ data }) => {
+        if (data?.author_name) setCourse(prev => prev ? { ...prev, author_name: data.author_name, author_channel_url: data.author_channel_url } : prev);
+      });
     }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id, user]);
@@ -152,7 +158,21 @@ const CourseDetail = () => {
             {allDone && <Button size="sm" className="bg-gradient-lime text-primary-foreground hover:opacity-90 shadow-glow" onClick={() => navigate(`/certificate/${course.id}`)}><Award className="h-4 w-4 mr-2" />{t("cert.title")}</Button>}
           </div>
         </div>
-        <p className="text-sm text-muted-foreground font-mono mb-8">{completedCount} / {modules.length} {t("dashboard.completed").toLowerCase()}</p>
+        <p className="text-sm text-muted-foreground font-mono mb-3">{completedCount} / {modules.length} {t("dashboard.completed").toLowerCase()}</p>
+
+        {course.author_name && (
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-border bg-gradient-card px-4 py-2 text-sm shadow-card">
+            <span className="text-muted-foreground font-mono text-xs uppercase tracking-widest">Author</span>
+            {course.author_channel_url ? (
+              <a href={course.author_channel_url} target="_blank" rel="noopener noreferrer" className="font-medium text-foreground hover:text-primary transition-colors">
+                {course.author_name}
+              </a>
+            ) : (
+              <span className="font-medium">{course.author_name}</span>
+            )}
+            <span className="text-xs text-muted-foreground">· YouTube</span>
+          </div>
+        )}
 
         {modules.length === 0 ? (
           <div className="text-muted-foreground py-12 text-center font-mono text-sm">{t("courses.noModules")}</div>
