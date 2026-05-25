@@ -73,10 +73,16 @@ const CourseDetail = () => {
       supabase.from("courses").select("*").eq("id", id).maybeSingle(),
       supabase.from("modules").select("id,position,title,duration_seconds,youtube_video_id,thumbnail_url").eq("course_id", id).order("position"),
     ]);
-    setCourse(c); setTitleVal(c?.title ?? ""); setModules(m ?? []);
+    setCourse(c as Course | null); setTitleVal(c?.title ?? ""); setModules(m ?? []);
     if (user) {
       const { data: p } = await supabase.from("module_progress").select("module_id,percent_watched,completed,mcq_passed").eq("user_id", user.id).in("module_id", (m ?? []).map((x:any) => x.id));
       setProgress(p ?? []);
+    }
+    // Backfill author info on demand for older imported courses
+    if (c && !(c as any).author_name) {
+      supabase.functions.invoke("fetch-playlist-author", { body: { course_id: c.id } }).then(({ data }) => {
+        if (data?.author_name) setCourse(prev => prev ? { ...prev, author_name: data.author_name, author_channel_url: data.author_channel_url } : prev);
+      });
     }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id, user]);
