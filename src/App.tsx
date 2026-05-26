@@ -106,6 +106,7 @@ const App = () => (
                 <Route path="/payments" element={<PaymentHistory />} />
                 <Route path="/certificate/:courseId" element={<Certificate />} />
                 <Route path="/info/:slug" element={<Info />} />
+                <Route path="/refund-policy" element={<RefundPolicy />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </Suspense>
