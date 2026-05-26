@@ -53,6 +53,7 @@ const AdminBroadcast = lazyWithRetry(() => import("./pages/admin/Broadcast.tsx")
 
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
 const Info = lazyWithRetry(() => import("./pages/Info.tsx"));
+const RefundPolicy = lazyWithRetry(() => import("./pages/RefundPolicy.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
