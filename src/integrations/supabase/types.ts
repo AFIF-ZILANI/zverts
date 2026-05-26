@@ -585,6 +585,12 @@ export type Database = {
           id: string
           method: Database["public"]["Enums"]["payment_method"]
           package_type: Database["public"]["Enums"]["package_type"]
+          refund_note: string | null
+          refund_reason: string | null
+          refund_requested_at: string | null
+          refunded: boolean
+          refunded_at: string | null
+          refunded_by: string | null
           rejected_at: string | null
           rejected_by: string | null
           sender_number: string
@@ -602,6 +608,12 @@ export type Database = {
           id?: string
           method: Database["public"]["Enums"]["payment_method"]
           package_type: Database["public"]["Enums"]["package_type"]
+          refund_note?: string | null
+          refund_reason?: string | null
+          refund_requested_at?: string | null
+          refunded?: boolean
+          refunded_at?: string | null
+          refunded_by?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
           sender_number: string
@@ -619,6 +631,12 @@ export type Database = {
           id?: string
           method?: Database["public"]["Enums"]["payment_method"]
           package_type?: Database["public"]["Enums"]["package_type"]
+          refund_note?: string | null
+          refund_reason?: string | null
+          refund_requested_at?: string | null
+          refunded?: boolean
+          refunded_at?: string | null
+          refunded_by?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
           sender_number?: string
@@ -1014,7 +1032,13 @@ export type Database = {
       notification_priority: "critical" | "high" | "normal" | "low"
       package_type: "single" | "mini" | "pro"
       payment_method: "bkash" | "nagad" | "rocket"
-      payment_status: "pending" | "approved" | "rejected"
+      payment_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "refund_pending"
+        | "refunded"
+        | "refund_rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1175,7 +1199,14 @@ export const Constants = {
       notification_priority: ["critical", "high", "normal", "low"],
       package_type: ["single", "mini", "pro"],
       payment_method: ["bkash", "nagad", "rocket"],
-      payment_status: ["pending", "approved", "rejected"],
+      payment_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "refund_pending",
+        "refunded",
+        "refund_rejected",
+      ],
     },
   },
 } as const
