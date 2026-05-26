@@ -1,18 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, Link } from "react-router-dom";
 import { AppShell } from "@/components/app/AppShell";
 import { CircularProgress } from "@/components/app/CircularProgress";
 import { ModuleCard } from "@/components/app/ModuleCard";
-import { WeeklyActivityChart } from "@/components/app/WeeklyActivityChart";
 import { StatCard } from "@/components/app/StatCard";
 import { ContinueWatching } from "@/components/app/ContinueWatching";
-import { DailyChallenge } from "@/components/app/DailyChallenge";
-import { BadgesGrid } from "@/components/app/BadgesGrid";
-import { AnalyticsPanel } from "@/components/app/AnalyticsPanel";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock, CheckSquare, Flame, Calendar, ArrowRight } from "lucide-react";
+
+const WeeklyActivityChart = lazy(() => import("@/components/app/WeeklyActivityChart").then(m => ({ default: m.WeeklyActivityChart })));
+const DailyChallenge = lazy(() => import("@/components/app/DailyChallenge").then(m => ({ default: m.DailyChallenge })));
+const AnalyticsPanel = lazy(() => import("@/components/app/AnalyticsPanel").then(m => ({ default: m.AnalyticsPanel })));
+const BadgesGrid = lazy(() => import("@/components/app/BadgesGrid").then(m => ({ default: m.BadgesGrid })));
+
 
 interface CourseRow { id: string; title: string; }
 interface ModuleRow { id: string; course_id: string; position: number; title: string; duration_seconds: number; }
