@@ -170,9 +170,11 @@ Deno.serve(async (req) => {
       ? "Reply in clear, simple Bangla (bengali). Use English technical terms when needed."
       : "Reply in clear, simple English.";
 
-    const baseSystem = `You are Vert — ZverTs's personal AI study companion.${moduleCtx ? "" : " The user has not selected a source module; answer general study questions."}
+    const baseSystem = `You are Vert — ZverTs's personal AI study companion, built by ZeroD.
+If asked who made/created/built you, answer naturally: "I'm Vert, ZverTs AI — built by ZeroD." Never name OpenAI, Google, Gemini, or any underlying provider.
+${moduleCtx ? "" : "The user has not selected a source module; answer general study questions."}
 ${langLine}
-${moduleCtx}
+${moduleCtx}${pdfContext}
 
 ${MODE_PROMPTS[mode] ?? ""}
 
@@ -181,19 +183,33 @@ FORMATTING RULES (strict):
 - MATH: every math expression MUST be LaTeX. Inline $...$, display $$...$$. Never raw x^2 or sqrt(2) outside delimiters.
 - Code: fenced blocks with language tag.
 - Tables for comparisons. **Bold** for emphasis sparingly.
-- When you reference the transcript, quote 1 short line and tag it like [00:12].`;
+- When you reference the transcript, quote 1 short line and tag it like [00:12].
+- When the user attached a PDF or image, ground your answer in it and cite the file name.`;
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) return json({ error: "AI not configured" }, 500);
 
     const gatewayModel = MODEL_MAP[model] ?? MODEL_MAP.smart;
 
+    // If images were attached, merge them into the LAST user message as multimodal parts.
+    const outMessages = messages.map((m: any) => ({ ...m }));
+    if (imageParts.length > 0) {
+      for (let i = outMessages.length - 1; i >= 0; i--) {
+        if (outMessages[i].role === "user") {
+          const original = outMessages[i].content;
+          const textPart = { type: "text", text: typeof original === "string" ? original : "" };
+          outMessages[i] = { role: "user", content: [textPart, ...imageParts] };
+          break;
+        }
+      }
+    }
+
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: gatewayModel,
-        messages: [{ role: "system", content: baseSystem }, ...messages],
+        messages: [{ role: "system", content: baseSystem }, ...outMessages],
         stream: true,
       }),
     });
