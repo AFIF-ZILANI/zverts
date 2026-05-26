@@ -42,7 +42,9 @@ Deno.serve(async (req) => {
     const author_name = sn.channelTitle ?? null;
     const author_channel_id = sn.channelId ?? null;
     const author_channel_url = author_channel_id ? `https://www.youtube.com/channel/${author_channel_id}` : null;
-    await supabase.from("courses").update({ author_name, author_channel_id, author_channel_url }).eq("id", course.id);
+    // Only the metadata cache write needs service-role (RLS would block update on public/system courses)
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    await admin.from("courses").update({ author_name, author_channel_id, author_channel_url }).eq("id", course.id);
     return json({ author_name, author_channel_url });
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
