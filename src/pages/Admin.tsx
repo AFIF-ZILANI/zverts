@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import { CreditCard, Users as UsersIcon, ShieldCheck, Megaphone } from "lucide-react";
+import { CreditCard, Users as UsersIcon, ShieldCheck, Megaphone, Phone } from "lucide-react";
 
 const Admin = () => {
   const { user, loading } = useAuth();
