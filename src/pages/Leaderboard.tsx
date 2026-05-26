@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Trophy, Flame, Gem, Loader2, Medal } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Row = {
   id: string;
