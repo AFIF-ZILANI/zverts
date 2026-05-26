@@ -113,7 +113,18 @@ const Courses = () => {
         </div>
 
         {loading ? (
-          <div className="text-muted-foreground font-mono text-sm mt-12">{t("common.loading")}</div>
+          <div className="mt-12 space-y-4">
+            <Skeleton className="h-7 w-40" />
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-2xl border border-border p-4 space-y-3">
+                  <Skeleton className="aspect-video w-full rounded-lg" />
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
           <>
             <div className="mt-12">
