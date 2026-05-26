@@ -103,8 +103,26 @@ const Leaderboard = () => {
         </p>
 
         {loading ? (
-          <div className="rounded-2xl border border-border bg-gradient-card shadow-card p-12 flex items-center justify-center text-muted-foreground">
-            <Loader2 className="h-5 w-5 mr-2 animate-spin" /> Loading rankings…
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-2">
+                  <Skeleton className="h-14 w-14 rounded-full" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className={cn("w-full rounded-t-xl", i === 1 ? "h-32" : i === 0 ? "h-24" : "h-20")} />
+                </div>
+              ))}
+            </div>
+            <div className="rounded-2xl border border-border bg-gradient-card shadow-card divide-y divide-border/60">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-3">
+                  <Skeleton className="h-6 w-6 rounded" />
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <Skeleton className="h-4 flex-1 max-w-[60%]" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : error ? (
           <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-6 text-sm text-destructive">
