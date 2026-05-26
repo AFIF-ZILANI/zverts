@@ -33,7 +33,10 @@ const Auth = () => {
   const signInGoogle = async () => {
     setGoogleBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/dashboard`,
+      // Per Lovable Cloud docs: default origin is what the broker expects on
+      // both preview URLs and custom domains. We navigate to /dashboard below
+      // once the session is set client-side.
+      redirect_uri: window.location.origin,
     });
     if (result.error) {
       toast.error(result.error.message || "Sign-in failed");
@@ -41,7 +44,7 @@ const Auth = () => {
       return;
     }
     if (result.redirected) return;
-    navigate("/dashboard");
+    navigate("/dashboard", { replace: true });
   };
 
   const handleEmailLogin = async () => {
