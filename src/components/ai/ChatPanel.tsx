@@ -73,10 +73,19 @@ export const ChatPanel = ({ userId, source, onUsageUpdate, externalPrompt, onExt
   const send = useCallback(async (rawText?: string) => {
     const text = (rawText ?? input).trim();
     if (!text || busy) return;
+    if (attachments.items.some((a) => a.uploading)) {
+      toast.error("Wait for attachments to finish uploading.");
+      return;
+    }
     setInput("");
-    const next: Msg[] = [...messages, { role: "user", content: text }, { role: "assistant", content: "" }];
+    const attachmentSnapshot = attachments.items.map((a) => ({ path: a.path, mime: a.mime, name: a.name }));
+    const userContent = attachmentSnapshot.length
+      ? `${text}\n\n_📎 ${attachmentSnapshot.map((a) => a.name).join(", ")}_`
+      : text;
+    const next: Msg[] = [...messages, { role: "user", content: userContent }, { role: "assistant", content: "" }];
     setMessages(next);
     setBusy(true);
+    attachments.clear();
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -97,8 +106,10 @@ export const ChatPanel = ({ userId, source, onUsageUpdate, externalPrompt, onExt
           language: lang,
           mode,
           model,
+          attachments: attachmentSnapshot,
         }),
       });
+
 
       // Pick up updated usage from header
       const usageHdr = res.headers.get("X-AI-Usage");
