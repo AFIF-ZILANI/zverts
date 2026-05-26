@@ -17,33 +17,35 @@ type Row = {
   longest_streak: number | null;
 };
 
-type Ranked = Row & { rank: number; xp: number; gems: number; streak: number };
+type Ranked = Row & { rank: number; xp: number; gems: number; streak: number; level: number };
 
 const toNumber = (v: unknown): number => {
   const n = typeof v === "string" ? parseInt(v, 10) : (v as number);
   return Number.isFinite(n) ? n : 0;
 };
 
-// Dense ranking with tie support: equal XP → equal rank, next bucket increments by 1.
+// Ordinal ranking. Priority: streak DESC → gems DESC → xp DESC → name ASC.
 function rank(rows: Row[]): Ranked[] {
   const normalized = rows
     .filter((r) => r && r.id)
-    .map<Ranked>((r) => ({
-      ...r,
-      xp: toNumber(r.total_xp),
-      gems: toNumber(r.total_gems),
-      streak: toNumber(r.current_streak),
-      rank: 0,
-    }))
+    .map<Ranked>((r) => {
+      const xp = toNumber(r.total_xp);
+      return {
+        ...r,
+        xp,
+        gems: toNumber(r.total_gems),
+        streak: toNumber(r.current_streak),
+        level: Math.floor(xp / 500) + 1,
+        rank: 0,
+      };
+    })
     .sort((a, b) => {
-      if (b.xp !== a.xp) return b.xp - a.xp;
-      if (b.gems !== a.gems) return b.gems - a.gems;
       if (b.streak !== a.streak) return b.streak - a.streak;
+      if (b.gems !== a.gems) return b.gems - a.gems;
+      if (b.xp !== a.xp) return b.xp - a.xp;
       return (a.name ?? "").localeCompare(b.name ?? "");
     });
 
-  // Ordinal ranking — every row gets a unique position (1, 2, 3, …).
-  // Ties on XP are broken by gems → streak → name in the sort above.
   for (let i = 0; i < normalized.length; i++) {
     normalized[i].rank = i + 1;
   }
@@ -52,6 +54,7 @@ function rank(rows: Row[]): Ranked[] {
 
 const medalColor = (r: number) =>
   r === 1 ? "text-yellow-400" : r === 2 ? "text-slate-300" : r === 3 ? "text-amber-600" : "text-muted-foreground";
+
 
 const Leaderboard = () => {
   const { t } = useTranslation();
@@ -99,7 +102,7 @@ const Leaderboard = () => {
           {t("leaderboard.title")}
         </h1>
         <p className="text-sm text-muted-foreground mb-8">
-          Top learners by XP — updates in real time.
+          Ranked by <span className="text-accent font-medium">streak</span> → <span className="text-primary font-medium">gems</span> → <span className="text-foreground font-medium">XP</span>. Updates in real time.
         </p>
 
         {loading ? (
@@ -136,21 +139,25 @@ const Leaderboard = () => {
           <>
             {/* Podium */}
             {podium.length > 0 && (
-              <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
                 {[1, 0, 2].map((idx) => {
                   const p = podium[idx];
                   if (!p) return <div key={idx} />;
                   const heights = ["h-24", "h-32", "h-20"];
                   const order = [1, 0, 2].indexOf(idx);
+                  const ringColor = p.rank === 1 ? "ring-yellow-400/70" : p.rank === 2 ? "ring-slate-300/60" : "ring-amber-600/60";
                   return (
                     <div key={p.id} className="flex flex-col items-center">
-                      <div className="h-14 w-14 rounded-full bg-muted overflow-hidden ring-2 ring-primary/40 mb-2">
+                      <div className={cn("h-14 w-14 rounded-full bg-muted overflow-hidden ring-2 mb-2", ringColor)}>
                         {p.avatar_url && (
                           <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
                         )}
                       </div>
                       <div className="text-sm font-semibold truncate max-w-full px-1">{p.name ?? "—"}</div>
-                      <div className="text-xs font-mono text-muted-foreground">{p.xp} XP</div>
+                      <div className="text-[10px] font-mono text-muted-foreground flex items-center gap-2 mt-0.5">
+                        <span className="inline-flex items-center gap-0.5 text-accent"><Flame className="h-3 w-3" />{p.streak}</span>
+                        <span className="inline-flex items-center gap-0.5 text-primary"><Gem className="h-3 w-3" />{p.gems}</span>
+                      </div>
                       <div
                         className={cn(
                           "mt-2 w-full rounded-t-lg border border-border bg-gradient-card flex items-center justify-center font-display text-2xl",
@@ -169,15 +176,17 @@ const Leaderboard = () => {
             <div className="rounded-2xl border border-border bg-gradient-card shadow-card overflow-hidden">
               {ranked.map((r) => {
                 const isMe = r.id === user?.id;
+                const isTop3 = r.rank <= 3;
                 return (
                   <div
                     key={r.id}
                     className={cn(
-                      "flex items-center gap-4 px-5 py-3 border-b border-border/40 last:border-0 transition-colors",
-                      isMe && "bg-primary/10",
+                      "flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3 border-b border-border/40 last:border-0 transition-colors",
+                      isMe && "bg-primary/10 ring-1 ring-inset ring-primary/40",
+                      !isMe && isTop3 && "bg-accent/5",
                     )}
                   >
-                    <span className={cn("font-mono text-xs w-10 font-semibold", medalColor(r.rank))}>
+                    <span className={cn("font-mono text-xs w-8 sm:w-10 font-semibold shrink-0", medalColor(r.rank))}>
                       #{r.rank}
                     </span>
                     <div className="h-9 w-9 rounded-full bg-muted overflow-hidden shrink-0">
@@ -185,18 +194,21 @@ const Leaderboard = () => {
                         <img src={r.avatar_url} alt="" className="w-full h-full object-cover" />
                       )}
                     </div>
-                    <span className="flex-1 font-medium truncate">
-                      {r.name ?? "—"}
-                      {isMe && <span className="ml-2 text-[10px] uppercase tracking-wider text-primary">you</span>}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate text-sm">
+                        {r.name ?? "—"}
+                        {isMe && <span className="ml-2 text-[10px] uppercase tracking-wider text-primary">you</span>}
+                      </div>
+                      <div className="text-[10px] font-mono text-muted-foreground">Lv {r.level}</div>
+                    </div>
+                    <span className="font-mono text-xs text-accent inline-flex items-center gap-1 tabular-nums w-12 justify-end" title="Streak">
+                      <Flame className="h-3 w-3" />{r.streak}
                     </span>
-                    <span className="font-mono text-xs text-muted-foreground tabular-nums">
-                      {r.xp.toLocaleString()} XP
-                    </span>
-                    <span className="font-mono text-xs text-primary inline-flex items-center gap-1 tabular-nums">
+                    <span className="font-mono text-xs text-primary inline-flex items-center gap-1 tabular-nums w-12 justify-end" title="Gems">
                       <Gem className="h-3 w-3" />{r.gems}
                     </span>
-                    <span className="font-mono text-xs text-accent inline-flex items-center gap-1 tabular-nums">
-                      <Flame className="h-3 w-3" />{r.streak}
+                    <span className="font-mono text-xs text-muted-foreground tabular-nums hidden sm:inline-block w-20 text-right" title="XP">
+                      {r.xp.toLocaleString()} XP
                     </span>
                   </div>
                 );
@@ -210,14 +222,17 @@ const Leaderboard = () => {
               </div>
             )}
             {myRow && myRow.rank > 10 && (
-              <div className="mt-4 rounded-xl border border-primary/40 bg-primary/5 px-5 py-3 flex items-center gap-4">
+              <div className="mt-4 rounded-xl border border-primary/40 bg-primary/5 px-5 py-3 flex items-center gap-3 sm:gap-4">
                 <span className="font-mono text-xs w-10 font-semibold text-primary">#{myRow.rank}</span>
-                <span className="flex-1 font-medium truncate">You</span>
-                <span className="font-mono text-xs">{myRow.xp.toLocaleString()} XP</span>
+                <span className="flex-1 font-medium truncate">You · Lv {myRow.level}</span>
+                <span className="font-mono text-xs text-accent inline-flex items-center gap-1"><Flame className="h-3 w-3" />{myRow.streak}</span>
+                <span className="font-mono text-xs text-primary inline-flex items-center gap-1"><Gem className="h-3 w-3" />{myRow.gems}</span>
+                <span className="font-mono text-xs hidden sm:inline">{myRow.xp.toLocaleString()} XP</span>
               </div>
             )}
           </>
         )}
+
       </section>
     </AppShell>
   );
