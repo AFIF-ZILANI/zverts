@@ -7,6 +7,7 @@ import { ModuleCard } from "@/components/app/ModuleCard";
 import { StatCard } from "@/components/app/StatCard";
 import { ContinueWatching } from "@/components/app/ContinueWatching";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock, CheckSquare, Flame, Calendar, ArrowRight } from "lucide-react";
 
