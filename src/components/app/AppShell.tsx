@@ -72,7 +72,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
               <ThemeToggle />
               {user ? (
                 <>
-                  <NotificationCenter />
+                  <Suspense fallback={null}><NotificationCenter /></Suspense>
                   <Button variant="ghost" size="icon" aria-label="Settings" onClick={() => navigate("/settings")}>
                     <UserIcon className="h-4 w-4" />
                   </Button>
@@ -84,7 +84,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                 <Button variant="default" size="sm" onClick={() => navigate("/auth")}>{t("nav.signin")}</Button>
               )}
             </div>
-            {user && <div className="md:hidden"><NotificationCenter /></div>}
+            {user && <div className="md:hidden"><Suspense fallback={null}><NotificationCenter /></Suspense></div>}
             <Button variant="ghost" size="icon" className="md:hidden" aria-label="Menu" onClick={() => setMobileOpen(v => !v)}>
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
@@ -131,9 +131,10 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         )}
       </header>
       <main className="flex-1">{children}</main>
-      <SiteFooter />
-      <InstallPrompt />
+      <Suspense fallback={null}><SiteFooter /></Suspense>
+      <Suspense fallback={null}><InstallPrompt /></Suspense>
     </div>
+
 
   );
 };
