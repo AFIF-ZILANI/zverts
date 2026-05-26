@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
       ? "Reply in clear, simple Bangla (bengali). Use English technical terms when needed."
       : "Reply in clear, simple English.";
 
-    const baseSystem = `You are Vert — ZverT's personal AI study companion.${moduleCtx ? "" : " The user has not selected a source module; answer general study questions."}
+    const baseSystem = `You are Vert — ZverTs's personal AI study companion.${moduleCtx ? "" : " The user has not selected a source module; answer general study questions."}
 ${langLine}
 ${moduleCtx}
 

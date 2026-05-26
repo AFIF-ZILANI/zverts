@@ -1,13 +1,13 @@
-# PRODUCT.md — ZverT
+# PRODUCT.md — ZverTs
 
-> Source-of-truth product specification for ZverT, a gamified learning platform that converts public YouTube playlists into structured, progress-tracked, certificate-bearing courses with an in-lesson AI tutor.
+> Source-of-truth product specification for ZverTs, a gamified learning platform that converts public YouTube playlists into structured, progress-tracked, certificate-bearing courses with an in-lesson AI tutor.
 
 ---
 
 ## 1. Product Overview
 
 ### Product name
-**ZverT** — "your playlist, leveled up."
+**ZverTs** — "your playlist, leveled up."
 
 ### Mission
 Turn the world's free video content (starting with YouTube) into rigorous, finishable, accountable learning experiences — so self-taught learners actually complete what they start.
@@ -15,11 +15,11 @@ Turn the world's free video content (starting with YouTube) into rigorous, finis
 ### Core problem solved
 Self-directed learners drown in saved playlists they never finish. YouTube is optimized for engagement, not completion: no sequencing, no progress memory across sessions, no comprehension checks, no proof of learning, no accountability loop. Bootcamps and LMS platforms solve this but cost $20–$2000/mo and lock content inside walled gardens.
 
-ZverT closes the gap: take any public playlist → get a sequenced course with locked modules, watch-progress sync, comprehension MCQs, smart notes, an AI tutor, streaks, XP, and a verifiable certificate — for free, on content the user already trusts.
+ZverTs closes the gap: take any public playlist → get a sequenced course with locked modules, watch-progress sync, comprehension MCQs, smart notes, an AI tutor, streaks, XP, and a verifiable certificate — for free, on content the user already trusts.
 
 ### Why this product should exist
 1. **YouTube is the world's largest unaccredited university** — but has zero pedagogical scaffolding.
-2. **Existing LMS tools require authoring** — ZverT requires only a URL.
+2. **Existing LMS tools require authoring** — ZverTs requires only a URL.
 3. **Gamification + AI tutoring measurably increase completion** — and both are now cheap to deliver.
 4. **Creators benefit** — learners discover playlist authors via the Explore + course-detail attribution, with no extra work from the creator.
 
@@ -32,7 +32,7 @@ ZverT closes the gap: take any public playlist → get a sequenced course with l
 1. **The Self-Taught Developer** — wants structure on top of free content.
 2. **The Bangla-speaking student** — wants localized UI on global content.
 3. **The Career Switcher** — needs a certificate to show effort even without accreditation.
-4. **The Creator/Curator** — shares public ZverT courses to add structure to their playlists.
+4. **The Creator/Curator** — shares public ZverTs courses to add structure to their playlists.
 5. **The Admin/Operator** — curates system courses and moderates public content.
 
 ### Primary use cases
@@ -68,7 +68,7 @@ ZverT closes the gap: take any public playlist → get a sequenced course with l
 - **Expected behavior:** Imports his own playlist, marks it public, shares the `/courses/:id` link in video descriptions.
 
 ### Persona D — "Sara, the admin/operator" (internal)
-- **Who:** ZverT team member with `admin` role.
+- **Who:** ZverTs team member with `admin` role.
 - **Goals:** Curate high-quality system courses; remove abusive content; monitor usage.
 - **Pain points:** Needs visibility into user-generated public courses and email delivery health.
 - **Expected behavior:** Lives in `/admin`. Promotes vetted courses to `is_system = true`.
@@ -80,7 +80,7 @@ ZverT closes the gap: take any public playlist → get a sequenced course with l
 ### 3.1 Essential MVP features
 
 #### F-1 — Playlist Import
-- **Purpose:** Convert a public YouTube playlist URL into a ZverT course.
+- **Purpose:** Convert a public YouTube playlist URL into a ZverTs course.
 - **User value:** Zero-authoring course creation.
 - **Functional requirements:**
   - Accept a YouTube playlist URL on `/courses`.
@@ -398,7 +398,7 @@ Auth, import, player, progress, notes, gamification core, certificates, explore,
 ### Phase 2 — Social & creator (8–12 weeks)
 - Public profile pages (`/u/:username`) with badge wall.
 - Course ratings + completion testimonials.
-- Creator attribution surface: claimed channels, "official ZverT course" badge.
+- Creator attribution surface: claimed channels, "official ZverTs course" badge.
 - Sharable progress cards (OG-image edge fn).
 
 ### Phase 3 — Depth (Q+1)

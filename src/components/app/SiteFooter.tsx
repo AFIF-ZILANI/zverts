@@ -19,12 +19,12 @@ import {
   Apple,
   Play,
 } from "lucide-react";
-import zvertLogo from "@/assets/zvert-logo.png";
+import zvertsLogo from "@/assets/zverts-logo.png";
 
 type LinkItem = { label: string; to: string; icon?: React.ComponentType<{ className?: string }> };
 
 const features: LinkItem[] = [
-  { label: "ZverT AI", to: "/dashboard", icon: Sparkles },
+  { label: "ZverTs AI", to: "/dashboard", icon: Sparkles },
 ];
 
 const categories: LinkItem[] = [
@@ -108,13 +108,13 @@ export const SiteFooter = () => {
           <div className="lg:col-span-4">
             <Link to="/" className="flex items-center gap-2.5">
               <img
-                src={zvertLogo}
-                alt="ZverT"
+                src={zvertsLogo}
+                alt="ZverTs"
                 className="h-10 w-auto drop-shadow-[0_0_10px_hsl(var(--primary)/0.5)]"
                 loading="lazy"
               />
               <span className="font-display text-2xl font-bold tracking-[0.18em] bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-                ZverT
+                ZverTs
               </span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground italic">
@@ -130,11 +130,11 @@ export const SiteFooter = () => {
                 </span>
               </div>
               <a
-                href="mailto:hello@zvert.app"
+                href="mailto:hello@zverts.app"
                 className="flex items-center gap-2.5 hover:text-primary transition-colors"
               >
                 <Mail className="h-4 w-4 text-primary/80" />
-                hello@zvert.app
+                hello@zverts.app
               </a>
             </div>
             <div className="mt-5 flex items-center gap-2">
@@ -210,7 +210,7 @@ export const SiteFooter = () => {
         </div>
 
         <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <span>© {year} ZverT. All rights reserved.</span>
+          <span>© {year} ZverTs. All rights reserved.</span>
         </div>
       </div>
     </footer>

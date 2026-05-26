@@ -11,7 +11,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { z } from "zod";
-import zvertLogo from "@/assets/zvert-logo.png";
+import zvertsLogo from "@/assets/zverts-logo.png";
 
 const emailSchema = z
   .string()
@@ -78,8 +78,8 @@ const Auth = () => {
             {/* Logo */}
             <div className="flex flex-col items-center text-center">
               <img
-                src={zvertLogo}
-                alt="ZverT"
+                src={zvertsLogo}
+                alt="ZverTs"
                 className="h-14 w-auto drop-shadow-[0_0_12px_hsl(var(--primary)/0.5)]"
               />
               <h1 className="mt-4 font-display text-xl md:text-2xl font-semibold tracking-tight">

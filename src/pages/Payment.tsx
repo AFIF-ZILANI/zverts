@@ -126,7 +126,7 @@ const Payment = () => {
             <Label htmlFor="agree-refund" className="text-xs leading-relaxed font-normal cursor-pointer">
               I agree to the{" "}
               <Link to="/refund-policy" target="_blank" className="text-primary hover:underline font-medium">
-                ZverT Refund Policy
+                ZverTs Refund Policy
               </Link>
               . By making payment, I confirm I have read and accepted its terms.
             </Label>

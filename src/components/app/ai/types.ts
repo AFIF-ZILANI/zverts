@@ -14,8 +14,8 @@ export type StoredChat = {
 };
 
 export const MODELS: { id: ChatModelId; label: string; description: string }[] = [
-  { id: "fast", label: "ZverT Fast", description: "Quick answers" },
-  { id: "smart", label: "ZverT Smart", description: "Balanced (default)" },
-  { id: "pro", label: "ZverT Pro", description: "Deepest knowledge" },
-  { id: "reasoning", label: "ZverT Reasoning", description: "Step-by-step logic" },
+  { id: "fast", label: "ZverTs Fast", description: "Quick answers" },
+  { id: "smart", label: "ZverTs Smart", description: "Balanced (default)" },
+  { id: "pro", label: "ZverTs Pro", description: "Deepest knowledge" },
+  { id: "reasoning", label: "ZverTs Reasoning", description: "Step-by-step logic" },
 ];

@@ -1,5 +1,5 @@
-# ZverT
-ZverT is a gamified learning platform that turns YouTube playlists into structured, sequential courses. Users can import playlists, progress through locked modules, track learning analytics, earn XP/gems, unlock achievements, and chat with an in-lesson AI tutor.
+# ZverTs
+ZverTs is a gamified learning platform that turns YouTube playlists into structured, sequential courses. Users can import playlists, progress through locked modules, track learning analytics, earn XP/gems, unlock achievements, and chat with an in-lesson AI tutor.
 
 ## Core features
 - Playlist import flow (preview + create course from YouTube playlist URL)

@@ -23,12 +23,12 @@ const T = {
   morning_push: [
     () => ({ title: "সকাল শুরু হইছে ☀️", body: "আজকে ২০ মিনিট পড়লেই XP বাড়বে 🔥" }),
     () => ({ title: "নতুন দিন, নতুন streak 😎", body: "আজকেও চালাইবেন তো?" }),
-    () => ({ title: "ঘুম শেষ, skill টাইম 💡", body: "ZverT খুলে অল্প একটু চর্চা দেন" }),
+    () => ({ title: "ঘুম শেষ, skill টাইম 💡", body: "ZverTs খুলে অল্প একটু চর্চা দেন" }),
     (c) => ({ title: "১টা lesson = level up?", body: `Level ${(c.level ?? 1) + 1} খুব কাছেই 🔥` }),
   ] as Tpl[],
   afternoon_push: [
     () => ({ title: "দুপুর গেল boss 😅", body: "১০ মিনিট video = XP add 🔥" }),
-    () => ({ title: "অল্প অল্প করলেও course শেষ হয় 😎", body: "ZverT এ lesson অপেক্ষায়" }),
+    () => ({ title: "অল্প অল্প করলেও course শেষ হয় 😎", body: "ZverTs এ lesson অপেক্ষায়" }),
     () => ({ title: "Lesson skip দিলে streak risk 😶", body: "আজকের জন্য একটু সময় দেন" }),
   ] as Tpl[],
   evening_push: [
@@ -47,13 +47,13 @@ const T = {
     () => ({ title: "এতদিনের consistency নষ্ট কইরেন না 😅", body: "Quick lesson দেন এখনই" }),
   ] as Tpl[],
   comeback_1d: [
-    () => ({ title: "কালকে থামছিলেন, আজকে আবার? 😎", body: "ZverT এ ফেরত আসেন boss" }),
+    () => ({ title: "কালকে থামছিলেন, আজকে আবার? 😎", body: "ZverTs এ ফেরত আসেন boss" }),
   ] as Tpl[],
   comeback_3d: [
     () => ({ title: "৩ দিন gap 😅", body: "Course কিন্তু অপেক্ষায় আছে boss" }),
   ] as Tpl[],
   comeback_7d: [
-    () => ({ title: "অনেকদিন দেখা নাই 👀", body: "ZverT miss করতেছে 😄" }),
+    () => ({ title: "অনেকদিন দেখা নাই 👀", body: "ZverTs miss করতেছে 😄" }),
   ] as Tpl[],
   comeback_14d: [
     () => ({ title: "Comeback দিবেন নাকি? 🔥", body: "Skill কিন্তু বসে থাকলে বাড়ে না" }),
@@ -103,7 +103,7 @@ export type TemplateCategory = keyof typeof T;
 
 export function renderTemplate(category: TemplateCategory, ctx: Ctx = {}, seed = Date.now()) {
   const list = T[category];
-  if (!list) return { title: "ZverT", body: "নতুন update আছে — দেখেন!" };
+  if (!list) return { title: "ZverTs", body: "নতুন update আছে — দেখেন!" };
   return pick(list, seed)(ctx);
 }
 

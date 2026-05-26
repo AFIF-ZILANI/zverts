@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import zvertLogo from "@/assets/zvert-logo.png";
+import zvertsLogo from "@/assets/zverts-logo.png";
 import { SiteFooter } from "./SiteFooter";
 import { NotificationCenter } from "./NotificationCenter";
 import { useAdminPaymentAlerts } from "@/hooks/useAdminPaymentAlerts";
@@ -50,9 +50,9 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <div className="container flex h-16 items-center justify-between gap-2">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2 shrink-0">
-            <img src={zvertLogo} alt="ZverT" className="h-9 w-auto drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
+            <img src={zvertsLogo} alt="ZverTs" className="h-9 w-auto drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]" />
             <span className="font-display text-xl font-bold tracking-[0.15em] bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-              ZverT
+              ZverTs
             </span>
           </Link>
           {user && (

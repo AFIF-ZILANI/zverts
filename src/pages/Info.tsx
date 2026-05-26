@@ -29,7 +29,7 @@ const PAGES: Page[] = [
     title: "Support",
     icon: LifeBuoy,
     tagline:
-      "ZverT Support is here to help learners have a smooth and stress-free experience. Whether you're facing technical issues, payment problems, course access errors, or app-related bugs, our support system is built to guide you quickly.",
+      "ZverTs Support is here to help learners have a smooth and stress-free experience. Whether you're facing technical issues, payment problems, course access errors, or app-related bugs, our support system is built to guide you quickly.",
     sections: [
       {
         heading: "We provide",
@@ -52,7 +52,7 @@ const PAGES: Page[] = [
     title: "About Us",
     icon: InfoIcon,
     tagline:
-      "ZverT is an AI-powered smart learning platform designed to make education easier, more engaging, and personalized for modern learners.",
+      "ZverTs is an AI-powered smart learning platform designed to make education easier, more engaging, and personalized for modern learners.",
     sections: [
       {
         heading: "We combine",
@@ -82,19 +82,19 @@ const PAGES: Page[] = [
     tagline: "Frequently Asked Questions",
     sections: [
       {
-        heading: "1. What is ZverT?",
-        body: "ZverT is an AI-powered learning app that helps users learn through videos, quizzes, AI summaries, progress tracking, and gamified learning.",
+        heading: "1. What is ZverTs?",
+        body: "ZverTs is an AI-powered learning app that helps users learn through videos, quizzes, AI summaries, progress tracking, and gamified learning.",
       },
       {
-        heading: "2. Is ZverT free?",
-        body: "ZverT offers both free and premium learning experiences.",
+        heading: "2. Is ZverTs free?",
+        body: "ZverTs offers both free and premium learning experiences.",
       },
       {
         heading: "3. Can I watch videos inside the app?",
         body: "Yes. Videos are designed to play inside the app for a seamless learning experience.",
       },
       {
-        heading: "4. Does ZverT use AI?",
+        heading: "4. Does ZverTs use AI?",
         body: "Yes. AI helps with summaries, quiz generation, recommendations, and weak-topic analysis.",
       },
       {
@@ -102,7 +102,7 @@ const PAGES: Page[] = [
         body: "Yes. You can monitor XP, streaks, lesson completion, and overall course progress.",
       },
       {
-        heading: "6. Is ZverT beginner-friendly?",
+        heading: "6. Is ZverTs beginner-friendly?",
         body: "Absolutely. Courses are built for beginners to advanced learners.",
       },
     ],
@@ -111,7 +111,7 @@ const PAGES: Page[] = [
     slug: "help",
     title: "Help Center",
     icon: BookOpen,
-    tagline: "The ZverT Help Center is your self-service knowledge hub.",
+    tagline: "The ZverTs Help Center is your self-service knowledge hub.",
     sections: [
       {
         heading: "Find help for",
@@ -135,7 +135,7 @@ const PAGES: Page[] = [
     slug: "contact",
     title: "Contact",
     icon: Mail,
-    tagline: "Need direct assistance? Reach out to ZverT.",
+    tagline: "Need direct assistance? Reach out to ZverTs.",
     sections: [
       { heading: "Customer Support", body: "For technical or account-related issues." },
       { heading: "Business Inquiries", body: "Partnerships, collaborations, or enterprise opportunities." },
@@ -152,7 +152,7 @@ const PAGES: Page[] = [
     title: "Affiliates",
     icon: Handshake,
     tagline:
-      "Join the ZverT Affiliate Program. Earn rewards by promoting ZverT and helping more learners discover smarter education.",
+      "Join the ZverTs Affiliate Program. Earn rewards by promoting ZverTs and helping more learners discover smarter education.",
     sections: [
       {
         heading: "Affiliate benefits",
@@ -174,14 +174,14 @@ const PAGES: Page[] = [
           "Learning influencers",
         ],
       },
-      { body: "Grow with ZverT. Earn while helping others learn." },
+      { body: "Grow with ZverTs. Earn while helping others learn." },
     ],
   },
   {
     slug: "community",
     title: "Community",
     icon: Users,
-    tagline: "ZverT is more than an app — it's a learning community.",
+    tagline: "ZverTs is more than an app — it's a learning community.",
     sections: [
       {
         heading: "Connect with",
@@ -205,7 +205,7 @@ const PAGES: Page[] = [
     slug: "blog",
     title: "Blog",
     icon: Newspaper,
-    tagline: "Explore insights, updates, and learning resources through the ZverT Blog.",
+    tagline: "Explore insights, updates, and learning resources through the ZverTs Blog.",
     sections: [
       {
         heading: "Topics include",
@@ -228,7 +228,7 @@ const PAGES: Page[] = [
     title: "Careers",
     icon: Briefcase,
     tagline:
-      "Join the team building the future of learning. At ZverT, we're creating an AI-first education platform that helps students learn smarter.",
+      "Join the team building the future of learning. At ZverTs, we're creating an AI-first education platform that helps students learn smarter.",
     sections: [
       {
         heading: "We look for",
@@ -252,7 +252,7 @@ const PAGES: Page[] = [
           "Real impact",
         ],
       },
-      { body: "Build the future of education with ZverT." },
+      { body: "Build the future of education with ZverTs." },
     ],
   },
 ];
@@ -280,7 +280,7 @@ const Info = () => {
         }
       : undefined;
 
-  const description = page.tagline?.slice(0, 155) || `${page.title} on ZverT.`;
+  const description = page.tagline?.slice(0, 155) || `${page.title} on ZverTs.`;
 
   return (
     <AppShell>

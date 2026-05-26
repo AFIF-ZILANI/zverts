@@ -61,7 +61,7 @@ const BuyPackage = () => {
           <div>Need help? Payment is reviewed manually within a few hours.</div>
           <div>
             By making payment, you agree to the{" "}
-            <Link to="/refund-policy" className="text-primary hover:underline">ZverT Refund Policy</Link>.
+            <Link to="/refund-policy" className="text-primary hover:underline">ZverTs Refund Policy</Link>.
           </div>
         </div>
       </section>

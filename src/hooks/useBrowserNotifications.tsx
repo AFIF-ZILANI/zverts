@@ -45,7 +45,7 @@ export function useBrowserNotifications() {
           playDing();
           if (typeof Notification !== "undefined" && Notification.permission === "granted") {
             try {
-              const note = new Notification(n.title || "ZverT", {
+              const note = new Notification(n.title || "ZverTs", {
                 body: n.body || "",
                 icon: "/favicon.ico",
                 badge: "/favicon.ico",

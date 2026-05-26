@@ -146,7 +146,7 @@ const ModulePlayer = () => {
                 <div>
                   <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">/ module reward</div>
                   <h2 className="font-display text-2xl mt-1">Character charge earned</h2>
-                  <p className="mt-2 text-sm text-muted-foreground">Finish each module to charge your ZverT character with <span className="text-primary font-medium">+50 XP</span> and <span className="text-primary font-medium">+2 Gems</span>.</p>
+                  <p className="mt-2 text-sm text-muted-foreground">Finish each module to charge your ZverTs character with <span className="text-primary font-medium">+50 XP</span> and <span className="text-primary font-medium">+2 Gems</span>.</p>
                 </div>
                 <div className="min-w-[180px] rounded-2xl border border-border/60 bg-background/60 px-5 py-4 text-center">
                   <div className="text-xs font-mono uppercase tracking-[0.25em] text-muted-foreground">Charge state</div>

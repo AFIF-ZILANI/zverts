@@ -13,9 +13,9 @@ const T = {
     { title: "Streak fragile mode 👀", body: `${streak} দিনের consistency ভাঙতেছে — ৫ মিনিট দেন!` },
     { title: "আজকে না পড়লে streak break 😶", body: "১টা ছোট lesson = streak safe" },
   ]),
-  comeback_1d: (): Tpl => ({ title: "কালকে থামছিলেন, আজকে আবার? 😎", body: "ZverT এ ফেরত আসেন boss" }),
+  comeback_1d: (): Tpl => ({ title: "কালকে থামছিলেন, আজকে আবার? 😎", body: "ZverTs এ ফেরত আসেন boss" }),
   comeback_3d: (): Tpl => ({ title: "৩ দিন gap 😅", body: "Course কিন্তু অপেক্ষায় আছে boss" }),
-  comeback_7d: (): Tpl => ({ title: "অনেকদিন দেখা নাই 👀", body: "ZverT miss করতেছে 😄" }),
+  comeback_7d: (): Tpl => ({ title: "অনেকদিন দেখা নাই 👀", body: "ZverTs miss করতেছে 😄" }),
   comeback_14d: (): Tpl => ({ title: "Comeback দিবেন নাকি? 🔥", body: "Skill কিন্তু বসে থাকলে বাড়ে না" }),
   morning_push: (): Tpl => pick([
     { title: "সকাল শুরু হইছে ☀️", body: "আজকে ২০ মিনিট পড়লেই XP বাড়বে 🔥" },

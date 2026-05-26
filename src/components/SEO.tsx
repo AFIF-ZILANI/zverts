@@ -13,7 +13,7 @@ const SITE = "https://zverts.lovable.app";
 
 export const SEO = ({ title, description, path = "/", type = "website", jsonLd, noindex }: SEOProps) => {
   const url = `${SITE}${path}`;
-  const fullTitle = title.includes("ZverT") ? title : `${title} — ZverT`;
+  const fullTitle = title.includes("ZverTs") ? title : `${title} — ZverTs`;
   const ldArr = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
   return (
     <Helmet>
