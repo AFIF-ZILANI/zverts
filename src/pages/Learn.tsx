@@ -60,7 +60,16 @@ const Learn = () => {
 
         <div className="mt-12">
           {loading ? (
-            <div className="text-muted-foreground font-mono text-sm">Loading…</div>
+            <div className="space-y-8">
+              {Array.from({ length: 2 }).map((_, s) => (
+                <div key={s} className="space-y-4">
+                  <Skeleton className="h-7 w-48" />
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-44 rounded-2xl" />)}
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             sections.length === 0 ? (
               <div className="rounded-2xl border border-border bg-gradient-card p-8 shadow-card text-sm text-muted-foreground">
