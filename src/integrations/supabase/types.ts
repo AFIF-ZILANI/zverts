@@ -941,8 +941,16 @@ export type Database = {
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_attendance: { Args: never; Returns: Json }
       mark_notification_read: { Args: { _id: string }; Returns: undefined }
+      process_refund: {
+        Args: { _approve: boolean; _note?: string; _payment_id: string }
+        Returns: Json
+      }
       reject_payment: {
         Args: { _note?: string; _payment_id: string }
+        Returns: Json
+      }
+      request_refund: {
+        Args: { _payment_id: string; _reason: string }
         Returns: Json
       }
       reset_my_progress: { Args: never; Returns: undefined }
