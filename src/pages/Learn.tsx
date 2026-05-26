@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { AppShell } from "@/components/app/AppShell";
 import { ModuleCard } from "@/components/app/ModuleCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CourseRow { id: string; title: string; }
