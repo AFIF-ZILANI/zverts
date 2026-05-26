@@ -1,19 +1,21 @@
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, BookOpen, User as UserIcon, Trophy, Shield, Compass, Menu, X, Sparkles, Bot } from "lucide-react";
-import { ReactNode, useEffect, useState } from "react";
+import { LogOut, LayoutDashboard, BookOpen, User as UserIcon, Trophy, Shield, Menu, X, Sparkles, Bot } from "lucide-react";
+import { ReactNode, Suspense, lazy, useEffect, useState } from "react";
 import { ThemeToggle, LanguageToggle } from "./ThemeToggle";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import zvertsLogo from "@/assets/zverts-logo.png";
-import { SiteFooter } from "./SiteFooter";
-import { NotificationCenter } from "./NotificationCenter";
 import { useAdminPaymentAlerts } from "@/hooks/useAdminPaymentAlerts";
 import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
-import { InstallPrompt } from "./InstallPrompt";
+
+const SiteFooter = lazy(() => import("./SiteFooter").then(m => ({ default: m.SiteFooter })));
+const NotificationCenter = lazy(() => import("./NotificationCenter").then(m => ({ default: m.NotificationCenter })));
+const InstallPrompt = lazy(() => import("./InstallPrompt").then(m => ({ default: m.InstallPrompt })));
+
 
 
 export const AppShell = ({ children }: { children: ReactNode }) => {
