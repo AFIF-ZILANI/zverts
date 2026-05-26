@@ -117,7 +117,7 @@ const App = () => (
                 <Route path="/quiz/:id" element={<Quiz />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
+                
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/ai" element={<AIWorkspace />} />
                 <Route path="/admin" element={<Admin />} />
