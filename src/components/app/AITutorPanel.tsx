@@ -245,17 +245,11 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
                 <Button variant="ghost" size="icon" className={cn("h-8 w-8", maximized && "md:hidden")} onClick={() => setShowSidebar(true)} title="Chat history">
                   <Menu className="h-4 w-4" />
                 </Button>
-                <div className="relative shrink-0">
-                  <div className="h-9 w-9 rounded-full bg-gradient-lime grid place-items-center">
-                    <Bot className="h-4 w-4 text-primary-foreground" />
-                  </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
+                <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-lime grid place-items-center">
+                  <Bot className="h-4 w-4 text-primary-foreground" />
                 </div>
                 <div className="min-w-0">
                   <div className="font-display text-sm font-semibold leading-tight truncate">Vert</div>
-                  <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <span className="h-1 w-1 rounded-full bg-emerald-500" /> online · {currentModelLabel}
-                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
