@@ -137,10 +137,25 @@ const CourseDetail = () => {
 
   return (
     <AppShell>
+      <SEO
+        title={course.title}
+        description={course.description?.slice(0, 155) || `${course.title} — a course on ZverT with ${modules.length} lessons.`}
+        path={`/courses/${course.id}`}
+        type="article"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Course",
+          name: course.title,
+          description: course.description || undefined,
+          provider: { "@type": "Organization", name: "ZverT", url: "https://zverts.lovable.app" },
+          ...(course.author_name ? { author: { "@type": "Person", name: course.author_name } } : {}),
+        }}
+      />
       <section className="container py-8 md:py-10 max-w-5xl">
         <Link to="/courses" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1 font-mono mb-6">
           <ArrowLeft className="h-3 w-3" /> {t("nav.courses")}
         </Link>
+
 
         <div className="flex flex-wrap items-end justify-between gap-4 mb-2">
           {editingTitle && owned ? (
