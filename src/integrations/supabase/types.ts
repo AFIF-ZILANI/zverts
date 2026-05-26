@@ -38,6 +38,24 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage: {
+        Row: {
+          count: number
+          day: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          day?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          day?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           created_at: string
@@ -730,6 +748,39 @@ export type Database = {
         }
         Relationships: []
       }
+      transcripts: {
+        Row: {
+          created_at: string
+          error: string | null
+          model: string | null
+          module_id: string
+          segments: Json | null
+          status: string
+          text: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          model?: string | null
+          module_id: string
+          segments?: Json | null
+          status?: string
+          text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          model?: string | null
+          module_id?: string
+          segments?: Json | null
+          status?: string
+          text?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_behavior: {
         Row: {
           avg_session_minutes: number | null
@@ -849,6 +900,7 @@ export type Database = {
         Returns: undefined
       }
       check_achievements: { Args: never; Returns: Json }
+      consume_ai_message: { Args: { _daily_limit?: number }; Returns: Json }
       consume_conversion: { Args: never; Returns: Json }
       dismiss_notification: { Args: { _id: string }; Returns: undefined }
       dispatch_notification: {
@@ -865,6 +917,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_ai_usage_today: { Args: { _daily_limit?: number }; Returns: Json }
       get_mcq_questions: {
         Args: { _limit?: number; _module_ids: string[] }
         Returns: {

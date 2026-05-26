@@ -5,62 +5,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const json = (b: unknown, s = 200) =>
-    new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+const MODEL_MAP: Record<string, string> = {
+  fast: "google/gemini-2.5-flash-lite",
+  smart: "google/gemini-2.5-flash",
+  pro: "google/gemini-2.5-pro",
+  reasoning: "openai/gpt-5-mini",
+  deep: "openai/gpt-5",
+  coding: "openai/gpt-5-mini",
+};
 
-  try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Unauthorized" }, 401);
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: { user } } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (!user) return json({ error: "Unauthorized" }, 401);
-
-    const { module_id, messages, language = "en", mode = "chat", model = "smart" } = await req.json();
-    if (!module_id || !Array.isArray(messages)) return json({ error: "module_id and messages required" }, 400);
-
-    const { data: mod } = await supabase.from("modules")
-      .select("title, position, course_id, youtube_video_id, courses!inner(id,title,user_id)")
-      .eq("id", module_id).maybeSingle();
-    if (!mod) return json({ error: "Module not found" }, 404);
-
-    const course = (mod as any).courses;
-    if (!course || course.user_id !== user.id) {
-      return json({ error: "Unauthorized" }, 403);
-    }
-
-    const courseTitle = course?.title ?? "course";
-    const langLine = language === "bn"
-      ? "Reply in clear, simple Bangla (bengali). Use English technical terms when needed."
-      : "Reply in clear, simple English.";
-
-    let system = `You are Vert — ZverT's focused study assistant for the lesson "${mod.title}" (module ${mod.position} of "${courseTitle}").
-${langLine}
-Be concise, accurate, and well structured.
-Always answer in a real study format using this order when relevant:
-1. Short direct answer
-2. Key points (bullets)
-3. Simple example or explanation
-4. What to study next
-
-FORMATTING RULES (strict):
-- Use markdown: headings (##, ###), bullet lists, and short paragraphs.
-- MATH (mandatory): EVERY mathematical expression MUST be valid LaTeX wrapped in delimiters. Inline math: $...$ . Display/block math: $$...$$ on its own lines.
-  * NEVER output raw plain-text equations like (x2 + 3x = 5), x^2, sqrt(2), 1/2, sum_{i=1}^n, or unicode math symbols outside delimiters. Always convert to LaTeX: $x^2 + 3x = 5$, $\\sqrt{2}$, $\\frac{1}{2}$, $\\sum_{i=1}^{n}$.
-  * Use proper LaTeX commands: \\frac{a}{b}, x^{n}, x_{i}, \\sqrt{x}, \\int, \\sum, \\lim, \\infty, \\cdot, \\times, \\leq, \\geq, \\neq, \\approx, \\pi, \\theta, \\alpha, matrices via \\begin{pmatrix}...\\end{pmatrix}.
-  * Do NOT put prose/explanations inside math blocks. Keep math blocks pure LaTeX.
-  * For multi-step derivations, put each step on its own $$...$$ line or use an aligned environment: $$\\begin{aligned} ... \\\\ ... \\end{aligned}$$.
-  * If the user input contains ambiguous math, infer correct meaning and render clean LaTeX.
-- For code, use fenced blocks with the language tag, e.g. \`\`\`python ... \`\`\` (supported: js, ts, python, cpp, c, java, html, css, json, bash, sql).
-- Use **bold** for emphasis sparingly. Use tables when comparing things.
-
-Only answer about THIS module or its parent course; if asked something unrelated, gently redirect.`;
-
-    if (mode === "summary") {
-      system += `\nTask: Produce a 5-7 bullet point summary of the key concepts likely covered in this lesson based on the title.`;
-    } else if (mode === "mcq") {
-      system += `\nTask: Generate exactly 5 multiple-choice questions about this lesson's likely content.
+const MODE_PROMPTS: Record<string, string> = {
+  chat: "",
+  study_buddy: "Tone: warm, encouraging study friend. Use short paragraphs, friendly emojis sparingly, ask one check-in question at the end.",
+  strict_teacher: "Tone: rigorous teacher. Demand precision. Point out common mistakes. End with one challenge problem.",
+  exam: "Mode: exam-style. Give exam-ready answers: definition → derivation → worked example → 2 practice questions.",
+  simple_bangla: "Mode: explain in simple, everyday Bangla (Banglish ok). Use everyday analogies. Keep English only for technical terms.",
+  deep_explain: "Mode: deep explanation. Start with intuition, then formal definition, then 2 worked examples (one easy, one harder), then edge cases.",
+  fast_revision: "Mode: fast revision. ONE-PAGE summary only — key formulas, 3 bullet points per concept, no fluff.",
+  coding_mentor: "Mode: coding mentor. Always include a runnable code snippet. Explain time/space complexity. Suggest one refactor.",
+  summary: "Task: Produce a 5-7 bullet point summary of the key concepts likely covered in this lesson based on the title and any provided transcript.",
+  mcq: `Task: Generate exactly 5 multiple-choice questions about this lesson's likely content.
 Output ONLY the questions in this STRICT format (no preamble, no closing text):
 **Q1.** question text
 - A) option
@@ -69,18 +33,98 @@ Output ONLY the questions in this STRICT format (no preamble, no closing text):
 - D) option
 **Answer:** B — short explanation
 
-(repeat for Q2..Q5, separated by a blank line)`;
+(repeat for Q2..Q5, separated by a blank line)`,
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const json = (b: unknown, s = 200) =>
+    new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+  try {
+    const auth = req.headers.get("Authorization");
+    if (!auth) return json({ error: "Unauthorized" }, 401);
+
+    const url = Deno.env.get("SUPABASE_URL")!;
+    const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const userClient = createClient(url, anon, { global: { headers: { Authorization: auth } } });
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) return json({ error: "Unauthorized" }, 401);
+
+    const body = await req.json();
+    const {
+      module_id = null,
+      messages,
+      language = "en",
+      mode = "chat",
+      model = "smart",
+      daily_limit = 10,
+    } = body;
+    if (!Array.isArray(messages) || messages.length === 0)
+      return json({ error: "messages required" }, 400);
+
+    // Enforce daily free-preview cap (paid users always pass)
+    const { data: usage, error: uErr } = await userClient.rpc("consume_ai_message", { _daily_limit: daily_limit });
+    if (uErr) return json({ error: uErr.message }, 400);
+    if (usage && (usage as any).ok === false) {
+      return json({
+        error: "limit_reached",
+        message: `You've used your ${daily_limit} free AI messages today. Upgrade for unlimited.`,
+        usage,
+      }, 429);
     }
+
+    // Load source context (module + transcript) — RLS-scoped
+    let moduleCtx = "";
+    let courseTitle = "general study";
+    let modTitle = "";
+    if (module_id) {
+      const { data: mod } = await userClient
+        .from("modules")
+        .select("title, position, course_id, courses!inner(title)")
+        .eq("id", module_id)
+        .maybeSingle();
+      if (mod) {
+        modTitle = (mod as any).title;
+        courseTitle = (mod as any).courses?.title ?? courseTitle;
+        moduleCtx = `\nACTIVE SOURCE: "${modTitle}" (module ${(mod as any).position} of "${courseTitle}").`;
+
+        const { data: tr } = await userClient
+          .from("transcripts")
+          .select("status,text")
+          .eq("module_id", module_id)
+          .maybeSingle();
+        if (tr?.status === "ready" && tr.text) {
+          const snippet = tr.text.length > 12000 ? tr.text.slice(0, 12000) + "\n…[truncated]" : tr.text;
+          moduleCtx += `\n\nTRANSCRIPT (use as primary source of truth, cite timestamps when present):\n${snippet}`;
+        } else if (tr?.status === "queued" || tr?.status === "processing") {
+          moduleCtx += `\n\n(Transcript is being generated. Answer from general knowledge and acknowledge the limitation.)`;
+        } else {
+          moduleCtx += `\n\n(No transcript available yet. Answer from general knowledge and the module title.)`;
+        }
+      }
+    }
+
+    const langLine = language === "bn"
+      ? "Reply in clear, simple Bangla (bengali). Use English technical terms when needed."
+      : "Reply in clear, simple English.";
+
+    const baseSystem = `You are Vert — ZverT's personal AI study companion.${moduleCtx ? "" : " The user has not selected a source module; answer general study questions."}
+${langLine}
+${moduleCtx}
+
+${MODE_PROMPTS[mode] ?? ""}
+
+FORMATTING RULES (strict):
+- Use markdown: headings (##, ###), bullet lists, short paragraphs.
+- MATH: every math expression MUST be LaTeX. Inline $...$, display $$...$$. Never raw x^2 or sqrt(2) outside delimiters.
+- Code: fenced blocks with language tag.
+- Tables for comparisons. **Bold** for emphasis sparingly.
+- When you reference the transcript, quote 1 short line and tag it like [00:12].`;
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) return json({ error: "AI not configured" }, 500);
 
-    const MODEL_MAP: Record<string, string> = {
-      fast: "google/gemini-2.5-flash-lite",
-      smart: "google/gemini-2.5-flash",
-      pro: "google/gemini-2.5-pro",
-      reasoning: "openai/gpt-5-mini",
-    };
     const gatewayModel = MODEL_MAP[model] ?? MODEL_MAP.smart;
 
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -88,20 +132,27 @@ Output ONLY the questions in this STRICT format (no preamble, no closing text):
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: gatewayModel,
-        messages: [{ role: "system", content: system }, ...messages],
+        messages: [{ role: "system", content: baseSystem }, ...messages],
         stream: true,
       }),
     });
 
     if (r.status === 429) return json({ error: "Rate limit — try again in a moment." }, 429);
-    if (r.status === 402) return json({ error: "AI credits exhausted. Add credits in Settings → Workspace → Usage." }, 402);
+    if (r.status === 402) return json({ error: "AI credits exhausted. Contact admin." }, 402);
     if (!r.ok || !r.body) {
       const t = await r.text();
       console.error("AI gateway error:", r.status, t);
       return json({ error: "AI gateway error" }, 500);
     }
 
-    return new Response(r.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+    // Forward usage info via custom response header so the client can update its chip
+    const headers = {
+      ...corsHeaders,
+      "Content-Type": "text/event-stream",
+      "X-AI-Usage": JSON.stringify(usage ?? {}),
+      "Access-Control-Expose-Headers": "X-AI-Usage",
+    };
+    return new Response(r.body, { headers });
   } catch (e) {
     console.error("ai-tutor error:", e);
     return json({ error: (e as Error).message }, 500);
