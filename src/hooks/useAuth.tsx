@@ -17,18 +17,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up listener FIRST
+    let mounted = true;
+
+    // 1) Set up listener FIRST so we never miss an event.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (!mounted) return;
       setSession(s);
       setUser(s?.user ?? null);
+      // Any auth event means storage is ready — stop loading.
+      setLoading(false);
     });
-    // Then fetch existing
+
+    // 2) Then hydrate from storage. This guarantees `loading` flips false
+    //    even when no auth event fires (anonymous visit).
     supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setLoading(false);
+    }).catch(() => {
+      if (!mounted) return;
+      setLoading(false);
     });
-    return () => sub.subscription.unsubscribe();
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
