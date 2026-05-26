@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Send, Sparkles, Square } from "lucide-react";
+import { FileText, Image as ImageIcon, Loader2, Paperclip, Send, Sparkles, Square, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,8 @@ import { ModeSelector, type StudyMode } from "./ModeSelector";
 import type { ChatModelId, Msg } from "@/components/app/ai/types";
 import type { ActiveSource } from "./SourcesPanel";
 import type { UsageState } from "@/hooks/useAIUsage";
+import { useAttachments } from "./useAttachments";
+
 
 type Props = {
   userId: string;
@@ -33,6 +35,19 @@ export const ChatPanel = ({ userId, source, onUsageUpdate, externalPrompt, onExt
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isPaid, setIsPaid] = useState(false);
+  const attachments = useAttachments(userId, isPaid);
+
+  // Load paid status (controls upload gate)
+  useEffect(() => {
+    let cancelled = false;
+    supabase.from("profiles").select("is_paid_user").eq("id", userId).maybeSingle().then(({ data }) => {
+      if (!cancelled) setIsPaid(!!data?.is_paid_user);
+    });
+    return () => { cancelled = true; };
+  }, [userId]);
+
 
   // Load thread for active source
   useEffect(() => {
@@ -58,10 +73,19 @@ export const ChatPanel = ({ userId, source, onUsageUpdate, externalPrompt, onExt
   const send = useCallback(async (rawText?: string) => {
     const text = (rawText ?? input).trim();
     if (!text || busy) return;
+    if (attachments.items.some((a) => a.uploading)) {
+      toast.error("Wait for attachments to finish uploading.");
+      return;
+    }
     setInput("");
-    const next: Msg[] = [...messages, { role: "user", content: text }, { role: "assistant", content: "" }];
+    const attachmentSnapshot = attachments.items.map((a) => ({ path: a.path, mime: a.mime, name: a.name }));
+    const userContent = attachmentSnapshot.length
+      ? `${text}\n\n_📎 ${attachmentSnapshot.map((a) => a.name).join(", ")}_`
+      : text;
+    const next: Msg[] = [...messages, { role: "user", content: userContent }, { role: "assistant", content: "" }];
     setMessages(next);
     setBusy(true);
+    attachments.clear();
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -82,8 +106,10 @@ export const ChatPanel = ({ userId, source, onUsageUpdate, externalPrompt, onExt
           language: lang,
           mode,
           model,
+          attachments: attachmentSnapshot,
         }),
       });
+
 
       // Pick up updated usage from header
       const usageHdr = res.headers.get("X-AI-Usage");
@@ -154,7 +180,7 @@ export const ChatPanel = ({ userId, source, onUsageUpdate, externalPrompt, onExt
       setBusy(false);
       abortRef.current = null;
     }
-  }, [input, messages, busy, source, lang, mode, model, onUsageUpdate]);
+  }, [input, messages, busy, source, lang, mode, model, onUsageUpdate, attachments]);
 
   // Allow external (transcript click) prompts
   useEffect(() => {
@@ -236,7 +262,63 @@ export const ChatPanel = ({ userId, source, onUsageUpdate, externalPrompt, onExt
 
       <div className="border-t border-border/60 bg-background/80 backdrop-blur-xl px-4 py-3">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-end gap-2 rounded-2xl border border-border/60 bg-card/60 px-3 py-2 focus-within:border-primary/60 transition-colors">
+          {attachments.items.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {attachments.items.map((a) => (
+                <div key={a.id} className="group relative flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 px-2 py-1.5 pr-7 text-xs">
+                  {a.previewUrl ? (
+                    <img src={a.previewUrl} alt="" className="h-8 w-8 rounded object-cover" />
+                  ) : a.mime === "application/pdf" ? (
+                    <div className="h-8 w-8 rounded bg-rose-500/15 text-rose-500 grid place-items-center"><FileText className="h-4 w-4" /></div>
+                  ) : (
+                    <div className="h-8 w-8 rounded bg-muted grid place-items-center"><ImageIcon className="h-4 w-4" /></div>
+                  )}
+                  <div className="max-w-[160px] truncate">
+                    <div className="truncate font-medium">{a.name}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {a.uploading ? "Uploading…" : `${(a.size / 1024).toFixed(0)} KB`}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => attachments.remove(a.id)}
+                    aria-label="Remove attachment"
+                    className="absolute right-1 top-1 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-end gap-2 rounded-2xl border border-border/60 bg-card/60 px-2 py-2 focus-within:border-primary/60 transition-colors">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.length) attachments.addFiles(e.target.files);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+            />
+            <Button
+              type="button"
+              onClick={() => {
+                if (!isPaid) {
+                  toast.error("File uploads are for paid users only.", { description: "Upgrade to attach PDFs or images." });
+                  return;
+                }
+                fileInputRef.current?.click();
+              }}
+              size="icon"
+              variant="ghost"
+              className="h-9 w-9 shrink-0"
+              aria-label="Attach file"
+              title={isPaid ? "Attach PDF or image (max 10MB, 5 files)" : "Paid users only"}
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
             <Textarea
               ref={textareaRef}
               value={input}
@@ -251,11 +333,12 @@ export const ChatPanel = ({ userId, source, onUsageUpdate, externalPrompt, onExt
                 <Square className="h-4 w-4" />
               </Button>
             ) : (
-              <Button onClick={() => send()} disabled={!input.trim()} size="icon" className="h-9 w-9 shrink-0 rounded-full">
+              <Button onClick={() => send()} disabled={!input.trim() || attachments.items.some((a) => a.uploading)} size="icon" className="h-9 w-9 shrink-0 rounded-full">
                 <Send className="h-4 w-4" />
               </Button>
             )}
           </div>
+
           <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
             <div className="flex flex-wrap items-center gap-1.5">
               <ModeSelector value={mode} onChange={setMode} />
