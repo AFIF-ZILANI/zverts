@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Send, Sparkles, Square } from "lucide-react";
+import { FileText, Image as ImageIcon, Loader2, Paperclip, Send, Sparkles, Square, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,8 @@ import { ModeSelector, type StudyMode } from "./ModeSelector";
 import type { ChatModelId, Msg } from "@/components/app/ai/types";
 import type { ActiveSource } from "./SourcesPanel";
 import type { UsageState } from "@/hooks/useAIUsage";
+import { useAttachments } from "./useAttachments";
+
 
 type Props = {
   userId: string;
