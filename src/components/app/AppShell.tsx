@@ -15,6 +15,7 @@ import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 const SiteFooter = lazy(() => import("./SiteFooter").then(m => ({ default: m.SiteFooter })));
 const NotificationCenter = lazy(() => import("./NotificationCenter").then(m => ({ default: m.NotificationCenter })));
 const InstallPrompt = lazy(() => import("./InstallPrompt").then(m => ({ default: m.InstallPrompt })));
+const SupportContactPopup = lazy(() => import("./SupportContactPopup").then(m => ({ default: m.SupportContactPopup })));
 
 
 
@@ -147,6 +148,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       <main className="flex-1">{children}</main>
       <Suspense fallback={null}><SiteFooter /></Suspense>
       <Suspense fallback={null}><InstallPrompt /></Suspense>
+      {user && <Suspense fallback={null}><SupportContactPopup /></Suspense>}
     </div>
 
 

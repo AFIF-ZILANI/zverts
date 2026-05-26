@@ -748,6 +748,63 @@ export type Database = {
         }
         Relationships: []
       }
+      support_contact_dismissals: {
+        Row: {
+          dismiss_count: number
+          dismissed_at: string
+          user_id: string
+        }
+        Insert: {
+          dismiss_count?: number
+          dismissed_at?: string
+          user_id: string
+        }
+        Update: {
+          dismiss_count?: number
+          dismissed_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      support_contacts: {
+        Row: {
+          country_code: string | null
+          email: string | null
+          id: string
+          name: string
+          phone_number: string
+          source: string
+          submitted_at: string
+          updated_at: string
+          user_id: string
+          whatsapp_enabled: boolean
+        }
+        Insert: {
+          country_code?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone_number: string
+          source?: string
+          submitted_at?: string
+          updated_at?: string
+          user_id: string
+          whatsapp_enabled?: boolean
+        }
+        Update: {
+          country_code?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone_number?: string
+          source?: string
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp_enabled?: boolean
+        }
+        Relationships: []
+      }
       transcripts: {
         Row: {
           created_at: string
@@ -861,6 +918,23 @@ export type Database = {
           _title: string
         }
         Returns: Json
+      }
+      admin_list_support_contacts: {
+        Args: { _limit?: number; _search?: string }
+        Returns: {
+          country_code: string
+          email: string
+          id: string
+          is_paid_user: boolean
+          joined_at: string
+          last_active: string
+          name: string
+          phone_number: string
+          source: string
+          submitted_at: string
+          user_id: string
+          whatsapp_enabled: boolean
+        }[]
       }
       admin_list_users: {
         Args: { _limit?: number; _search?: string }
