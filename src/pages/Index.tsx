@@ -2,6 +2,7 @@ import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
+import { SEO } from "@/components/SEO";
 import {
   ArrowRight,
   Youtube,
@@ -23,6 +24,15 @@ const Index = () => {
 
   return (
     <AppShell>
+      <SEO
+        title="ZverT — Disciplined Learning, Verified Progress"
+        description="A free, sequential learning platform with strict watch-time tracking, attendance, AI summaries, and certificates. Master web development one module at a time."
+        path="/"
+        jsonLd={[
+          { "@context": "https://schema.org", "@type": "Organization", name: "ZverT", url: "https://zverts.lovable.app", logo: "https://zverts.lovable.app/favicon.png" },
+          { "@context": "https://schema.org", "@type": "WebSite", name: "ZverT", url: "https://zverts.lovable.app" },
+        ]}
+      />
       {/* HERO */}
       <section className="relative overflow-hidden">
         {/* subtle background */}
