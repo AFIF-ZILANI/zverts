@@ -265,9 +265,33 @@ const Info = () => {
   const Icon = page.icon;
   const related = PAGES.filter((p) => p.slug !== page.slug).slice(0, 6);
 
+  const faqJsonLd =
+    page.slug === "faq"
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: page.sections
+            .filter((s) => s.heading && s.body)
+            .map((s) => ({
+              "@type": "Question",
+              name: s.heading!.replace(/^\d+\.\s*/, ""),
+              acceptedAnswer: { "@type": "Answer", text: s.body! },
+            })),
+        }
+      : undefined;
+
+  const description = page.tagline?.slice(0, 155) || `${page.title} on ZverT.`;
+
   return (
     <AppShell>
+      <SEO
+        title={page.title}
+        description={description}
+        path={`/info/${page.slug}`}
+        jsonLd={faqJsonLd}
+      />
       <main className="container py-10 md:py-14">
+
         <nav className="text-xs text-muted-foreground mb-6 flex items-center gap-1.5">
           <Link to="/" className="hover:text-primary transition-colors">Home</Link>
           <ChevronRight className="h-3 w-3" />
