@@ -67,9 +67,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <div className="container flex h-16 items-center justify-between gap-2">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md">
-            <span className="font-display text-xl font-bold tracking-[0.15em] bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-              ZverTs
-            </span>
+            <img src={zvertsLogo} alt="ZverTs" height={36} className="h-9 w-auto object-contain" loading="eager" decoding="async" />
           </Link>
           {user && (
             <nav className="hidden md:flex items-center gap-1">
