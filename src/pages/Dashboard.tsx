@@ -150,7 +150,19 @@ const Dashboard = () => {
             Couldn't load your dashboard: {error}
           </div>
         ) : loading ? (
-          <div className="text-muted-foreground font-mono text-sm">Loading your progress…</div>
+          <div className="space-y-6">
+            <Skeleton className="h-40 rounded-2xl" />
+            <div className="grid lg:grid-cols-3 gap-6">
+              <Skeleton className="h-64 rounded-2xl lg:col-span-1" />
+              <div className="lg:col-span-2 grid sm:grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+              </div>
+            </div>
+            <Skeleton className="h-72 rounded-2xl" />
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-44 rounded-2xl" />)}
+            </div>
+          </div>
         ) : (
           <>
             {/* Continue watching */}
