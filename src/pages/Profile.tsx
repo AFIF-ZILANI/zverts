@@ -74,7 +74,7 @@ const Profile = () => {
                   <div>
                     <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">/ profile</div>
                     <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight mt-2">{firstName}</h1>
-                    <p className="mt-2 text-muted-foreground max-w-md">Your personal ZverT identity, learning rewards, and account settings.</p>
+                    <p className="mt-2 text-muted-foreground max-w-md">Your personal ZverTs identity, learning rewards, and account settings.</p>
                   </div>
                 </div>
                 <label className="cursor-pointer">

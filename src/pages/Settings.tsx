@@ -242,7 +242,7 @@ const Settings = () => {
           <TabsContent value="notifications">
             <div className="rounded-2xl border border-border bg-gradient-card p-8 shadow-card space-y-5">
               {[
-                { k: "notify_email" as const, title: "Email notifications", body: "Master switch for all email from ZverT." },
+                { k: "notify_email" as const, title: "Email notifications", body: "Master switch for all email from ZverTs." },
                 { k: "notify_inactivity" as const, title: "Inactivity alerts", body: "Get a nudge if you haven't studied in a few days." },
                 { k: "notify_completion" as const, title: "Completion emails", body: "Receive a recap when you finish a module or course." },
               ].map(item => (

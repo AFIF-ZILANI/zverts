@@ -55,7 +55,7 @@ const RefundPolicy = () => (
           / legal · refund policy
         </div>
         <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight mt-3">
-          ZverT Refund Policy
+          ZverTs Refund Policy
         </h1>
         <p className="text-muted-foreground mt-3">
           Last updated: 2026 — Please read carefully before making any payment.
@@ -64,7 +64,7 @@ const RefundPolicy = () => (
 
       <div className="space-y-6">
         <Section icon={Scale} title="1. Digital Product Policy">
-          <p>ZverT provides digital products and services, including:</p>
+          <p>ZverTs provides digital products and services, including:</p>
           <ul className="space-y-1.5">
             <Bullet>Playlist conversion credits</Bullet>
             <Bullet>AI feature access</Bullet>
@@ -98,14 +98,14 @@ const RefundPolicy = () => (
             <Bullet>Wrong information was submitted by the user</Bullet>
             <Bullet>User changed mind after successful activation</Bullet>
             <Bullet>
-              Payment was sent to a wrong number outside official ZverT accounts
+              Payment was sent to a wrong number outside official ZverTs accounts
             </Bullet>
           </ul>
         </Section>
 
         <Section icon={ShieldCheck} title="4. Manual Review Process">
           <p>
-            All refund requests are manually reviewed by the ZverT admin team.
+            All refund requests are manually reviewed by the ZverTs admin team.
             We reserve the right to:
           </p>
           <ul className="space-y-1.5">
@@ -127,7 +127,7 @@ const RefundPolicy = () => (
 
         <Section icon={AlertTriangle} title="6. Fraud Prevention">
           <p>
-            ZverT monitors suspicious payment activity. Fraudulent refund claims
+            ZverTs monitors suspicious payment activity. Fraudulent refund claims
             or fake transaction submissions may result in{" "}
             <span className="text-destructive font-medium">
               account restrictions or permanent suspension
@@ -140,7 +140,7 @@ const RefundPolicy = () => (
           <p>For payment or refund-related issues, contact:</p>
           <ul className="space-y-1.5">
             <Bullet>
-              ZverT Support via our{" "}
+              ZverTs Support via our{" "}
               <Link to="/info/contact" className="text-primary hover:underline">
                 contact page
               </Link>
@@ -148,7 +148,7 @@ const RefundPolicy = () => (
             <Bullet>Official Telegram / Email support channels</Bullet>
           </ul>
           <p className="text-xs font-mono pt-3 border-t border-border">
-            By using ZverT and making payments, you agree to this refund policy.
+            By using ZverTs and making payments, you agree to this refund policy.
           </p>
         </Section>
       </div>

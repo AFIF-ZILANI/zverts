@@ -1,6 +1,6 @@
-# FRONTEND.md — ZverT
+# FRONTEND.md — ZverTs
 
-> Implementation-ready frontend architecture for ZverT, derived from `PRODUCT.md`.
+> Implementation-ready frontend architecture for ZverTs, derived from `PRODUCT.md`.
 > Target stack: **Next.js 14 (App Router) · React 18 · TypeScript · Tailwind CSS · TanStack Query v5 · shadcn/ui · Radix · Framer Motion · react-hook-form + Zod · i18next**.
 > Backend contract: Supabase (Postgres + Auth + RLS + Edge Functions) accessed via `@supabase/ssr`.
 

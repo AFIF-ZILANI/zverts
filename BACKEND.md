@@ -1,6 +1,6 @@
-# BACKEND.md — ZverT
+# BACKEND.md — ZverTs
 
-> Implementation-ready backend engineering specification for ZverT, derived from `PRODUCT.md` and the production schema currently running on Postgres (Supabase).
+> Implementation-ready backend engineering specification for ZverTs, derived from `PRODUCT.md` and the production schema currently running on Postgres (Supabase).
 > Target stack: **Go 1.22 · PostgreSQL 15 · Redis 7 · REST (HTTP/1.1 + HTTP/2) · JWT (RS256) · `chi` router · `pgx/v5` · `sqlc` · `golang-migrate` · `riverqueue` · OpenTelemetry**.
 
 ---
@@ -10,13 +10,13 @@
 ### 1.1 Service boundaries
 A single deployable **modular monolith** in Go, organized internally as bounded modules. This matches the product's scale today (one DB, single tenant) and leaves a clear seam for future extraction. Two long-running processes share one binary:
 
-- **`zvert-api`** — public HTTP server (chi).
-- **`zvert-worker`** — background workers + cron (riverqueue + robfig/cron).
+- **`zverts-api`** — public HTTP server (chi).
+- **`zverts-worker`** — background workers + cron (riverqueue + robfig/cron).
 
 Both processes share `internal/*` packages but expose different `cmd/` entry points. They scale independently behind the same image.
 
 A third lightweight process exists:
-- **`zvert-migrate`** — one-shot job to run `golang-migrate` on deploy.
+- **`zverts-migrate`** — one-shot job to run `golang-migrate` on deploy.
 
 ### 1.2 Modules (bounded contexts)
 Each module owns its tables, queries, services, and HTTP/job handlers. Cross-module calls go through the owning module's **service interface** — never raw SQL.
@@ -41,12 +41,12 @@ Each module owns its tables, queries, services, and HTTP/job handlers. Cross-mod
 - **In-process:** modules expose Go interfaces from `internal/<module>/service`. Wiring done in `cmd/api/main.go` via constructor injection.
 - **Across processes:** `api` → `worker` strictly via the **queue** (River, Postgres-backed). No worker-only HTTP endpoints.
 - **DB transactions:** owned by the originating module; cross-module writes use the **Outbox pattern** (write own tables + outbox row in same tx; worker fans out).
-- **Realtime fan-out:** Postgres `LISTEN/NOTIFY` channel `zvert_events` published to from `award_progress`/`update_module_progress`; an SSE hub in `api` forwards filtered events to clients (for live XP toasts, leaderboard updates).
+- **Realtime fan-out:** Postgres `LISTEN/NOTIFY` channel `zverts_events` published to from `award_progress`/`update_module_progress`; an SSE hub in `api` forwards filtered events to clients (for live XP toasts, leaderboard updates).
 - **External calls** (YouTube Data API, Lovable AI Gateway, SMTP/Resend): wrapped behind interface adapters under `internal/platform/clients`, guarded by per-host circuit breakers (sony/gobreaker) and bounded HTTP clients (`net/http` with `Transport.MaxIdleConnsPerHost`, timeouts).
 
 ```
                     +----------------------+
-   Browser  --->    |  zvert-api (chi)     |  ---> Postgres (pgx pool, primary + read-replica)
+   Browser  --->    |  zverts-api (chi)     |  ---> Postgres (pgx pool, primary + read-replica)
                     |  - REST + SSE        |  ---> Redis (cache, ratelimit, locks)
                     |  - JWT verify        |  ---> Queue.Enqueue (River → Postgres)
                     +----------+-----------+
@@ -54,7 +54,7 @@ Each module owns its tables, queries, services, and HTTP/job handlers. Cross-mod
                                | enqueues jobs / outbox dispatch
                                v
                     +----------------------+
-                    |  zvert-worker        |  ---> YouTube API
+                    |  zverts-worker        |  ---> YouTube API
                     |  - River workers     |  ---> Lovable AI Gateway
                     |  - Cron              |  ---> Email provider
                     +----------------------+
@@ -342,7 +342,7 @@ Token-bucket state lives in Redis (`rl:<scope>:<id>`). Not a SQL table.
 
 ## 4. API Routes
 
-> Base URL: `https://api.zvert.app/v1`. Content type: `application/json; charset=utf-8` unless noted (SSE: `text/event-stream`). Errors follow §9.2. Pagination is cursor-based: `?cursor=<opaque>&limit=<1..100>` returning `{ items, next_cursor }`. Mutating endpoints accept optional `Idempotency-Key` header (UUID).
+> Base URL: `https://api.zverts.app/v1`. Content type: `application/json; charset=utf-8` unless noted (SSE: `text/event-stream`). Errors follow §9.2. Pagination is cursor-based: `?cursor=<opaque>&limit=<1..100>` returning `{ items, next_cursor }`. Mutating endpoints accept optional `Idempotency-Key` header (UUID).
 
 ### 4.1 Public
 | Method | Route | Purpose | Auth | Rate limit |
@@ -480,7 +480,7 @@ Headers: `Idempotency-Key` honored.
 | POST | `/internal/inactivity/notify` | Lifecycle email batch |
 | POST | `/internal/cache/invalidate` | Targeted cache bust |
 
-All `/internal/*` require client certificate AND a per-call HMAC signature header (`X-ZverT-Signature`).
+All `/internal/*` require client certificate AND a per-call HMAC signature header (`X-ZverTs-Signature`).
 
 ### 4.6 Cross-cutting response shape
 Success: `{ "data": ..., "meta": { "request_id": "..." } }`.
@@ -493,7 +493,7 @@ Error: see §9.2.
 ### 5.1 Session model
 - **Stateless access JWT** (RS256, 15 min TTL) signed by an internal KMS-backed key; `kid` rotated quarterly. Verified via JWKS endpoint, cached in Redis 10 min.
 - **Opaque refresh token** (256-bit) stored as **hash** (SHA-256) in Redis: `sess:rt:<hash>` → `{ user_id, jti, family, created_at, ua, ip }`, TTL 30 days. Refresh rotation with reuse detection: any reuse of a rotated token invalidates the entire family.
-- Cookies on web (HTTPS, `__Host-zvert_at` access, `__Host-zvert_rt` refresh; `Secure; HttpOnly; SameSite=Lax`). Mobile uses `Authorization: Bearer`.
+- Cookies on web (HTTPS, `__Host-zverts_at` access, `__Host-zverts_rt` refresh; `Secure; HttpOnly; SameSite=Lax`). Mobile uses `Authorization: Bearer`.
 - `at` claims: `sub`, `email`, `role` (highest), `roles` (all), `iat`, `exp`, `jti`, `aud`, `iss`.
 - Logout: delete `sess:rt:<hash>` and append `jti` to `sess:revoked:<jti>` (TTL = access remaining).
 
@@ -578,7 +578,7 @@ Roles: `student` (default), `instructor`, `admin`. Stored in `user_roles`; users
 | `outbox.gc` | Cron 02:15 UTC | bulk | Delete `outbox_events` with `published_at < now()-7d`. |
 
 ### 7.3 Scheduled jobs (cron)
-Run on `zvert-worker` via `robfig/cron/v3`:
+Run on `zverts-worker` via `robfig/cron/v3`:
 - `*/1 * * * *` — outbox dispatcher tick (in addition to LISTEN/NOTIFY).
 - `0 0 * * *` — streak.repair, daily_challenge.preassign (precompute today's challenge set per active user).
 - `10 3 * * *` — analytics.kpi_snapshot.
@@ -718,7 +718,7 @@ Headers always include `X-Request-Id`. 4xx with `details.fields` for validation.
 ## 11. Folder Structure
 
 ```text
-zvert-backend/
+zverts-backend/
 ├── cmd/
 │   ├── api/main.go                 # HTTP server entrypoint
 │   ├── worker/main.go              # River workers + cron
@@ -841,8 +841,8 @@ zvert-backend/
 6. **`courses` `is_public` scans on explore** as catalog grows.
 
 ### 12.2 Horizontal scaling
-- **`zvert-api`**: stateless except for SSE connections. Scale via HPA on CPU + p99 latency + RPS. Sticky routing not required (JWT). For SSE, use connection-aware autoscaler (active connections / max).
-- **`zvert-worker`**: scale on queue depth + per-lane backlog (River exposes metrics). Separate deployments for `bulk` vs `realtime` lanes so bulk can't starve realtime.
+- **`zverts-api`**: stateless except for SSE connections. Scale via HPA on CPU + p99 latency + RPS. Sticky routing not required (JWT). For SSE, use connection-aware autoscaler (active connections / max).
+- **`zverts-worker`**: scale on queue depth + per-lane backlog (River exposes metrics). Separate deployments for `bulk` vs `realtime` lanes so bulk can't starve realtime.
 - **PgBouncer** in `transaction` mode between API and Postgres; pool sizing `4 * vCPU` per replica.
 - **Read replica** for: explore search, leaderboard, admin metrics, public profile reads. Routed via a `db.ReadOnly()` helper; writes always primary. Replica lag budget 5 s; degrade gracefully (fall back to primary) if exceeded.
 - **Redis cluster** scales by shards; clients use cluster-aware driver, hash-tags only where multi-key ops needed (rate-limit Lua).

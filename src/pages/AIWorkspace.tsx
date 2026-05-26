@@ -9,7 +9,7 @@ import { UsageChip } from "@/components/ai/UsageChip";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, BookOpen, FileText, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
-import zvertLogo from "@/assets/zvert-logo.png";
+import zvertsLogo from "@/assets/zverts-logo.png";
 
 type MobileTab = "sources" | "chat" | "panel";
 
@@ -37,9 +37,9 @@ const AIWorkspace = () => {
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
-            <img src={zvertLogo} alt="ZverT" className="h-7 w-auto shrink-0" />
+            <img src={zvertsLogo} alt="ZverTs" className="h-7 w-auto shrink-0" />
             <div className="min-w-0">
-              <div className="font-display text-sm font-semibold leading-none truncate">ZverT AI</div>
+              <div className="font-display text-sm font-semibold leading-none truncate">ZverTs AI</div>
               <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground leading-tight">
                 {source ? source.moduleTitle : "Vert · Study Companion"}
               </div>

@@ -9,7 +9,7 @@ export const InstallPrompt = () => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem("zvert.installDismissed") === "1") return;
+    if (localStorage.getItem("zverts.installDismissed") === "1") return;
     // Hide if already running standalone
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
@@ -38,14 +38,14 @@ export const InstallPrompt = () => {
   };
 
   const dismiss = () => {
-    localStorage.setItem("zvert.installDismissed", "1");
+    localStorage.setItem("zverts.installDismissed", "1");
     setVisible(false);
   };
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-2xl p-3 flex items-center gap-3 animate-fade-in">
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold">Install ZverT</div>
+        <div className="text-sm font-semibold">Install ZverTs</div>
         <div className="text-xs text-muted-foreground truncate">Add to home screen for an app-like experience.</div>
       </div>
       <Button size="sm" onClick={install}>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { StoredChat, Msg, ChatModelId } from "./types";
 
-const key = (userId: string, moduleId: string) => `zvert.chats.${userId}.${moduleId}`;
+const key = (userId: string, moduleId: string) => `zverts.chats.${userId}.${moduleId}`;
 
 function read(userId: string, moduleId: string): StoredChat[] {
   try {

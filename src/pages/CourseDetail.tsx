@@ -140,7 +140,7 @@ const CourseDetail = () => {
     <AppShell>
       <SEO
         title={course.title}
-        description={course.description?.slice(0, 155) || `${course.title} — a course on ZverT with ${modules.length} lessons.`}
+        description={course.description?.slice(0, 155) || `${course.title} — a course on ZverTs with ${modules.length} lessons.`}
         path={`/courses/${course.id}`}
         type="article"
         jsonLd={{
@@ -148,7 +148,7 @@ const CourseDetail = () => {
           "@type": "Course",
           name: course.title,
           description: course.description || undefined,
-          provider: { "@type": "Organization", name: "ZverT", url: "https://zverts.lovable.app" },
+          provider: { "@type": "Organization", name: "ZverTs", url: "https://zverts.lovable.app" },
           ...(course.author_name ? { author: { "@type": "Person", name: course.author_name } } : {}),
         }}
       />

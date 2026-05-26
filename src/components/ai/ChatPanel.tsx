@@ -20,7 +20,7 @@ type Props = {
   onExternalConsumed?: () => void;
 };
 
-const STORAGE_KEY = (uid: string, sourceId: string) => `zvert.ai.workspace.${uid}.${sourceId}`;
+const STORAGE_KEY = (uid: string, sourceId: string) => `zverts.ai.workspace.${uid}.${sourceId}`;
 
 export const ChatPanel = ({ userId, source, onUsageUpdate, externalPrompt, onExternalConsumed }: Props) => {
   const sourceKey = source?.moduleId ?? "general";

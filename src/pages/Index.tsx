@@ -25,12 +25,12 @@ const Index = () => {
   return (
     <AppShell>
       <SEO
-        title="ZverT — Disciplined Learning, Verified Progress"
+        title="ZverTs — Disciplined Learning, Verified Progress"
         description="A free, sequential learning platform with strict watch-time tracking, attendance, AI summaries, and certificates. Master web development one module at a time."
         path="/"
         jsonLd={[
-          { "@context": "https://schema.org", "@type": "Organization", name: "ZverT", url: "https://zverts.lovable.app", logo: "https://zverts.lovable.app/favicon.png" },
-          { "@context": "https://schema.org", "@type": "WebSite", name: "ZverT", url: "https://zverts.lovable.app" },
+          { "@context": "https://schema.org", "@type": "Organization", name: "ZverTs", url: "https://zverts.lovable.app", logo: "https://zverts.lovable.app/favicon.png" },
+          { "@context": "https://schema.org", "@type": "WebSite", name: "ZverTs", url: "https://zverts.lovable.app" },
         ]}
       />
       {/* HERO */}
@@ -262,7 +262,7 @@ function DashboardMockup() {
             <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30" />
           </div>
           <div className="text-[10px] text-muted-foreground">
-            zvert.app / dashboard
+            zverts.app / dashboard
           </div>
           <div className="w-8" />
         </div>

@@ -167,7 +167,7 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
     if (kind === "pdf") exportAsPdf(active);
   };
 
-  const currentModelLabel = MODELS.find((m) => m.id === model)?.label ?? "ZverT Smart";
+  const currentModelLabel = MODELS.find((m) => m.id === model)?.label ?? "ZverTs Smart";
 
   return (
     <>
