@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS payments_insert_own ON public.payments;
