@@ -116,10 +116,28 @@ const Payment = () => {
             <Label htmlFor="trx">Transaction ID</Label>
             <Input id="trx" placeholder="e.g. 8N7Y6XKL21" value={trx} onChange={(e) => setTrx(e.target.value)} className="mt-1.5 font-mono" />
           </div>
-          <Button onClick={submit} disabled={submitting} className="w-full bg-gradient-lime text-primary-foreground shadow-glow">
+          <div className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/30 p-3">
+            <Checkbox
+              id="agree-refund"
+              checked={agreed}
+              onCheckedChange={(v) => setAgreed(v === true)}
+              className="mt-0.5"
+            />
+            <Label htmlFor="agree-refund" className="text-xs leading-relaxed font-normal cursor-pointer">
+              I agree to the{" "}
+              <Link to="/refund-policy" target="_blank" className="text-primary hover:underline font-medium">
+                ZverT Refund Policy
+              </Link>
+              . By making payment, I confirm I have read and accepted its terms.
+            </Label>
+          </div>
+          <Button onClick={submit} disabled={submitting || !agreed} className="w-full bg-gradient-lime text-primary-foreground shadow-glow disabled:opacity-50">
             {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Submitting…</> : "Submit payment"}
           </Button>
-          <p className="text-xs text-muted-foreground text-center font-mono">Admins typically approve within a few hours.</p>
+          <p className="text-xs text-muted-foreground text-center font-mono">
+            Admins typically approve within a few hours. ·{" "}
+            <Link to="/refund-policy" className="hover:text-primary underline">Refund Policy</Link>
+          </p>
         </div>
       </section>
     </AppShell>
