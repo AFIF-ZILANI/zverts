@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { AppShell } from "@/components/app/AppShell";
+import { OfficialEmail } from "@/components/OfficialEmail";
 import {
   ShieldCheck,
   CheckCircle2,
