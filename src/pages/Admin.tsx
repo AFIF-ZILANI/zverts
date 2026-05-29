@@ -17,8 +17,8 @@ const Admin = () => {
 
   const loadPending = async () => {
     const { count } = await supabase
-      .from("payments" as any)
-      .select("id", { count: "exact", head: true })
+      .from("payments")
+      .select("*", { count: "exact", head: true })
       .eq("status", "pending");
 
     console.log("Payment Count: ", count);
