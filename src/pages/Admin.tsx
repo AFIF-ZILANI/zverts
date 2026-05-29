@@ -20,6 +20,7 @@ const Admin = () => {
       .from("payments")
       .select("*", { count: "exact", head: true })
       .eq("status", "pending");
+    
 
     console.log("Payment Count: ", count);
     setPendingCount(count ?? 0);
