@@ -27,30 +27,39 @@ const Admin = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }).then(async ({ data }) => {
+
+    let ch: ReturnType<typeof supabase.channel> | null = null;
+
+    const init = async () => {
+      const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
       setIsAdmin(!!data);
-      if (data) {
-        const [{ data: u }, { data: l }, { data: s }] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("id,name,email,total_gems,total_xp,current_streak,last_active")
-            .order("last_active", { ascending: false }),
-          supabase.from("email_logs").select("*").order("created_at", { ascending: false }).limit(50),
-          supabase.rpc("has_role", { _user_id: user.id, _role: "super_admin" }),
-        ]);
-        setUsers(u ?? []);
-        setLogs(l ?? []);
-        setIsSuper(!!s);
-        loadPending();
-        const ch = supabase
-          .channel("admin:overview-payments")
-          .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, () => loadPending())
-          .subscribe();
-        return () => {
-          supabase.removeChannel(ch);
-        };
-      }
-    });
+      if (!data) return;
+
+      const [{ data: u }, { data: l }, { data: s }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id,name,email,total_gems,total_xp,current_streak,last_active")
+          .order("last_active", { ascending: false }),
+        supabase.from("email_logs").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.rpc("has_role", { _user_id: user.id, _role: "super_admin" }),
+      ]);
+
+      setUsers(u ?? []);
+      setLogs(l ?? []);
+      setIsSuper(!!s);
+      await loadPending();
+
+      ch = supabase
+        .channel(`admin:overview-payments:${user.id}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, () => loadPending())
+        .subscribe();
+    };
+
+    init();
+
+    return () => {
+      if (ch) supabase.removeChannel(ch);
+    };
   }, [user]);
 
   if (loading || isAdmin === null) return null;
