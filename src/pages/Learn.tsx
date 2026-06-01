@@ -52,6 +52,10 @@ const Learn = () => {
     setMods(m ?? []);
     setProg(p ?? []);
     setLoading(false);
+
+    console.log("ownCourses", ownCourses);
+    console.log("m", m);
+    console.log("p", p);
   };
 
   useEffect(() => {
@@ -90,6 +94,8 @@ const Learn = () => {
     });
     return { course, cards };
   });
+
+  console.log("sections", sections);
 
   return (
     <AppShell>
