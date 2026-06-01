@@ -25,6 +25,7 @@ interface ProgressRow {
 
 const Learn = () => {
   const { user, loading: authLoading } = useAuth();
+  console.log("userid", user.id);
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [mods, setMods] = useState<ModuleRow[]>([]);
   const [prog, setProg] = useState<ProgressRow[]>([]);
@@ -62,7 +63,6 @@ const Learn = () => {
   useEffect(() => {
     if (!user) return;
     void load(user.id);
-    console.log(userid, user.id);
     const channel = supabase
       .channel(`learn:${user.id}`)
       .on(
