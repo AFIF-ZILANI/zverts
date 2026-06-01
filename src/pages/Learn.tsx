@@ -25,7 +25,6 @@ interface ProgressRow {
 
 const Learn = () => {
   const { user, loading: authLoading } = useAuth();
-  console.log("userid", user.id);
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [mods, setMods] = useState<ModuleRow[]>([]);
   const [prog, setProg] = useState<ProgressRow[]>([]);
@@ -53,11 +52,6 @@ const Learn = () => {
     setMods(m ?? []);
     setProg(p ?? []);
     setLoading(false);
-
-    console.log("ownCourses", JSON.stringify(ownCourses, null, 2));
-
-    console.log("m", JSON.stringify(m, null, 2));
-    console.log("p", JSON.stringify(p, null, 2));
   };
 
   useEffect(() => {
@@ -96,8 +90,6 @@ const Learn = () => {
     });
     return { course, cards };
   });
-
-  console.log("sections", JSON.stringify(sections, null, 2));
 
   return (
     <AppShell>
