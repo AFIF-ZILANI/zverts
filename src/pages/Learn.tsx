@@ -54,9 +54,9 @@ const Learn = () => {
     setLoading(false);
 
     console.log("ownCourses", JSON.stringify(ownCourses, null, 2));
-    
-    console.log("m", JSON.stringify(m, null, 2););
-    console.log("p", JSON.stringify(p, null, 2););
+
+    console.log("m", JSON.stringify(m, null, 2));
+    console.log("p", JSON.stringify(p, null, 2));
   };
 
   useEffect(() => {
@@ -96,7 +96,7 @@ const Learn = () => {
     return { course, cards };
   });
 
-  console.log("sections", JSON.stringify(sections, null, 2););
+  console.log("sections", JSON.stringify(sections, null, 2));
 
   return (
     <AppShell>
