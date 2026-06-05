@@ -39,15 +39,9 @@ Deno.serve(async (req) => {
     const label = action === "confirm" ? "APPROVED" : "REJECTED";
     const token = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const { error } = await admin
-      .from("payments")
-      .update({ status })
-      .eq("id", paymentId);
+    const { error } = await admin.from("payments").update({ status }).eq("id", paymentId);
 
     if (error) {
       await answerCallback(token, callbackQuery.id, `❌ ${error.message}`);
