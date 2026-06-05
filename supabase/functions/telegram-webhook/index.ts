@@ -11,6 +11,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     const callbackQuery = body.callback_query;
+
     if (!callbackQuery) {
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -19,6 +20,7 @@ Deno.serve(async (req) => {
 
     const data = callbackQuery.data as string;
     const [action, paymentId] = data.split(":");
+
     if (!action || !paymentId) {
       return new Response(JSON.stringify({ error: "Invalid callback data" }), {
         status: 400,
@@ -26,31 +28,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    const token = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    let label: string;
-    let error: any = null;
-    if (action === "confirm") {
-      const { error: e } = await admin.rpc("approve_payment", { _payment_id: paymentId });
-      error = e;
-      label = "APPROVED";
-    } else if (action === "reject") {
-      const { error: e } = await admin.rpc("reject_payment", { _payment_id: paymentId, _note: "Rejected via Telegram" });
-      error = e;
-      label = "REJECTED";
-    } else {
+    if (action !== "confirm" && action !== "reject") {
       return new Response(JSON.stringify({ error: "Unknown action" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const status = action === "confirm" ? "approved" : "rejected";
+    const label = action === "confirm" ? "APPROVED" : "REJECTED";
+    const token = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
+
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { error } = await admin
+      .from("payments")
+      .update({ status })
+      .eq("id", paymentId);
+
     if (error) {
-      await answerCallback(token, callbackQuery.id, `❌ ${error.message ?? "Failed"}`);
+      await answerCallback(token, callbackQuery.id, `❌ ${error.message}`);
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
