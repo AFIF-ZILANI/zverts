@@ -118,7 +118,8 @@ const App = () => (
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<Settings />} />
                 
-                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/growth" element={<Growth />} />
+                <Route path="/leaderboard" element={<Navigate to="/growth" replace />} />
                 <Route path="/ai" element={<AIWorkspace />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/payments" element={<AdminPayments />} />
