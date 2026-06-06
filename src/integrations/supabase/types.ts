@@ -226,6 +226,42 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_missions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          date: string
+          done_tasks: number
+          rewarded_at: string | null
+          tasks: Json
+          total_tasks: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          date?: string
+          done_tasks?: number
+          rewarded_at?: string | null
+          tasks?: Json
+          total_tasks?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          date?: string
+          done_tasks?: number
+          rewarded_at?: string | null
+          tasks?: Json
+          total_tasks?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_logs: {
         Row: {
           created_at: string
@@ -992,6 +1028,7 @@ export type Database = {
         Returns: string
       }
       get_ai_usage_today: { Args: { _daily_limit?: number }; Returns: Json }
+      get_growth_stats: { Args: never; Returns: Json }
       get_mcq_questions: {
         Args: { _limit?: number; _module_ids: string[] }
         Returns: {
@@ -1002,6 +1039,7 @@ export type Database = {
           question: string
         }[]
       }
+      get_today_mission: { Args: never; Returns: Json }
       grade_and_submit_daily_challenge: {
         Args: { _answers: Json }
         Returns: Json

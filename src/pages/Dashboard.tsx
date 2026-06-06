@@ -6,6 +6,7 @@ import { CircularProgress } from "@/components/app/CircularProgress";
 import { ModuleCard } from "@/components/app/ModuleCard";
 import { StatCard } from "@/components/app/StatCard";
 import { ContinueWatching } from "@/components/app/ContinueWatching";
+import { TodayMissionCard } from "@/components/app/TodayMissionCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -177,6 +178,9 @@ const Dashboard = () => {
           </div>
         ) : (
           <>
+            {/* Today's Mission (replaces global leaderboard mindset) */}
+            <TodayMissionCard userId={user.id} />
+
             {/* Continue watching */}
             <ContinueWatching userId={user.id} />
 

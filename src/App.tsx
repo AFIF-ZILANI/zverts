@@ -1,6 +1,6 @@
 import { lazy, Suspense, type ComponentType } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -40,7 +40,7 @@ const Profile = lazyWithRetry(() => import("./pages/Profile.tsx"));
 const Settings = lazyWithRetry(() => import("./pages/Settings.tsx"));
 
 const Quiz = lazyWithRetry(() => import("./pages/Quiz.tsx"));
-const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard.tsx"));
+const Growth = lazyWithRetry(() => import("./pages/Growth.tsx"));
 const Admin = lazyWithRetry(() => import("./pages/Admin.tsx"));
 const Certificate = lazyWithRetry(() => import("./pages/Certificate.tsx"));
 const BuyPackage = lazyWithRetry(() => import("./pages/BuyPackage.tsx"));
@@ -118,7 +118,8 @@ const App = () => (
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<Settings />} />
                 
-                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/growth" element={<Growth />} />
+                <Route path="/leaderboard" element={<Navigate to="/growth" replace />} />
                 <Route path="/ai" element={<AIWorkspace />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/payments" element={<AdminPayments />} />
