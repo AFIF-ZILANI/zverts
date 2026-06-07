@@ -1,7 +1,7 @@
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, BookOpen, User as UserIcon, Trophy, Shield, Menu, X, Sparkles, Bot, TrendingUp } from "lucide-react";
+import { LogOut, LayoutDashboard, BookOpen, User as UserIcon, Trophy, Shield, Menu, X, Sparkles, Bot, TrendingUp, CreditCard } from "lucide-react";
 import { ReactNode, Suspense, lazy, useEffect, useState } from "react";
 import { ThemeToggle, LanguageToggle } from "./ThemeToggle";
 import { useTranslation } from "react-i18next";
@@ -59,6 +59,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     { to: "/courses", icon: BookOpen, label: t("nav.courses") },
     { to: "/ai", icon: Bot, label: "Vert AI" },
     { to: "/growth", icon: TrendingUp, label: "Growth" },
+    { to: "/payments", icon: CreditCard , label: t("nav.payments") },
     { to: "/buy", icon: Sparkles, label: "Upgrade" },
     ...(isAdmin ? [{ to: "/admin", icon: Shield, label: t("nav.admin") }] : []),
   ];
