@@ -1,215 +1,225 @@
 import { Link } from "react-router-dom";
 import {
-  Atom,
-  FlaskConical,
-  Palette,
-  Briefcase,
-  GraduationCap,
-  FileText,
-  Database,
-  Radio,
-  Sparkles,
-  Trophy,
-  MapPin,
-  Mail,
-  Twitter,
-  Facebook,
-  Instagram,
-  Youtube,
-  Apple,
-  Play,
+    Sparkles,
+    Trophy,
+    LayoutDashboard,
+    BookOpen,
+    TrendingUp,
+    Bot,
+    CreditCard,
+    MapPin,
+    Facebook,
+    Twitter,
+    Instagram,
+    Youtube,
+    Apple,
+    Play,
+    ExternalLink,
+    ArrowUpRight,
 } from "lucide-react";
 import zvertsLogo from "@/assets/zverts-logo.png";
 import { OfficialEmail } from "@/components/OfficialEmail";
 
-type LinkItem = { label: string; to: string; icon?: React.ComponentType<{ className?: string }> };
+type NavLink = { label: string; to: string; external?: boolean };
 
-const features: LinkItem[] = [
-  { label: "ZverTs AI", to: "/dashboard", icon: Sparkles },
+const platform: NavLink[] = [
+    { label: "Dashboard", to: "/dashboard" },
+    { label: "Courses", to: "/courses" },
+    { label: "Growth", to: "/growth" },
+    { label: "Leaderboard", to: "/leaderboard" },
+    { label: "Vert AI", to: "/ai" },
+    { label: "Buy Credits", to: "/buy" },
 ];
 
-const categories: LinkItem[] = [
-  { label: "Dashboard", to: "/dashboard", icon: Atom },
-  { label: "Courses", to: "/courses", icon: FlaskConical },
-  
-  { label: "Leaderboard", to: "/leaderboard", icon: Trophy },
+const company: NavLink[] = [
+    { label: "About Us", to: "/info/about" },
+    { label: "Help Center", to: "/info/help" },
+    { label: "FAQ", to: "/info/faq" },
+    { label: "Contact", to: "/info/contact" },
+    { label: "Blog", to: "/info/blog" },
+    { label: "Careers", to: "/info/careers" },
 ];
 
-const support: LinkItem[] = [
-  { label: "About Us", to: "/info/about" },
-  { label: "FAQ", to: "/info/faq" },
-  { label: "Help Center", to: "/info/help" },
-  { label: "Contact", to: "/info/contact" },
-  { label: "Affiliates", to: "/info/affiliates" },
-  { label: "Community", to: "/info/community" },
-  { label: "Blog", to: "/info/blog" },
-  { label: "Careers", to: "/info/careers" },
-];
-
-const legal: LinkItem[] = [
-  { label: "Terms & Conditions", to: "/" },
-  { label: "Privacy Policy", to: "/" },
-  { label: "Refund Policy", to: "/refund-policy" },
+const legal: NavLink[] = [
+    { label: "Terms & Conditions", to: "/" },
+    { label: "Privacy Policy", to: "/" },
+    { label: "Refund Policy", to: "/refund-policy" },
 ];
 
 const socials = [
-  { Icon: Facebook, href: "#", label: "Facebook" },
-  { Icon: Twitter, href: "#", label: "Twitter" },
-  { Icon: Instagram, href: "#", label: "Instagram" },
-  { Icon: Youtube, href: "#", label: "YouTube" },
+    { Icon: Facebook, href: "#", label: "Facebook" },
+    { Icon: Twitter, href: "#", label: "X / Twitter" },
+    { Icon: Instagram, href: "#", label: "Instagram" },
+    { Icon: Youtube, href: "#", label: "YouTube" },
 ];
 
-function Column({
-  title,
-  items,
-}: {
-  title: string;
-  items: LinkItem[];
-}) {
-  return (
+const LinkColumn = ({ title, items }: { title: string; items: NavLink[] }) => (
     <div>
-      <h4 className="text-sm font-display font-semibold tracking-wider uppercase text-foreground/90 mb-4">
-        {title}
-      </h4>
-      <ul className="space-y-2.5">
-        {items.map((item) => (
-          <li key={item.label}>
-            <Link
-              to={item.to}
-              className="group inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {item.icon && (
-                <item.icon className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all" />
-              )}
-              <span className="relative">
-                {item.label}
-                <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-primary group-hover:w-full transition-all duration-300" />
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+        <h4 className="text-xs font-mono font-semibold uppercase tracking-widest text-foreground/70 mb-4">
+            {title}
+        </h4>
+        <ul className="space-y-2.5">
+            {items.map((item) => (
+                <li key={item.label}>
+                    <Link
+                        to={item.to}
+                        className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors duration-150"
+                    >
+                        {item.label}
+                        {item.external && (
+                            <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-70 transition-opacity" />
+                        )}
+                    </Link>
+                </li>
+            ))}
+        </ul>
     </div>
-  );
-}
+);
 
 export const SiteFooter = () => {
-  const year = new Date().getFullYear();
+    const year = new Date().getFullYear();
 
-  return (
-    <footer className="relative mt-16 border-t border-border/60 overflow-hidden">
-      {/* Gradient backdrop */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background via-background to-background/40" />
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_left,_hsl(var(--primary)/0.10),_transparent_55%),radial-gradient(ellipse_at_bottom_right,_hsl(var(--primary)/0.06),_transparent_55%)]" />
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+    return (
+        <footer className="relative mt-16 border-t border-border/60 overflow-hidden">
+            {/* Gradient */}
+            <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background to-background/95" />
+            <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_left,_hsl(var(--primary)/0.07),_transparent_50%),radial-gradient(ellipse_at_bottom_right,_hsl(var(--primary)/0.04),_transparent_50%)]" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
-      <div className="container py-14">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-12">
-          {/* Company */}
-          <div className="lg:col-span-4">
-            <Link to="/" className="flex items-center gap-2.5">
-              <img
-                src={zvertsLogo}
-                alt="ZverTs"
-                className="h-10 w-auto drop-shadow-[0_0_10px_hsl(var(--primary)/0.5)]"
-                loading="lazy"
-              />
-              <span className="font-display text-2xl font-bold tracking-[0.18em] bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-                ZverTs
-              </span>
-            </Link>
-            <p className="mt-4 text-sm text-muted-foreground italic">
-              Disciplined Learning for Future Leaders.
-            </p>
-            <div className="mt-5 space-y-2.5 text-sm text-muted-foreground">
-              <div className="flex items-start gap-2.5">
-                <MapPin className="h-4 w-4 mt-0.5 text-primary/80 shrink-0" />
-                <span>
-                  Boalia
-                  <br />
-                  Rajshahi, Bangladesh
-                </span>
-              </div>
-              <OfficialEmail className="text-sm" />
-            </div>
-            <div className="mt-5 flex items-center gap-2">
-              {socials.map(({ Icon, href, label }) => (
-                <a
-                  key={label}
-                  href={href}
-                  aria-label={label}
-                  className="h-9 w-9 grid place-items-center rounded-full border border-border/60 bg-background/40 backdrop-blur text-muted-foreground hover:text-primary hover:border-primary/60 hover:bg-primary/5 transition-all hover:-translate-y-0.5"
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              ))}
-            </div>
-          </div>
+            <div className="container py-14">
+                <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-12">
+                    {/* ── Brand ─────────────────────────────────────────────────── */}
+                    <div className="lg:col-span-4 space-y-5">
+                        <Link to="/" className="inline-flex items-center gap-2.5 group">
+                            <img
+                                src={zvertsLogo}
+                                alt="ZverTs"
+                                className="h-9 w-auto drop-shadow-[0_0_8px_hsl(var(--primary)/0.4)] group-hover:drop-shadow-[0_0_12px_hsl(var(--primary)/0.6)] transition-all"
+                                loading="lazy"
+                            />
+                            <span className="font-display text-xl font-bold tracking-[0.15em] bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
+                                ZverTs
+                            </span>
+                        </Link>
 
-          {/* Link columns */}
-          <div className="lg:col-span-2">
-            <Column title="Features" items={features} />
-          </div>
-          <div className="lg:col-span-2">
-            <Column title="Categories" items={categories} />
-          </div>
-          <div className="lg:col-span-2">
-            <Column title="Support" items={support} />
-          </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+                            A disciplined learning platform for future leaders. Turn YouTube
+                            playlists into structured courses and grow every day.
+                        </p>
 
-          {/* App download — coming soon */}
-          <div className="lg:col-span-2">
-            <h4 className="text-sm font-display font-semibold tracking-wider uppercase text-foreground/90 mb-4">
-              Get the App
-            </h4>
-            <div className="flex flex-col gap-2.5">
-              <div className="relative group flex items-center gap-3 rounded-xl border border-border/60 bg-background/40 backdrop-blur px-3 py-2.5 opacity-70 cursor-not-allowed">
-                <Play className="h-5 w-5 text-primary" />
-                <div className="leading-tight">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Get it on
-                  </div>
-                  <div className="text-sm font-semibold">Google Play</div>
+                        <div className="space-y-2 text-sm text-muted-foreground">
+                            <div className="flex items-start gap-2">
+                                <MapPin className="h-3.5 w-3.5 mt-0.5 text-primary/70 shrink-0" />
+                                <span>Boalia, Rajshahi, Bangladesh</span>
+                            </div>
+                            <OfficialEmail className="text-sm" />
+                        </div>
+
+                        {/* Socials */}
+                        <div className="flex items-center gap-2">
+                            {socials.map(({ Icon, href, label }) => (
+                                <a
+                                    key={label}
+                                    href={href}
+                                    aria-label={label}
+                                    className="h-8 w-8 grid place-items-center rounded-full border border-border/70 bg-muted/30 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all hover:-translate-y-0.5"
+                                >
+                                    <Icon className="h-3.5 w-3.5" />
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Platform ──────────────────────────────────────────────── */}
+                    <div className="lg:col-span-2">
+                        <LinkColumn title="Platform" items={platform} />
+                    </div>
+
+                    {/* ── Company ───────────────────────────────────────────────── */}
+                    <div className="lg:col-span-2">
+                        <LinkColumn title="Company" items={company} />
+                    </div>
+
+                    {/* ── Legal ─────────────────────────────────────────────────── */}
+                    <div className="lg:col-span-2">
+                        <LinkColumn title="Legal" items={legal} />
+                    </div>
+
+                    {/* ── Get the App ───────────────────────────────────────────── */}
+                    <div className="lg:col-span-2">
+                        <h4 className="text-xs font-mono font-semibold uppercase tracking-widest text-foreground/70 mb-4">
+                            Get the App
+                        </h4>
+                        <div className="flex flex-col gap-2.5">
+                            {[
+                                { Icon: Play, pre: "Get it on", name: "Google Play" },
+                                { Icon: Apple, pre: "Download on", name: "App Store" },
+                            ].map(({ Icon, pre, name }) => (
+                                <div
+                                    key={name}
+                                    className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5 opacity-60 cursor-not-allowed select-none"
+                                >
+                                    <Icon className="h-4.5 w-4.5 text-primary shrink-0" />
+                                    <div className="leading-tight">
+                                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                            {pre}
+                                        </div>
+                                        <div className="text-sm font-semibold">{name}</div>
+                                    </div>
+                                    <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                                        Soon
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Trust badge */}
+                        <div className="mt-5 rounded-xl border border-border/50 bg-muted/20 px-3 py-3 space-y-0.5">
+                            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                                Learning made for
+                            </div>
+                            <div className="text-sm font-semibold text-foreground">
+                                Future leaders
+                            </div>
+                            <div className="flex items-center gap-1 mt-1.5">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <span key={i} className="text-yellow-400 text-xs">
+                                        ★
+                                    </span>
+                                ))}
+                                <span className="text-[10px] text-muted-foreground font-mono ml-1">
+                                    5.0
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">
-                  Soon
-                </span>
-              </div>
-              <div className="relative group flex items-center gap-3 rounded-xl border border-border/60 bg-background/40 backdrop-blur px-3 py-2.5 opacity-70 cursor-not-allowed">
-                <Apple className="h-5 w-5 text-primary" />
-                <div className="leading-tight">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Download on
-                  </div>
-                  <div className="text-sm font-semibold">App Store</div>
+
+                {/* ── Bottom strip ──────────────────────────────────────────────── */}
+                <div className="mt-12 pt-6 border-t border-border/50">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+                        <span>© {year} ZverTs. All rights reserved.</span>
+
+                        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
+                            {legal.map((l) => (
+                                <Link
+                                    key={l.label}
+                                    to={l.to}
+                                    className="hover:text-primary transition-colors"
+                                >
+                                    {l.label}
+                                </Link>
+                            ))}
+                        </div>
+
+                        <span className="font-mono">
+                            Made in <span className="text-foreground/70">Bangladesh</span> 🇧🇩
+                        </span>
+                    </div>
                 </div>
-                <span className="ml-auto text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">
-                  Soon
-                </span>
-              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Legal strip */}
-        <div className="mt-12 pt-6 border-t border-border/60 flex flex-wrap items-center gap-x-5 gap-y-2 justify-center md:justify-end text-xs">
-          {legal.map((l) => (
-            <Link
-              key={l.label}
-              to={l.to}
-              className="text-muted-foreground hover:text-primary transition-colors"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <span>© {year} ZverTs. All rights reserved.</span>
-        </div>
-      </div>
-    </footer>
-  );
+        </footer>
+    );
 };
 
 export default SiteFooter;
