@@ -36,7 +36,15 @@ export type Database = {
           unlocked_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_usage: {
         Row: {
@@ -54,7 +62,15 @@ export type Database = {
           day?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       attendance: {
         Row: {
@@ -75,7 +91,15 @@ export type Database = {
           id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "attendance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_logs: {
         Row: {
@@ -138,6 +162,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -224,7 +255,15 @@ export type Database = {
           total?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "daily_challenges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       daily_missions: {
         Row: {
@@ -260,7 +299,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "daily_missions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_logs: {
         Row: {
@@ -329,6 +376,13 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcq_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -498,6 +552,13 @@ export type Database = {
             referencedRelation: "modules"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       notification_events: {
@@ -528,6 +589,13 @@ export type Database = {
             columns: ["notification_id"]
             isOneToOne: false
             referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -575,7 +643,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -626,7 +702,15 @@ export type Database = {
           title?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -698,89 +782,78 @@ export type Database = {
           trx_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
-          ai_enabled: boolean
           avatar_url: string | null
           certificate_name: string | null
-          convert_credits: number
           created_at: string
-          current_streak: number
-          daily_goal_minutes: number
           email: string | null
-          free_playlist_used: number
           id: string
-          is_paid_user: boolean
           last_active: string
-          last_attendance_date: string | null
           locked: boolean
-          longest_streak: number
           name: string | null
-          notify_completion: boolean
-          notify_email: boolean
-          notify_inactivity: boolean
           preferred_language: string
-          profile_public: boolean
-          study_reminders_enabled: boolean
-          total_gems: number
-          total_paid: number
-          total_xp: number
+          role: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
-          ai_enabled?: boolean
           avatar_url?: string | null
           certificate_name?: string | null
-          convert_credits?: number
           created_at?: string
-          current_streak?: number
-          daily_goal_minutes?: number
           email?: string | null
-          free_playlist_used?: number
           id: string
-          is_paid_user?: boolean
           last_active?: string
-          last_attendance_date?: string | null
           locked?: boolean
-          longest_streak?: number
           name?: string | null
-          notify_completion?: boolean
-          notify_email?: boolean
-          notify_inactivity?: boolean
           preferred_language?: string
-          profile_public?: boolean
-          study_reminders_enabled?: boolean
-          total_gems?: number
-          total_paid?: number
-          total_xp?: number
+          role?: Database["public"]["Enums"]["app_role"]
         }
         Update: {
-          ai_enabled?: boolean
           avatar_url?: string | null
           certificate_name?: string | null
-          convert_credits?: number
           created_at?: string
-          current_streak?: number
-          daily_goal_minutes?: number
           email?: string | null
-          free_playlist_used?: number
           id?: string
-          is_paid_user?: boolean
           last_active?: string
-          last_attendance_date?: string | null
           locked?: boolean
-          longest_streak?: number
           name?: string | null
-          notify_completion?: boolean
-          notify_email?: boolean
-          notify_inactivity?: boolean
           preferred_language?: string
-          profile_public?: boolean
-          study_reminders_enabled?: boolean
-          total_gems?: number
-          total_paid?: number
-          total_xp?: number
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_role_fkey"
+            columns: ["role"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          description: string | null
+          label: string
+          name: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          description?: string | null
+          label: string
+          name: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          description?: string | null
+          label?: string
+          name?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: []
       }
@@ -800,7 +873,15 @@ export type Database = {
           dismissed_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "support_contact_dismissals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_contacts: {
         Row: {
@@ -839,7 +920,15 @@ export type Database = {
           user_id?: string
           whatsapp_enabled?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "support_contacts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transcripts: {
         Row: {
@@ -914,28 +1003,123 @@ export type Database = {
           user_id?: string
           weak_topic?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_behavior_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      user_roles: {
+      user_entitlements: {
         Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
+          ai_enabled: boolean
+          convert_credits: number
+          playlist_conversions_left: number
+          is_paid_user: boolean
+          total_paid: number
           user_id: string
         }
         Insert: {
-          created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          ai_enabled?: boolean
+          convert_credits?: number
+          playlist_conversions_left?: number
+          is_paid_user?: boolean
+          total_paid?: number
           user_id: string
         }
         Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          ai_enabled?: boolean
+          convert_credits?: number
+          playlist_conversions_left?: number
+          is_paid_user?: boolean
+          total_paid?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_entitlements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_preferences: {
+        Row: {
+          daily_goal_minutes: number
+          notify_completion: boolean
+          notify_email: boolean
+          notify_inactivity: boolean
+          profile_public: boolean
+          study_reminders_enabled: boolean
+          user_id: string
+        }
+        Insert: {
+          daily_goal_minutes?: number
+          notify_completion?: boolean
+          notify_email?: boolean
+          notify_inactivity?: boolean
+          profile_public?: boolean
+          study_reminders_enabled?: boolean
+          user_id: string
+        }
+        Update: {
+          daily_goal_minutes?: number
+          notify_completion?: boolean
+          notify_email?: boolean
+          notify_inactivity?: boolean
+          profile_public?: boolean
+          study_reminders_enabled?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_progress: {
+        Row: {
+          current_streak: number
+          last_attendance_date: string | null
+          longest_streak: number
+          total_gems: number
+          total_xp: number
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          last_attendance_date?: string | null
+          longest_streak?: number
+          total_gems?: number
+          total_xp?: number
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          last_attendance_date?: string | null
+          longest_streak?: number
+          total_gems?: number
+          total_xp?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -979,7 +1163,7 @@ export type Database = {
           convert_credits: number
           created_at: string
           email: string
-          free_playlist_used: number
+          playlist_conversions_left: number
           id: string
           is_paid_user: boolean
           last_active: string
@@ -1137,7 +1321,7 @@ export type Database = {
         Returns: string
       }
       svc_approve_payment: {
-        Args: { _actor_label?: string; _payment_id: string }
+        Args: { _actor_label: string; _payment_id: string }
         Returns: Json
       }
       svc_reject_payment: {
