@@ -43,12 +43,14 @@ type Profile = {
   avatar_url: string | null;
   certificate_name: string | null;
   preferred_language: string;
+  // user_preferences
   daily_goal_minutes: number;
   study_reminders_enabled: boolean;
   notify_email: boolean;
   notify_inactivity: boolean;
   notify_completion: boolean;
   profile_public: boolean;
+  // user_progress
   total_gems: number;
   total_xp: number;
   current_streak: number;
@@ -69,8 +71,24 @@ const Settings = () => {
     if (!user) return;
     setEmailInput(user.email ?? "");
     (async () => {
-      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-      if (data) setP(data as Profile);
+      const [{ data: prof }, { data: prefs }, { data: prog }] = await Promise.all([
+        supabase.from("profiles").select("name,email,avatar_url,certificate_name,preferred_language").eq("id", user.id).maybeSingle(),
+        supabase.from("user_preferences").select("daily_goal_minutes,study_reminders_enabled,notify_email,notify_inactivity,notify_completion,profile_public").eq("user_id", user.id).maybeSingle(),
+        supabase.from("user_progress").select("total_gems,total_xp,current_streak,longest_streak").eq("user_id", user.id).maybeSingle(),
+      ]);
+      if (prof) setP({
+        ...prof,
+        daily_goal_minutes: prefs?.daily_goal_minutes ?? 30,
+        study_reminders_enabled: prefs?.study_reminders_enabled ?? true,
+        notify_email: prefs?.notify_email ?? true,
+        notify_inactivity: prefs?.notify_inactivity ?? true,
+        notify_completion: prefs?.notify_completion ?? true,
+        profile_public: prefs?.profile_public ?? true,
+        total_gems: prog?.total_gems ?? 0,
+        total_xp: prog?.total_xp ?? 0,
+        current_streak: prog?.current_streak ?? 0,
+        longest_streak: prog?.longest_streak ?? 0,
+      } as Profile);
       const { count } = await supabase
         .from("module_progress")
         .select("*", { count: "exact", head: true })
@@ -99,21 +117,23 @@ const Settings = () => {
 
   const saveProfile = async () => {
     setBusy(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
+    const [{ error: e1 }, { error: e2 }] = await Promise.all([
+      supabase.from("profiles").update({
         name: p.name,
         certificate_name: p.certificate_name,
         preferred_language: p.preferred_language,
+      }).eq("id", user.id),
+      supabase.from("user_preferences").update({
         daily_goal_minutes: p.daily_goal_minutes,
         study_reminders_enabled: p.study_reminders_enabled,
         notify_email: p.notify_email,
         notify_inactivity: p.notify_inactivity,
         notify_completion: p.notify_completion,
         profile_public: p.profile_public,
-      })
-      .eq("id", user.id);
+      }).eq("user_id", user.id),
+    ]);
     setBusy(false);
+    const error = e1 ?? e2;
     if (error) toast.error(error.message);
     else toast.success(t("profile.saved"));
     if (p.preferred_language !== i18n.language) i18n.changeLanguage(p.preferred_language);

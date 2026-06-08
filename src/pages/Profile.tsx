@@ -28,14 +28,18 @@ const Profile = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("name,certificate_name,avatar_url,total_xp,total_gems,current_streak,longest_streak,profile_public").eq("id", user.id).maybeSingle().then(({ data }) => {
-      setName(data?.name ?? ""); setCertName(data?.certificate_name ?? ""); setAvatar(data?.avatar_url ?? null);
+    Promise.all([
+      supabase.from("profiles").select("name,certificate_name,avatar_url").eq("id", user.id).maybeSingle(),
+      supabase.from("user_progress").select("total_xp,total_gems,current_streak,longest_streak").eq("user_id", user.id).maybeSingle(),
+      supabase.from("user_preferences").select("profile_public").eq("user_id", user.id).maybeSingle(),
+    ]).then(([{ data: prof }, { data: prog }, { data: pref }]) => {
+      setName(prof?.name ?? ""); setCertName(prof?.certificate_name ?? ""); setAvatar(prof?.avatar_url ?? null);
       setStats({
-        total_xp: data?.total_xp ?? 0,
-        total_gems: data?.total_gems ?? 0,
-        current_streak: data?.current_streak ?? 0,
-        longest_streak: data?.longest_streak ?? 0,
-        profile_public: data?.profile_public ?? true,
+        total_xp: prog?.total_xp ?? 0,
+        total_gems: prog?.total_gems ?? 0,
+        current_streak: prog?.current_streak ?? 0,
+        longest_streak: prog?.longest_streak ?? 0,
+        profile_public: pref?.profile_public ?? true,
       });
     });
   }, [user]);

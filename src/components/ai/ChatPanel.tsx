@@ -42,7 +42,7 @@ export const ChatPanel = ({ userId, source, onUsageUpdate, externalPrompt, onExt
   // Load paid status (controls upload gate)
   useEffect(() => {
     let cancelled = false;
-    supabase.from("profiles").select("is_paid_user").eq("id", userId).maybeSingle().then(({ data }) => {
+    supabase.from("user_entitlements").select("is_paid_user").eq("user_id", userId).maybeSingle().then(({ data }) => {
       if (!cancelled) setIsPaid(!!data?.is_paid_user);
     });
     return () => { cancelled = true; };

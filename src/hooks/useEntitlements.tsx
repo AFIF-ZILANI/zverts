@@ -28,28 +28,29 @@ export const useEntitlements = (): Entitlements => {
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
-    const [{ data: profile }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("free_playlist_used,convert_credits,ai_enabled,is_paid_user,total_paid,locked").eq("id", user.id).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", user.id),
+    const [{ data: ent }, { data: profile }] = await Promise.all([
+      supabase.from("user_entitlements").select("free_playlist_used,convert_credits,ai_enabled,is_paid_user,total_paid").eq("user_id", user.id).maybeSingle(),
+      supabase.from("profiles").select("locked,role").eq("id", user.id).maybeSingle(),
     ]);
     setState({
-      free_playlist_used: profile?.free_playlist_used ?? 0,
-      convert_credits: profile?.convert_credits ?? 0,
-      ai_enabled: profile?.ai_enabled ?? false,
-      is_paid_user: profile?.is_paid_user ?? false,
-      total_paid: profile?.total_paid ?? 0,
+      free_playlist_used: ent?.free_playlist_used ?? 0,
+      convert_credits: ent?.convert_credits ?? 0,
+      ai_enabled: ent?.ai_enabled ?? false,
+      is_paid_user: ent?.is_paid_user ?? false,
+      total_paid: ent?.total_paid ?? 0,
       locked: profile?.locked ?? false,
-      roles: (roles ?? []).map((r: any) => r.role),
+      roles: profile?.role ? [profile.role] : [],
     });
     setLoading(false);
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Realtime refresh on profile change
+  // Realtime refresh on entitlement or profile changes
   useEffect(() => {
     if (!user) return;
     const ch = supabase.channel(`user:${user.id}:ent:${Math.random().toString(36).slice(2)}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "user_entitlements", filter: `user_id=eq.${user.id}` }, () => load())
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };

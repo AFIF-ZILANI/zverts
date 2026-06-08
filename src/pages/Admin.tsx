@@ -38,7 +38,7 @@ const Admin = () => {
       const [{ data: u }, { data: l }, { data: s }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id,name,email,total_gems,total_xp,current_streak,last_active")
+          .select("id,name,email,last_active,user_progress(total_gems,total_xp,current_streak)")
           .order("last_active", { ascending: false }),
         supabase.from("email_logs").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.rpc("has_role", { _user_id: user.id, _role: "super_admin" }),
@@ -152,9 +152,9 @@ const Admin = () => {
                   <tr key={u.id} className="border-b border-border/40">
                     <td className="py-2">{u.name}</td>
                     <td className="text-muted-foreground">{u.email}</td>
-                    <td>{u.total_gems}</td>
-                    <td>{u.total_xp}</td>
-                    <td>{u.current_streak}</td>
+                    <td>{(u.user_progress as any)?.total_gems ?? 0}</td>
+                    <td>{(u.user_progress as any)?.total_xp ?? 0}</td>
+                    <td>{(u.user_progress as any)?.current_streak ?? 0}</td>
                     <td className="font-mono text-xs">{new Date(u.last_active).toLocaleDateString()}</td>
                   </tr>
                 ))}

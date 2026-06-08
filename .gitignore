@@ -1,5 +1,24 @@
+# =========================
+# Dependencies
+# =========================
+node_modules/
+bun.lockb
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# =========================
+# Build outputs
+# =========================
+dist/
+dist-ssr/
+build/
+out/
+
+# =========================
 # Logs
-logs
+# =========================
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,15 +26,38 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# =========================
+# Vite / env
+# =========================
+.env
+.env.*
+!.env.example
+.env.local
+.env.production
+.env.development
 
-# Editor directories and files
-.vscode/*
+# =========================
+# Bun runtime cache
+# =========================
+.bun/
+bun-debug.log*
+
+# =========================
+# Supabase
+# =========================
+supabase/.branches/
+supabase/.temp/
+supabase/.output/
+supabase/.env
+supabase/.env.*
+supabase/logs/
+
+# =========================
+# Editor / OS
+# =========================
+.vscode/
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
@@ -23,5 +65,8 @@ dist-ssr
 *.sln
 *.sw?
 
-.env
-.env.*.local
+# =========================
+# Testing / coverage (if used)
+# =========================
+coverage/
+*.lcov
