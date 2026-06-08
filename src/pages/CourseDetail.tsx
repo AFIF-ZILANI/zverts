@@ -277,7 +277,7 @@ const CourseDetail = () => {
           "@type": "Course",
           name: course.title,
           description: course.description || undefined,
-          provider: { "@type": "Organization", name: "ZverTs", url: "https://zverts.lovable.app" },
+          provider: { "@type": "Organization", name: "ZverTs", url: "https://zverts.app" },
           ...(course.author_name ? { author: { "@type": "Person", name: course.author_name } } : {}),
         }}
       />

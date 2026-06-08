@@ -29,8 +29,8 @@ const Index = () => {
         description="A free, sequential learning platform with strict watch-time tracking, attendance, AI summaries, and certificates. Master web development one module at a time."
         path="/"
         jsonLd={[
-          { "@context": "https://schema.org", "@type": "Organization", name: "ZverTs", url: "https://zverts.lovable.app", logo: "https://zverts.lovable.app/favicon.png" },
-          { "@context": "https://schema.org", "@type": "WebSite", name: "ZverTs", url: "https://zverts.lovable.app" },
+          { "@context": "https://schema.org", "@type": "Organization", name: "ZverTs", url: "https://zverts.app", logo: "https://zverts.app/favicon.png" },
+          { "@context": "https://schema.org", "@type": "WebSite", name: "ZverTs", url: "https://zverts.app" },
         ]}
       />
       {/* HERO */}

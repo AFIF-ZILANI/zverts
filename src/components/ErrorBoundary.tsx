@@ -12,7 +12,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Surface to console so logs panel + Lovable can see it
     console.error("[ErrorBoundary]", error, info.componentStack);
   }
 

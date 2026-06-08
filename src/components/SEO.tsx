@@ -9,7 +9,7 @@ interface SEOProps {
   noindex?: boolean;
 }
 
-const SITE = "https://zverts.lovable.app";
+const SITE = "https://zverts.app";
 
 export const SEO = ({ title, description, path = "/", type = "website", jsonLd, noindex }: SEOProps) => {
   const url = `${SITE}${path}`;
