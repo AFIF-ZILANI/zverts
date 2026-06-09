@@ -144,7 +144,7 @@ const Courses = () => {
                         <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
                             / {t("nav.courses")}
                         </div>
-                        <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight mt-1">
+                        <h1 className="font-display text-3xl md:text-5xl font-semibold tracking-tight mt-1">
                             {t("courses.mine")}
                         </h1>
                     </div>
@@ -165,7 +165,7 @@ const Courses = () => {
                     <Button
                         onClick={previewPlaylist}
                         disabled={previewing || !url.trim()}
-                        className="bg-gradient-lime text-primary-foreground hover:opacity-90 shadow-glow shrink-0"
+                        className="bg-gradient-lime text-primary-foreground hover:opacity-90 shadow-glow shrink-0 w-full sm:w-auto"
                     >
                         {previewing ? (
                             <>
@@ -198,7 +198,7 @@ const Courses = () => {
                         ))}
                     </div>
                 ) : mine.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center space-y-3">
+                    <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 sm:p-12 text-center space-y-3">
                         <BookOpen className="h-10 w-10 text-muted-foreground mx-auto" />
                         <p className="font-display text-xl">No courses yet</p>
                         <p className="text-sm text-muted-foreground">
@@ -285,7 +285,7 @@ const CourseCard = ({ c, onDelete }: { c: Course; onDelete: () => void }) => {
                 <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 w-7 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-7 w-7 p-0 text-destructive sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                     onClick={onDelete}
                 >
                     <Trash2 className="h-3.5 w-3.5" />

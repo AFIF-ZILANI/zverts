@@ -14,12 +14,11 @@ import {
     ArrowRight,
     CheckCircle2,
     Lock,
-    ChevronLeft,
-    ChevronRight,
     PlayCircle,
     ListVideo,
     Clock,
 } from "lucide-react";
+import { MdOutlinePlaylistPlay } from "react-icons/md";
 
 const AITutorPanel = lazy(() =>
     import("@/components/app/AITutorPanel").then((m) => ({ default: m.AITutorPanel })),
@@ -310,22 +309,14 @@ const ModulePlayer = () => {
         <AppShell>
             <div className="container max-w-[1400px] py-4 md:py-6">
                 {/* Back + breadcrumb */}
-                <div className="flex items-center justify-between gap-4 mb-4">
+                <div className="mb-4">
                     <Link
                         to={mod ? `/courses/${mod.course_id}` : "/courses"}
                         className="inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground"
                     >
                         <ArrowLeft className="h-3 w-3" />
-                        {mod?.courses?.title ?? "Back"}
+                        {mod?.courses?.title ?? "Back to courses"}
                     </Link>
-                    {/* Mobile sidebar toggle */}
-                    <button
-                        className="md:hidden inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground"
-                        onClick={() => setSidebarOpen((v) => !v)}
-                    >
-                        <ListVideo className="h-4 w-4" />
-                        {sidebarOpen ? "Hide list" : "Show lessons"}
-                    </button>
                 </div>
 
                 {loading ? (
@@ -346,7 +337,7 @@ const ModulePlayer = () => {
                         Module not found or you do not have access.
                     </div>
                 ) : !unlocked ? (
-                    <div className="rounded-2xl border border-border bg-gradient-card p-12 text-center shadow-elevated max-w-lg mx-auto">
+                    <div className="rounded-2xl border border-border bg-gradient-card p-8 sm:p-12 text-center shadow-elevated max-w-lg mx-auto">
                         <Lock className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
                         <h2 className="font-display text-3xl font-semibold">Module locked</h2>
                         <p className="text-muted-foreground mt-2">
@@ -360,64 +351,103 @@ const ModulePlayer = () => {
                         </Button>
                     </div>
                 ) : (
-                    <div className="flex flex-col lg:flex-row gap-4 items-start">
-                        {/* ── Left: video + content ─────────────────────────────────── */}
-                        <div className="flex-1 min-w-0 space-y-4">
-                            {/* Module title */}
-                            <div>
-                                <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">
-                                    Lesson {String(mod.position).padStart(2, "0")} ·{" "}
-                                    {mod.courses?.title ?? "Course"}
-                                </p>
-                                <h1 className="font-display text-2xl md:text-3xl font-semibold tracking-tight mt-1 text-balance">
-                                    {mod.title}
-                                </h1>
-                            </div>
+                    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-x-4 lg:gap-y-4 lg:items-start">
+                        {/* ── Title (col 1, row 1) ── */}
+                        <div className="lg:col-start-1 lg:row-start-1">
+                            <p className="font-mono text-[11px] text-muted-foreground uppercase tracking-widest">
+                                Lesson {String(mod.position).padStart(2, "0")}
+                            </p>
+                            <h1 className="font-display text-xl md:text-3xl font-semibold tracking-tight mt-0.5 leading-tight">
+                                {mod.title}
+                            </h1>
+                        </div>
 
-                            {/* Player */}
-                            <div className="relative rounded-2xl overflow-hidden border border-border shadow-card">
-                                <YouTubePlayer
-                                    ref={playerRef}
-                                    videoId={mod.youtube_video_id}
-                                    onProgress={(s) => sendProgress(s)}
-                                    onEnded={() => sendProgress(lastSentRef.current, true)}
-                                />
-                                {completed && (
-                                    <div className="pointer-events-none absolute inset-0 flex items-end justify-center p-4">
-                                        <div className="pointer-events-auto rounded-2xl border border-primary/40 bg-background/95 backdrop-blur px-5 py-3 shadow-glow flex flex-wrap items-center gap-3">
-                                            <div>
-                                                <p className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                                                    / lesson complete
-                                                </p>
-                                                <p className="font-display text-base">
-                                                    Stay focused — keep going on ZverTs
-                                                </p>
-                                            </div>
-                                            {nextId ? (
-                                                <Button
-                                                    onClick={() => navigate(`/learn/${nextId}`)}
-                                                    className="bg-gradient-lime text-primary-foreground shadow-glow"
-                                                >
-                                                    Next <ArrowRight className="ml-1.5 h-4 w-4" />
-                                                </Button>
-                                            ) : (
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() =>
-                                                        navigate(`/courses/${mod.course_id}`)
-                                                    }
-                                                >
-                                                    Done
-                                                </Button>
-                                            )}
+                        {/* ── Player (col 1, row 2) — defines the row height ── */}
+                        <div className="relative mt-4 lg:mt-0 -mx-6 lg:mx-0 overflow-hidden border-y lg:border lg:rounded-2xl border-border shadow-card lg:col-start-1 lg:row-start-2">
+                            <YouTubePlayer
+                                ref={playerRef}
+                                videoId={mod.youtube_video_id}
+                                onProgress={(s) => sendProgress(s)}
+                                onEnded={() => sendProgress(lastSentRef.current, true)}
+                            />
+                            {completed && (
+                                <div className="pointer-events-none absolute inset-0 flex items-end justify-center p-4">
+                                    <div className="pointer-events-auto rounded-2xl border border-primary/40 bg-background/95 backdrop-blur px-5 py-3 shadow-glow flex flex-wrap items-center gap-3">
+                                        <div>
+                                            <p className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                                                / lesson complete
+                                            </p>
+                                            <p className="font-display text-base">
+                                                Stay focused — keep going on ZverTs
+                                            </p>
                                         </div>
+                                        {nextId ? (
+                                            <Button
+                                                onClick={() => navigate(`/learn/${nextId}`)}
+                                                className="bg-gradient-lime text-primary-foreground shadow-glow"
+                                            >
+                                                Next <ArrowRight className="ml-1.5 h-4 w-4" />
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    navigate(`/courses/${mod.course_id}`)
+                                                }
+                                            >
+                                                Done
+                                            </Button>
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
+                        </div>
 
+                        {/* ── Sidebar / playlist (col 2, row 2) — matches player height ── */}
+                        <aside className="mt-4 lg:mt-0 lg:col-start-2 lg:row-start-2 lg:self-stretch lg:relative">
+                            <div className="flex flex-col rounded-2xl border border-border bg-card overflow-hidden h-[360px] lg:h-auto lg:absolute lg:inset-0">
+                                {/* header */}
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+                                    <div className="flex items-center gap-2">
+                                        <ListVideo className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm font-medium">
+                                            {mod.courses?.title ?? "Course"}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs font-mono text-muted-foreground">
+                                        {siblingCards.filter((c) => c.completed).length}/
+                                        {siblings.length}
+                                    </span>
+                                </div>
+                                {/* list */}
+                                <div
+                                    ref={sidebarRef}
+                                    className="overflow-y-auto flex-1 min-h-0 p-2 space-y-0.5"
+                                >
+                                    {siblingCards.map((c) => (
+                                        <div
+                                            key={c.m.id}
+                                            data-current={c.isCurrent ? "true" : undefined}
+                                        >
+                                            <SidebarRow
+                                                m={c.m}
+                                                isCurrent={c.isCurrent}
+                                                locked={c.locked}
+                                                completed={c.completed}
+                                                percent={c.percent}
+                                                onClick={() => navigate(`/learn/${c.m.id}`)}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </aside>
+
+                        {/* ── Lower content (col 1, row 3) — stays at player width ── */}
+                        <div className="mt-4 lg:mt-0 lg:col-start-1 lg:row-start-3 space-y-4">
                             {/* Progress + actions */}
-                            <div className="rounded-2xl border border-border bg-card p-4 flex flex-wrap items-center gap-4">
-                                <div className="flex-1 min-w-[180px]">
+                            <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+                                <div>
                                     <div className="flex justify-between font-mono text-xs text-muted-foreground mb-1.5">
                                         <span>Watch progress</span>
                                         <span>{Math.round(percent)}% · 90% to complete</span>
@@ -429,10 +459,10 @@ const ModulePlayer = () => {
                                         />
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex items-center justify-between gap-3">
                                     {completed ? (
                                         <span className="inline-flex items-center gap-2 text-sm font-medium text-primary">
-                                            <CheckCircle2 className="h-5 w-5" /> Completed
+                                            <CheckCircle2 className="h-5 w-5" /> Lesson complete
                                         </span>
                                     ) : (
                                         <Button
@@ -443,6 +473,36 @@ const ModulePlayer = () => {
                                             Mark complete
                                         </Button>
                                     )}
+                                    {nextId && completed && (
+                                        <Button
+                                            size="sm"
+                                            onClick={() => navigate(`/learn/${nextId}`)}
+                                            className="bg-gradient-lime text-primary-foreground shadow-glow"
+                                        >
+                                            Next lesson <ArrowRight className="ml-1.5 h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Notes + AI hint */}
+                            <div className="grid lg:grid-cols-2 gap-4">
+                                <NotesPanel
+                                    moduleId={mod.id}
+                                    getCurrentTime={() => playerRef.current?.getCurrentTime() ?? 0}
+                                    onSeek={(s) => playerRef.current?.seekTo(s)}
+                                />
+                                <div className="rounded-2xl border border-border bg-card p-5 flex flex-col items-center justify-center text-center min-h-[140px]">
+                                    <p className="font-display text-base mb-1">
+                                        Need help understanding?
+                                    </p>
+                                    <p className="text-sm text-muted-foreground max-w-xs">
+                                        Open Vert to explain concepts, summarize this lesson, or
+                                        quiz you in English or Bangla.
+                                    </p>
+                                    <p className="text-xs font-mono text-muted-foreground mt-3">
+                                        Tap "Chat with Vert" → bottom-right
+                                    </p>
                                 </div>
                             </div>
 
@@ -494,104 +554,7 @@ const ModulePlayer = () => {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Notes + AI hint */}
-                            <div className="grid lg:grid-cols-2 gap-4">
-                                <NotesPanel
-                                    moduleId={mod.id}
-                                    getCurrentTime={() => playerRef.current?.getCurrentTime() ?? 0}
-                                    onSeek={(s) => playerRef.current?.seekTo(s)}
-                                />
-                                <div className="rounded-2xl border border-border bg-card p-5 flex flex-col items-center justify-center text-center min-h-[160px]">
-                                    <p className="font-display text-base mb-1">
-                                        Need help understanding?
-                                    </p>
-                                    <p className="text-sm text-muted-foreground max-w-xs">
-                                        Open Vert to explain concepts, summarize this lesson, or
-                                        quiz you in English or Bangla.
-                                    </p>
-                                    <p className="text-xs font-mono text-muted-foreground mt-3">
-                                        Tap "Chat with Vert" → bottom-right
-                                    </p>
-                                </div>
-                            </div>
                         </div>
-
-                        {/* ── Right: collapsible sidebar ──────────────────────────── */}
-                        <>
-                            {/* Desktop toggle button */}
-                            <button
-                                onClick={() => setSidebarOpen((v) => !v)}
-                                className="hidden lg:flex items-center justify-center h-8 w-5 mt-[56px] rounded border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 self-start"
-                                title={sidebarOpen ? "Collapse lesson list" : "Expand lesson list"}
-                            >
-                                {sidebarOpen ? (
-                                    <ChevronRight className="h-3.5 w-3.5" />
-                                ) : (
-                                    <ChevronLeft className="h-3.5 w-3.5" />
-                                )}
-                            </button>
-
-                            {/* Sidebar panel */}
-                            <div
-                                className={cn(
-                                    "shrink-0 transition-all duration-300 overflow-hidden",
-                                    // Desktop
-                                    sidebarOpen ? "lg:w-[320px]" : "lg:w-0",
-                                    // Mobile: full width, conditionally shown
-                                    sidebarOpen ? "block" : "hidden lg:block",
-                                    "w-full lg:block",
-                                )}
-                            >
-                                <div
-                                    className={cn(
-                                        "rounded-2xl border border-border bg-card overflow-hidden",
-                                        "lg:sticky lg:top-24",
-                                        sidebarOpen
-                                            ? "lg:max-h-[calc(100vh-7rem)]"
-                                            : "lg:max-h-0 lg:border-0",
-                                        "flex flex-col transition-all duration-300",
-                                    )}
-                                >
-                                    {/* Sidebar header */}
-                                    <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-                                        <div className="flex items-center gap-2">
-                                            <ListVideo className="h-4 w-4 text-muted-foreground" />
-                                            <span className="text-sm font-medium">
-                                                {mod.courses?.title ?? "Course"}
-                                            </span>
-                                        </div>
-                                        <span className="text-xs font-mono text-muted-foreground">
-                                            {siblingCards.filter((c) => c.completed).length}/
-                                            {siblings.length}
-                                        </span>
-                                    </div>
-
-                                    {/* Module list */}
-                                    <div
-                                        ref={sidebarRef}
-                                        className="overflow-y-auto flex-1 p-2 space-y-0.5"
-                                        style={{ maxHeight: "calc(100vh - 12rem)" }}
-                                    >
-                                        {siblingCards.map((c) => (
-                                            <div
-                                                key={c.m.id}
-                                                data-current={c.isCurrent ? "true" : undefined}
-                                            >
-                                                <SidebarRow
-                                                    m={c.m}
-                                                    isCurrent={c.isCurrent}
-                                                    locked={c.locked}
-                                                    completed={c.completed}
-                                                    percent={c.percent}
-                                                    onClick={() => navigate(`/learn/${c.m.id}`)}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </>
                     </div>
                 )}
             </div>
