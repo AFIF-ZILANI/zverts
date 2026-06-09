@@ -8,6 +8,20 @@ const corsHeaders = {
 Deno.serve(async (req) => {
     if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+    // ── Auth guard 1: Telegram webhook secret token ───────────────────────
+    // Telegram sends X-Telegram-Bot-Api-Secret-Token on every update if you
+    // registered it via setWebhook { secret_token: "..." }.
+    // Without this check, anyone who knows the function URL can approve payments.
+    const webhookSecret = Deno.env.get("TELEGRAM_WEBHOOK_SECRET");
+    if (!webhookSecret) {
+        console.error("TELEGRAM_WEBHOOK_SECRET env var not set");
+        return new Response("misconfigured", { status: 500 });
+    }
+    const incomingSecret = req.headers.get("X-Telegram-Bot-Api-Secret-Token") ?? "";
+    if (incomingSecret !== webhookSecret) {
+        return new Response("Forbidden", { status: 403 });
+    }
+
     try {
         const body = await req.json();
         const callbackQuery = body.callback_query;
@@ -16,6 +30,13 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify({ ok: true }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
+        }
+
+        // ── Auth guard 2: caller must be the registered admin ─────────────
+        // Prevents a non-admin Telegram user from tapping a forwarded message.
+        const adminTgId = parseInt(Deno.env.get("ADMIN_TELEGRAM_ID") ?? "0", 10);
+        if (!adminTgId || callbackQuery.from?.id !== adminTgId) {
+            return new Response("Forbidden", { status: 403 });
         }
 
         const data = callbackQuery.data as string;
@@ -56,9 +77,12 @@ Deno.serve(async (req) => {
                   });
 
         if (error) {
+            // Tell the admin what went wrong via the button pop-up, then return
+            // 200 so Telegram does NOT retry. Retrying would call the same RPC
+            // again — useless for "Already processed", harmful for others.
             await answerCallback(token, callbackQuery.id, `❌ ${error.message}`);
             return new Response(JSON.stringify({ error: error.message }), {
-                status: 500,
+                status: 200,
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
         }
@@ -70,8 +94,11 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
                 chat_id: callbackQuery.message.chat.id,
                 message_id: callbackQuery.message.message_id,
-                text: originalText + `\n\n*Status: ${label}*`,
-                parse_mode: "Markdown",
+                text: originalText + `\n\n<b>Status: ${label}</b>`,
+                parse_mode: "HTML",
+                // Empty inline_keyboard removes the Confirm/Reject buttons so
+                // the admin cannot accidentally tap them a second time.
+                reply_markup: { inline_keyboard: [] },
             }),
         });
 
@@ -81,8 +108,11 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     } catch (e) {
+        // Return 200 so Telegram stops retrying. An unhandled exception here is
+        // a code bug, not a transient condition that retry would fix.
+        console.error("telegram-webhook unhandled error:", e);
         return new Response(JSON.stringify({ error: (e as Error).message }), {
-            status: 500,
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }

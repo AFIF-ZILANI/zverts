@@ -19,15 +19,25 @@ Deno.serve(async (req) => {
         const token = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
         const adminChatId = Deno.env.get("ADMIN_CHAT_ID")!;
 
+        // Escape any characters that would be interpreted by Telegram's HTML parser.
+        // Only user-controlled fields need this; enums/integers are safe as-is.
+        const esc = (s: string) =>
+            s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        const isDupe = (record.prior_count ?? 0) > 0;
+        const dupeWarning = isDupe
+            ? `\n⚠️ <b>This Txn ID was seen ${record.prior_count} time(s) before!</b>`
+            : "";
+
         const message =
-            `💰 *New Payment Request*\n\n` +
+            `💰 <b>New Payment Request</b>${dupeWarning}\n\n` +
             `Package: ${record.package_type}\n` +
             `Credits: ${record.credits}\n` +
             `Amount: ৳${record.amount}\n` +
             `Method: ${record.method}\n` +
-            `Sender: \`${record.sender_number}\`\n` +
-            `Txn ID: \`${record.trx_id}\`\n` +
-            `Payment ID: \`${record.id}\``;
+            `Sender: <code>${esc(record.sender_number)}</code>\n` +
+            `Txn ID: <code>${esc(record.trx_id)}</code>\n` +
+            `Payment ID: <code>${record.id}</code>`;
 
         const keyboard = {
             inline_keyboard: [
@@ -44,7 +54,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
                 chat_id: adminChatId,
                 text: message,
-                parse_mode: "Markdown",
+                parse_mode: "HTML",
                 reply_markup: keyboard,
             }),
         });
