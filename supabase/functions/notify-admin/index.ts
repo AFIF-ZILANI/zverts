@@ -16,8 +16,15 @@ Deno.serve(async (req) => {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
 
-        const token = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
-        const adminChatId = Deno.env.get("ADMIN_CHAT_ID")!;
+        const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+        const adminChatId = Deno.env.get("ADMIN_CHAT_ID");
+        if (!token || !adminChatId) {
+            console.error("Missing TELEGRAM_BOT_TOKEN or ADMIN_CHAT_ID secret");
+            return new Response(JSON.stringify({ error: "missing secrets" }), {
+                status: 500,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
 
         // Escape any characters that would be interpreted by Telegram's HTML parser.
         // Only user-controlled fields need this; enums/integers are safe as-is.

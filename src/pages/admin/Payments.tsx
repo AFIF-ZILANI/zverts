@@ -19,12 +19,14 @@ const AdminPaymentsInner = () => {
     const load = useCallback(async () => {
         setLoading(true);
         let q = supabase
-            .from("payments" as any)
+            .from("payments")
             .select("*")
             .eq("status", status)
             .order("created_at", { ascending: false })
             .limit(200);
+
         const { data } = await q;
+        console.log("DATA", data);
         let list = (data as any[]) ?? [];
         if (list.length) {
             const ids = Array.from(new Set(list.map((r) => r.user_id)));
