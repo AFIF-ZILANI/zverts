@@ -46,12 +46,12 @@ const PaymentHistory = () => {
     useEffect(() => {
         if (!user) return;
         supabase
-            .from("payments" as any)
-            .select("*")
+            .from("payments")
+            .select("id,package_type,credits,amount,method,trx_id,status,admin_note,created_at")
             .eq("user_id", user.id)
             .order("created_at", { ascending: false })
             .then(({ data }) => {
-                setRows((data as unknown as Payment[]) ?? []);
+                setRows((data as Payment[]) ?? []);
                 setFetching(false);
             });
     }, [user]);

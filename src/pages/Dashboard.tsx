@@ -223,15 +223,6 @@ const Dashboard = () => {
         return { day: DAYS[d.getDay()], minutes };
     });
 
-    const localStreak = (() => {
-        let s = 0;
-        for (let i = weekly.length - 1; i >= 0; i--) {
-            if (weekly[i].minutes > 0) s++;
-            else break;
-        }
-        return s;
-    })();
-
     const level = userStats ? Math.floor(userStats.xp / 500) + 1 : 1;
     const activeDays = weekly.filter((d) => d.minutes > 0).length;
 
@@ -342,8 +333,8 @@ const Dashboard = () => {
                                 <StatCard
                                     icon={Flame}
                                     label="Streak"
-                                    value={localStreak}
-                                    sub={localStreak > 0 ? "Keep it going" : "Start today"}
+                                    value={userStats?.streak ?? 0}
+                                    sub={(userStats?.streak ?? 0) > 0 ? "Keep it going" : "Open the app daily"}
                                 />
                                 <StatCard
                                     icon={Calendar}

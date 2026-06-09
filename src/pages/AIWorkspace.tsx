@@ -7,11 +7,17 @@ import { ChatPanel } from "@/components/ai/ChatPanel";
 import { TranscriptPanel } from "@/components/ai/TranscriptPanel";
 import { UsageChip } from "@/components/ai/UsageChip";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookOpen, FileText, MessageSquare } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, MessageSquare, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import zvertsLogo from "@/assets/zverts-logo.png";
 
 type MobileTab = "sources" | "chat" | "panel";
+
+const TABS = [
+    { id: "sources" as const, label: "Sources", icon: BookOpen },
+    { id: "chat" as const, label: "Chat", icon: MessageSquare },
+    { id: "panel" as const, label: "Notes", icon: FileText },
+];
 
 const AIWorkspace = () => {
     const { user, loading } = useAuth();
@@ -29,40 +35,63 @@ const AIWorkspace = () => {
     };
 
     return (
-        <div className="h-screen flex flex-col bg-background">
-            {/* Header */}
-            <header className="shrink-0 h-14 border-b border-border/60 bg-background/80 backdrop-blur-xl flex items-center justify-between px-3 md:px-4 gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                    <Link
-                        to="/dashboard"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-muted/60 transition-colors shrink-0"
-                        aria-label="Back to dashboard"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
-                    <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
-                        <img src={zvertsLogo} alt="ZverTs" className="h-7 w-auto shrink-0" />
-                        <div className="min-w-0">
-                            <div className="font-display text-sm font-semibold leading-none truncate">
-                                ZverTs AI
+        <div className="h-screen flex flex-col bg-background overflow-hidden">
+
+            {/* ── Header ─────────────────────────────────────────────────────── */}
+            <header className="shrink-0 h-14 border-b border-border/60 bg-background/95 backdrop-blur-xl">
+                <div className="h-full flex items-center justify-between px-3 md:px-4 gap-2">
+                    {/* Left: back + branding */}
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Link
+                            to="/dashboard"
+                            aria-label="Back to dashboard"
+                            className="shrink-0 flex items-center justify-center h-8 w-8 rounded-lg border border-border/60 hover:bg-muted/60 hover:border-border transition-colors"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                        </Link>
+
+                        <div className="flex items-center gap-2 min-w-0">
+                            <div className="h-7 w-7 shrink-0 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+                                <Sparkles className="h-3.5 w-3.5" />
                             </div>
-                            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground leading-tight">
-                                {source ? source.moduleTitle : "Vert · Study Companion"}
+                            <div className="min-w-0">
+                                <div className="font-display text-sm font-semibold leading-none">
+                                    Vert AI
+                                </div>
+                                <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground leading-tight truncate max-w-[160px] md:max-w-xs">
+                                    {source
+                                        ? source.moduleTitle
+                                        : "Study Companion"}
+                                </div>
                             </div>
                         </div>
-                    </Link>
-                </div>
-                <div className="flex items-center gap-2">
-                    <UsageChip usage={usage} />
-                    <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
-                        <Link to="/dashboard">Close</Link>
-                    </Button>
+
+                        {/* Active source pill */}
+                        {source && (
+                            <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/8 px-2.5 py-1 text-[11px] font-medium text-primary max-w-[200px]">
+                                <BookOpen className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{source.courseTitle}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right: usage + close */}
+                    <div className="flex items-center gap-2 shrink-0">
+                        <UsageChip usage={usage} />
+                        <Link
+                            to="/dashboard"
+                            aria-label="Close workspace"
+                            className="hidden md:flex items-center justify-center h-8 w-8 rounded-lg border border-border/60 hover:bg-muted/60 transition-colors text-muted-foreground hover:text-foreground"
+                        >
+                            <X className="h-4 w-4" />
+                        </Link>
+                    </div>
                 </div>
             </header>
 
-            {/* Desktop: three columns */}
+            {/* ── Desktop: three columns ────────────────────────────────────── */}
             <div className="flex-1 min-h-0 hidden md:grid md:grid-cols-[280px_minmax(0,1fr)_320px] lg:grid-cols-[300px_minmax(0,1fr)_360px]">
-                <aside className="border-r border-border/60 min-h-0">
+                <aside className="border-r border-border/60 min-h-0 bg-muted/20">
                     <SourcesPanel userId={user.id} active={source} onSelect={setSource} />
                 </aside>
                 <section className="min-h-0">
@@ -74,12 +103,12 @@ const AIWorkspace = () => {
                         onExternalConsumed={() => setExternalPrompt(null)}
                     />
                 </section>
-                <aside className="border-l border-border/60 min-h-0">
+                <aside className="border-l border-border/60 min-h-0 bg-muted/20">
                     <TranscriptPanel source={source} onAskAbout={onAskAbout} />
                 </aside>
             </div>
 
-            {/* Mobile: tabbed single column */}
+            {/* ── Mobile: single column with tab nav ───────────────────────── */}
             <div className="flex-1 min-h-0 flex flex-col md:hidden">
                 <div className="flex-1 min-h-0">
                     {mobileTab === "sources" && (
@@ -105,26 +134,29 @@ const AIWorkspace = () => {
                         <TranscriptPanel source={source} onAskAbout={onAskAbout} />
                     )}
                 </div>
-                <nav className="shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-xl grid grid-cols-3">
-                    {(
-                        [
-                            { id: "sources", label: "Sources", icon: BookOpen },
-                            { id: "chat", label: "Chat", icon: MessageSquare },
-                            { id: "panel", label: "Transcript", icon: FileText },
-                        ] as const
-                    ).map((t) => (
-                        <button
-                            key={t.id}
-                            onClick={() => setMobileTab(t.id)}
-                            className={cn(
-                                "flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors",
-                                mobileTab === t.id ? "text-primary" : "text-muted-foreground",
-                            )}
-                        >
-                            <t.icon className="h-4 w-4" />
-                            {t.label}
-                        </button>
-                    ))}
+
+                {/* Bottom tab bar */}
+                <nav className="shrink-0 border-t border-border/60 bg-background/95 backdrop-blur-xl safe-area-pb">
+                    <div className="grid grid-cols-3 px-2 py-1.5 gap-1">
+                        {TABS.map((t) => {
+                            const active = mobileTab === t.id;
+                            return (
+                                <button
+                                    key={t.id}
+                                    onClick={() => setMobileTab(t.id)}
+                                    className={cn(
+                                        "flex flex-col items-center gap-0.5 py-2 rounded-xl text-[10px] font-medium transition-all",
+                                        active
+                                            ? "bg-primary/10 text-primary"
+                                            : "text-muted-foreground hover:text-foreground",
+                                    )}
+                                >
+                                    <t.icon className={cn("h-4 w-4", active && "scale-110 transition-transform")} />
+                                    {t.label}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </nav>
             </div>
         </div>

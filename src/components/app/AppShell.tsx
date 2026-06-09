@@ -15,7 +15,7 @@ import {
     CreditCard,
     Settings,
 } from "lucide-react";
-import { ReactNode, Suspense, lazy, useEffect, useState } from "react";
+import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
 import { ThemeToggle, LanguageToggle } from "./ThemeToggle";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,15 +44,23 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     const { theme } = useTheme();
     const [isAdmin, setIsAdmin] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const attendanceMarkedFor = useRef<string | null>(null);
 
     useEffect(() => {
-        if (!user) {
-            setIsAdmin(false);
-            return;
-        }
-        supabase
-            .rpc("has_role", { _user_id: user.id, _role: "admin" })
+        if (!user) { setIsAdmin(false); return; }
+        supabase.rpc("has_role", { _user_id: user.id, _role: "admin" })
             .then(({ data }) => setIsAdmin(!!data));
+    }, [user]);
+
+    // Mark today's attendance once per user per browser session.
+    // The RPC is idempotent (ON CONFLICT DO NOTHING) so calling it every
+    // app load is safe — it won't create duplicate rows or reset the streak.
+    useEffect(() => {
+        if (!user || attendanceMarkedFor.current === user.id) return;
+        attendanceMarkedFor.current = user.id;
+        supabase.rpc("mark_attendance").then(({ error }) => {
+            if (error) console.error("mark_attendance failed:", error.message);
+        });
     }, [user]);
 
     useEffect(() => {
