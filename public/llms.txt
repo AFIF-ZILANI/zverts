@@ -1,14 +1,36 @@
 # ZverTs
 
-> An AI-powered, disciplined learning platform with sequential modules, strict watch-time tracking, quizzes, and verified certificates.
+> A free, AI-powered disciplined learning platform. Sequential video modules with strict watch-time enforcement, quizzes, XP streaks, badges, and verifiable completion certificates.
 
-ZverTs helps learners master web development and other topics through video lessons, AI summaries, gamified progress, and proof-of-completion certificates.
+ZverTs converts YouTube playlists into structured courses with enforced progression — learners cannot skip ahead. Progress is tracked by actual watch time, not just clicks. Certificates are issued only after completing all modules and passing assessments.
+
+## What ZverTs does
+
+- Turns YouTube playlists into locked, sequential courses
+- Tracks real watch time per video (no faking completion)
+- Issues verifiable certificates on course completion
+- Gamifies learning with XP, streaks, badges, and leaderboards
+- Provides an AI tutor for per-lesson summaries and Q&A
+- Supports quizzes gated behind module completion
+- Available in English and Bengali
+
+## Who it is for
+
+Self-learners and students in Bangladesh and beyond who want structured accountability when learning web development and programming through free video content.
+
+## Tech stack (for AI coding assistants)
+
+- Frontend: React, Vite, TypeScript, Tailwind CSS, shadcn/ui
+- Backend: Supabase (PostgreSQL, Auth, RLS, Edge Functions)
+- Payments: bKash / Telegram bot approval flow
+- Hosted at: https://zverts.app
 
 ## Pages
 
-- [Home](/): Overview of the ZverTs learning platform.
-- [Courses](/courses): Browse public courses and learning tracks.
-- [Leaderboard](/leaderboard): Top learners by XP and streaks.
+- [Home](/): Platform overview, featured courses, and onboarding CTA.
+- [Courses](/courses): Browse all public courses and learning tracks.
+- [Dashboard](/dashboard): Authenticated learner's progress hub.
+- [Leaderboard](/leaderboard): Top learners ranked by XP and streaks.
 - [About](/info/about): Mission and vision of ZverTs.
 - [FAQ](/info/faq): Frequently asked questions about ZverTs.
 - [Help Center](/info/help): Self-service support topics.
@@ -16,3 +38,8 @@ ZverTs helps learners master web development and other topics through video less
 - [Affiliates](/info/affiliates): Affiliate program details.
 - [Community](/info/community): Join the ZverTs learner community.
 - [Refund Policy](/refund-policy): Refund terms and conditions.
+
+## Contact
+
+- Email: zvertsofficial@gmail.com
+- Website: https://zverts.app

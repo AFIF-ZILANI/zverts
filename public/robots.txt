@@ -1,15 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /admin/
-Disallow: /auth
-Disallow: /dashboard
-Disallow: /profile
-Disallow: /settings
-Disallow: /payment
-Disallow: /payments
-Disallow: /buy
-Disallow: /reset-password
-Disallow: /certificate/
 
-Sitemap: https://zverts.lovable.app/sitemap.xml
+Sitemap: https://zverts.vercel.app/sitemap.xml
