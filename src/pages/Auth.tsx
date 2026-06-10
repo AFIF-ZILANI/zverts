@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
-import zvertsLogo from "@/assets/zverts-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
@@ -50,7 +49,7 @@ const Auth = () => {
                         {/* Logo */}
                         <div className="relative flex flex-col items-center text-center">
                             <img
-                                src={zvertsLogo}
+                                src="/hero.webp"
                                 alt="ZverTs"
                                 width={64}
                                 height={64}
