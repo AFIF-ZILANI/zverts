@@ -169,7 +169,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
 
                     {/* Desktop right actions */}
                     <div className="hidden md:flex items-center gap-1">
-                        <LanguageToggle />
+                        {/* <LanguageToggle /> */}
                         <ThemeToggle />
                         {user ? (
                             <>
@@ -375,7 +375,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                         {/* Preferences + sign out */}
                         <div className="px-3 pb-4 pt-1 border-t border-border/60 flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1">
-                                <LanguageToggle />
+                                {/* <LanguageToggle /> */}
                                 <ThemeToggle />
                             </div>
                             {user ? (
