@@ -58,6 +58,8 @@ const AIWorkspace = lazyWithRetry(() => import("./pages/AIWorkspace.tsx"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
 const Info = lazyWithRetry(() => import("./pages/Info.tsx"));
 const RefundPolicy = lazyWithRetry(() => import("./pages/RefundPolicy.tsx"));
+const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy.tsx"));
+const TermsOfService = lazyWithRetry(() => import("./pages/TermsOfService.tsx"));
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -141,6 +143,8 @@ const App = () => (
                                     />
                                     <Route path="/info/:slug" element={<Info />} />
                                     <Route path="/refund-policy" element={<RefundPolicy />} />
+                                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                                    <Route path="/terms-of-service" element={<TermsOfService />} />
                                     <Route path="*" element={<NotFound />} />
                                 </Routes>
                             </Suspense>

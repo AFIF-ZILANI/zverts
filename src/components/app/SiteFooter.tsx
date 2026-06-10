@@ -32,8 +32,8 @@ const company: NavLink[] = [
 ];
 
 const legal: NavLink[] = [
-    { label: "Terms & Conditions", to: "/" },
-    { label: "Privacy Policy", to: "/" },
+    { label: "Terms & Conditions", to: "/terms-of-service" },
+    { label: "Privacy Policy", to: "/privacy-policy" },
     { label: "Refund Policy", to: "/refund-policy" },
 ];
 
