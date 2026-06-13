@@ -23,14 +23,15 @@ BEGIN
   END IF;
 END $$;
 
--- Fix attendance_block_direct_writes: same FOR ALL RESTRICTIVE bug as payments
--- (see 20260609050000). The permissive attendance_select_own policy is overridden
--- by USING(false) on the RESTRICTIVE policy, silently returning 0 rows for SELECT.
--- Fix: scope it to write commands only.
+-- Fix attendance_block_direct_writes: same FOR ALL RESTRICTIVE bug as payments.
+-- Postgres requires one policy per command — no multi-command shorthand.
 DROP POLICY IF EXISTS attendance_block_direct_writes ON public.attendance;
-CREATE POLICY attendance_block_direct_writes ON public.attendance
-  AS RESTRICTIVE FOR INSERT, UPDATE, DELETE TO authenticated, anon
-  WITH CHECK (false);
+CREATE POLICY attendance_block_direct_writes_ins ON public.attendance
+  AS RESTRICTIVE FOR INSERT TO authenticated, anon WITH CHECK (false);
+CREATE POLICY attendance_block_direct_writes_upd ON public.attendance
+  AS RESTRICTIVE FOR UPDATE TO authenticated, anon USING (false);
+CREATE POLICY attendance_block_direct_writes_del ON public.attendance
+  AS RESTRICTIVE FOR DELETE TO authenticated, anon USING (false);
 
 -- Ensure authenticated users can query their own attendance rows
 GRANT SELECT ON public.attendance TO authenticated;

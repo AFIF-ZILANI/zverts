@@ -1,18 +1,16 @@
--- Two bugs in the original notify_admin_payment trigger:
+-- Three bugs in the original notify_admin_payment trigger:
 --
--- 1. Missing Authorization + apikey headers. Supabase Edge Functions use the
---    apikey header for project routing even when verify_jwt = false. Without it
---    the request arrives at the function runtime but may be rejected before
---    the function handler is invoked.
+-- 1. Wrong project URL — was calling the old project (rehgfihjeuvtixjphzku)
+--    instead of the active project (jiprvhotnoobsutdlnrf).
 --
--- 2. No exception guard around net.http_post. If pg_net fails to queue the
---    request (extension unavailable, wrong schema, etc.) the exception propagates
---    and rolls back the payment INSERT — the user's row disappears silently.
---    The notification is important but the payment record is more important.
+-- 2. Missing Authorization + apikey headers. Supabase Edge Functions use the
+--    apikey header for project routing even when verify_jwt = false.
 --
--- Fix: add the anon key headers (read from Supabase's built-in Postgres setting)
--- and wrap the HTTP call in an exception block that logs a WARNING instead of
--- rolling back. Also recreate the trigger explicitly to ensure it is active.
+-- 3. No exception guard around net.http_post. A pg_net failure would propagate
+--    and roll back the payment INSERT, silently losing the user's payment row.
+--
+-- Fix: correct the URL, hardcode the anon key (ALTER DATABASE is not available
+-- on managed Supabase), and wrap the HTTP call in an exception block.
 
 CREATE OR REPLACE FUNCTION public.notify_admin_payment()
 RETURNS TRIGGER
@@ -23,7 +21,6 @@ AS $$
 DECLARE
   payload   jsonb;
   prior_ct  integer;
-  anon_key  text := current_setting('app.settings.anon_key', true);
 BEGIN
   SELECT count(*) INTO prior_ct
     FROM public.payments
@@ -47,12 +44,12 @@ BEGIN
 
   BEGIN
     PERFORM net.http_post(
-      url     := 'https://rehgfihjeuvtixjphzku.supabase.co/functions/v1/notify-admin',
+      url     := 'https://jiprvhotnoobsutdlnrf.supabase.co/functions/v1/notify-admin',
       body    := payload,
       headers := jsonb_build_object(
         'Content-Type',  'application/json',
-        'Authorization', 'Bearer ' || COALESCE(anon_key, ''),
-        'apikey',        COALESCE(anon_key, '')
+        'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppcHJ2aG90bm9vYnN1dGRsbnJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MzU4NzUsImV4cCI6MjA5NjMxMTg3NX0.bs4n5HxjnfVDBEr9Qzsg9fntu_ANZhsVoiEB5Uj7suU',
+        'apikey',        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppcHJ2aG90bm9vYnN1dGRsbnJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MzU4NzUsImV4cCI6MjA5NjMxMTg3NX0.bs4n5HxjnfVDBEr9Qzsg9fntu_ANZhsVoiEB5Uj7suU'
       )
     );
   EXCEPTION WHEN OTHERS THEN
