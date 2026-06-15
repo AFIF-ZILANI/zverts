@@ -55,15 +55,21 @@ Deno.serve(async (req) => {
         const auth = req.headers.get("Authorization");
         if (!auth) return json({ error: "Unauthorized" }, 401);
 
+        // verify_jwt=true already validates the JWT before this function runs.
+        // Decode the user ID directly from the token — avoids calling /auth/v1/user
+        // which was failing with 403 due to a stale SUPABASE_ANON_KEY secret.
+        let user: { id: string } | null = null;
+        try {
+            const payload = JSON.parse(atob(auth.replace("Bearer ", "").split(".")[1]));
+            if (payload?.sub) user = { id: payload.sub };
+        } catch { /* fall through */ }
+        if (!user) return json({ error: "Unauthorized" }, 401);
+
         const url = Deno.env.get("SUPABASE_URL")!;
         const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
         const userClient = createClient(url, anon, {
             global: { headers: { Authorization: auth } },
         });
-        const {
-            data: { user },
-        } = await userClient.auth.getUser();
-        if (!user) return json({ error: "Unauthorized" }, 401);
 
         const body = await req.json();
         const {
