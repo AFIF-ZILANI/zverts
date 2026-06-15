@@ -21,6 +21,7 @@ import {
     GripVertical,
     BookOpen,
     Clock,
+    BrainCircuit,
 } from "lucide-react";
 import {
     DndContext,
@@ -222,13 +223,22 @@ const SortableRow = ({
                 </div>
             )}
 
-            {/* open button */}
+            {/* open buttons */}
             {!locked && (
-                <Link to={`/learn/${m.id}`}>
-                    <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 shrink-0">
-                        {completed ? "Rewatch" : "Watch"}
-                    </Button>
-                </Link>
+                <div className="flex items-center gap-1.5 shrink-0">
+                    {completed && (
+                        <Link to={`/quiz/${m.id}`}>
+                            <Button size="sm" variant="ghost" className="h-7 text-xs px-2.5 gap-1">
+                                <BrainCircuit className="h-3 w-3" /> Quiz
+                            </Button>
+                        </Link>
+                    )}
+                    <Link to={`/learn/${m.id}`}>
+                        <Button size="sm" variant="outline" className="h-7 text-xs px-2.5">
+                            {completed ? "Rewatch" : "Watch"}
+                        </Button>
+                    </Link>
+                </div>
             )}
         </div>
     );
