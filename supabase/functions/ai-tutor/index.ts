@@ -85,7 +85,10 @@ Deno.serve(async (req) => {
         const { data: usage, error: uErr } = await userClient.rpc("consume_ai_message", {
             _daily_limit: DAILY_LIMIT,
         });
-        if (uErr) return json({ error: uErr.message }, 400);
+        if (uErr) {
+            console.error("consume_ai_message failed:", uErr.message, uErr);
+            return json({ error: uErr.message }, 400);
+        }
         if (usage && (usage as any).ok === false) {
             return json(
                 {
@@ -100,12 +103,12 @@ Deno.serve(async (req) => {
         // Gate attachments to paid users (defence in depth — storage RLS also enforces this)
         let isPaid = false;
         if (attachments.length > 0) {
-            const { data: prof } = await userClient
-                .from("profiles")
+            const { data: ent } = await userClient
+                .from("user_entitlements")
                 .select("is_paid_user")
-                .eq("id", user.id)
+                .eq("user_id", user.id)
                 .maybeSingle();
-            isPaid = !!prof?.is_paid_user;
+            isPaid = !!ent?.is_paid_user;
             if (!isPaid) return json({ error: "File uploads are for paid users only." }, 403);
         }
 
@@ -265,11 +268,15 @@ FORMATTING RULES (strict):
         });
 
         if (r.status === 429) return json({ error: "Rate limit — try again in a moment." }, 429);
-        if (r.status === 402) return json({ error: "AI credits exhausted. Contact admin." }, 402);
+        if (r.status === 402) {
+            const t = await r.text();
+            console.error("OpenRouter 402:", t);
+            return json({ error: "AI credits exhausted. Contact admin." }, 402);
+        }
         if (!r.ok || !r.body) {
             const t = await r.text();
             console.error("AI gateway error:", r.status, t);
-            return json({ error: "AI gateway error" }, 500);
+            return json({ error: `AI gateway error (${r.status}): ${t}` }, 500);
         }
 
         // Forward usage info via custom response header so the client can update its chip

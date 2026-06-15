@@ -137,19 +137,29 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
                 }),
             });
             if (resp.status === 429) {
-                toast.error("Rate limit — wait a moment");
+                const body = await resp.json().catch(() => ({}));
+                toast.error(body?.message ?? "Rate limit — wait a moment");
                 setBusy(false);
                 setStreamingText("");
                 return;
             }
             if (resp.status === 402) {
-                toast.error("AI credits exhausted");
+                const body = await resp.json().catch(() => ({}));
+                toast.error(body?.error ?? "AI credits exhausted");
                 setBusy(false);
                 setStreamingText("");
                 return;
             }
             if (!resp.ok || !resp.body) {
-                toast.error("AI unavailable");
+                const errText = await resp.text().catch(() => "");
+                let errMsg = "AI unavailable";
+                try {
+                    const parsed = JSON.parse(errText);
+                    if (parsed?.error) errMsg = parsed.error;
+                    else if (parsed?.message) errMsg = parsed.message;
+                } catch { /* keep default */ }
+                console.error("ai-tutor error", resp.status, errText);
+                toast.error(errMsg);
                 setBusy(false);
                 setStreamingText("");
                 return;
