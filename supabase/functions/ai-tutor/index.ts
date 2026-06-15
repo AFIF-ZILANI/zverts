@@ -6,12 +6,12 @@ const corsHeaders = {
 };
 
 const MODEL_MAP: Record<string, string> = {
-    fast: "google/gemini-2.5-flash-lite",
-    smart: "google/gemini-2.5-flash",
-    pro: "google/gemini-2.5-pro",
-    reasoning: "openai/o4-mini",
-    deep: "openai/o3",
-    coding: "openai/gpt-4o-mini",
+    fast: "google/gemini-2.0-flash-exp:free",
+    smart: "google/gemini-2.0-flash-exp:free",
+    pro: "google/gemini-2.5-pro:free",
+    reasoning: "deepseek/deepseek-r1:free",
+    deep: "deepseek/deepseek-r1:free",
+    coding: "google/gemini-2.0-flash-exp:free",
 };
 
 const MODE_PROMPTS: Record<string, string> = {
