@@ -177,8 +177,8 @@ const Index = () => {
                         },
                         {
                             icon: Brain,
-                            title: "MCQ System",
-                            body: "Pass a quiz at the end of every module to lock progress.",
+                            title: "MCQ Quizzes",
+                            body: "Take a quiz after each module to reinforce learning and earn +1 Gem, +30 XP.",
                         },
                         {
                             icon: Gem,
