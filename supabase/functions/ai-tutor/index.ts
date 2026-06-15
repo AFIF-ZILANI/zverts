@@ -9,9 +9,9 @@ const MODEL_MAP: Record<string, string> = {
     fast: "google/gemini-2.5-flash-lite",
     smart: "google/gemini-2.5-flash",
     pro: "google/gemini-2.5-pro",
-    reasoning: "openai/gpt-5-mini",
-    deep: "openai/gpt-5",
-    coding: "openai/gpt-5-mini",
+    reasoning: "openai/o4-mini",
+    deep: "openai/o3",
+    coding: "openai/gpt-4o-mini",
 };
 
 const MODE_PROMPTS: Record<string, string> = {
@@ -228,7 +228,7 @@ FORMATTING RULES (strict):
 - When you reference the transcript, quote 1 short line and tag it like [00:12].
 - When the user attached a PDF or image, ground your answer in it and cite the file name.`;
 
-        const apiKey = Deno.env.get("LOVABLE_API_KEY");
+        const apiKey = Deno.env.get("OPENROUTER_API_KEY");
         if (!apiKey) return json({ error: "AI not configured" }, 500);
 
         const gatewayModel = MODEL_MAP[model] ?? MODEL_MAP.smart;
@@ -249,9 +249,14 @@ FORMATTING RULES (strict):
             }
         }
 
-        const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
-            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://zverts.com",
+                "X-Title": "ZverTs AI Tutor",
+            },
             body: JSON.stringify({
                 model: gatewayModel,
                 messages: [{ role: "system", content: baseSystem }, ...outMessages],
