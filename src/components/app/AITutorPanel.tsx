@@ -21,11 +21,14 @@ import {
     ThumbsDown,
     MoreHorizontal,
     Download,
+    Lock,
+    Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntitlements } from "@/hooks/useEntitlements";
 import { useNavigate } from "react-router-dom";
 import { MessageContent } from "./ai/MessageContent";
 import { ModelSelector } from "./ai/ModelSelector";
@@ -44,6 +47,7 @@ import {
 
 export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
     const { user } = useAuth();
+    const { ai_enabled } = useEntitlements();
     const navigate = useNavigate();
     const [open, setOpen] = useState(false);
     const [maximized, setMaximized] = useState(false);
@@ -237,17 +241,91 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
             <button
                 onClick={() => setOpen(true)}
                 className={cn(
-                    "fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full px-5 py-3 font-medium shadow-glow transition-transform bg-gradient-lime text-primary-foreground hover:scale-105",
+                    "fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full px-5 py-3 font-medium shadow-glow transition-transform",
+                    ai_enabled
+                        ? "bg-gradient-lime text-primary-foreground hover:scale-105"
+                        : "bg-card border border-border text-foreground hover:border-primary/60 hover:scale-105",
                     open && "hidden",
                 )}
-                aria-label="Open Vert AI"
+                aria-label={ai_enabled ? "Open Vert AI" : "Vert AI — upgrade to unlock"}
             >
-                <Sparkles className="h-4 w-4" />
-                Chat with Vert
+                {ai_enabled ? (
+                    <Sparkles className="h-4 w-4" />
+                ) : (
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className={ai_enabled ? "" : "text-muted-foreground"}>
+                    {ai_enabled ? "Chat with Vert" : "Vert AI"}
+                </span>
             </button>
 
-            {/* Panel */}
-            <div
+            {/* Locked panel — shown when ai_enabled is false */}
+            {!ai_enabled && (
+                <div
+                    className={cn(
+                        "fixed z-50 transition-all duration-300",
+                        "inset-x-0 bottom-0 md:inset-auto md:bottom-6 md:right-6 md:w-[380px]",
+                        open
+                            ? "translate-y-0 opacity-100 pointer-events-auto"
+                            : "translate-y-full opacity-0 pointer-events-none md:translate-y-4",
+                    )}
+                >
+                    <div className="h-auto rounded-t-2xl md:rounded-2xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-elevated overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center justify-between gap-2 p-3 border-b border-border/60">
+                            <div className="flex items-center gap-2">
+                                <div className="h-9 w-9 shrink-0 rounded-full bg-muted grid place-items-center">
+                                    <Bot className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                                <div>
+                                    <div className="font-display text-sm font-semibold leading-tight">Vert AI</div>
+                                    <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">Locked</div>
+                                </div>
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpen(false)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        {/* Locked content */}
+                        <div className="p-6 text-center space-y-4">
+                            <div className="h-16 w-16 mx-auto rounded-2xl bg-primary/10 grid place-items-center">
+                                <Lock className="h-7 w-7 text-primary" />
+                            </div>
+                            <div>
+                                <p className="font-display text-lg font-semibold">Vert AI is locked</p>
+                                <p className="text-sm text-muted-foreground mt-1.5 max-w-xs mx-auto">
+                                    Get instant explanations, lesson summaries, and MCQ quizzes — grounded in this exact lesson.
+                                </p>
+                            </div>
+                            <ul className="text-left text-sm space-y-2 text-muted-foreground">
+                                {[
+                                    "Explain any concept in English or Bangla",
+                                    "Generate MCQs to test your understanding",
+                                    "Summarize the full lesson in seconds",
+                                    "Ask follow-up questions with context",
+                                ].map((f) => (
+                                    <li key={f} className="flex items-start gap-2">
+                                        <Sparkles className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                                        {f}
+                                    </li>
+                                ))}
+                            </ul>
+                            <Button
+                                className="w-full bg-gradient-lime text-primary-foreground shadow-glow gap-2"
+                                onClick={() => navigate("/buy")}
+                            >
+                                <Zap className="h-4 w-4" />
+                                Unlock Vert AI
+                            </Button>
+                            <p className="text-[11px] text-muted-foreground">One-time purchase · Lifetime access</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Active panel — shown when ai_enabled is true */}
+            {ai_enabled && <div
                 className={cn(
                     "fixed z-50 transition-all duration-300",
                     maximized
@@ -597,7 +675,7 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div>}
         </>
     );
 };
