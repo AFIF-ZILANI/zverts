@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import { normalizeLatex } from "./normalizeLatex";
 import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/prism-async-light";
 import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import js from "react-syntax-highlighter/dist/esm/languages/prism/javascript";
@@ -169,10 +170,7 @@ function MessageContentInner({ content }: { content: string }) {
     const { resolvedTheme } = useTheme();
     const isDark = resolvedTheme !== "light";
 
-    // Normalize \[ ... \] and \( ... \) to $$/$ for remark-math
-    const normalized = content
-        .replace(/\\\[([\s\S]+?)\\\]/g, (_, inner) => `\n$$${inner}$$\n`)
-        .replace(/\\\(([\s\S]+?)\\\)/g, (_, inner) => `$${inner}$`);
+    const normalized = normalizeLatex(content);
 
     const mcqResult = parseMCQs(normalized);
 
@@ -183,7 +181,9 @@ function MessageContentInner({ content }: { content: string }) {
                 <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-headings:mt-3 prose-headings:mb-2 prose-pre:p-0 prose-pre:bg-transparent prose-code:before:content-none prose-code:after:content-none">
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
+                        rehypePlugins={[
+                            [rehypeKatex, { throwOnError: false, strict: "ignore" }],
+                        ]}
                         components={{
                             code({ inline, className, children, ...props }: any) {
                                 const match = /language-(\w+)/.exec(className || "");

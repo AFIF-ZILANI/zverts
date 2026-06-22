@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import { normalizeLatex } from "./ai/normalizeLatex";
 import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/prism-async-light";
 import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import js from "react-syntax-highlighter/dist/esm/languages/prism/javascript";
@@ -35,12 +36,6 @@ SyntaxHighlighter.registerLanguage("bash", bash);
 SyntaxHighlighter.registerLanguage("sh", bash);
 SyntaxHighlighter.registerLanguage("sql", sql);
 
-function normalize(text: string) {
-    return text
-        .replace(/\\\[([\s\S]+?)\\\]/g, (_, inner) => `\n$$${inner}$$\n`)
-        .replace(/\\\(([\s\S]+?)\\\)/g, (_, inner) => `$${inner}$`);
-}
-
 interface Props {
     children: string;
     /** When true, wraps paragraph output in <span> — safe inside <button> elements */
@@ -50,12 +45,12 @@ interface Props {
 function RichTextInner({ children, inline = false }: Props) {
     const { resolvedTheme } = useTheme();
     const isDark = resolvedTheme !== "light";
-    const text = normalize(children);
+    const text = normalizeLatex(children);
 
     return (
         <ReactMarkdown
             remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
+            rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: "ignore" }]]}
             components={{
                 ...(inline ? { p: ({ children: c }) => <span>{c}</span> } : {}),
                 code({ inline: isInline, className, children: c, ...props }: any) {
