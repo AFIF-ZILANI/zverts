@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
@@ -19,7 +19,6 @@ import {
     Clock,
     BrainCircuit,
 } from "lucide-react";
-import { MdOutlinePlaylistPlay } from "react-icons/md";
 
 const AITutorPanel = lazy(() =>
     import("@/components/app/AITutorPanel").then((m) => ({ default: m.AITutorPanel })),
@@ -45,6 +44,7 @@ interface SiblingProgress {
     module_id: string;
     percent_watched: number;
     completed: boolean;
+    mcq_passed: boolean;
 }
 
 const fmt = (s: number) => {
@@ -53,7 +53,91 @@ const fmt = (s: number) => {
     return h ? `${h}h ${m}m` : `${m}m`;
 };
 
-// ── Sidebar module row ───────────────────────────────────────────────────────
+// ── Quiz countdown overlay ────────────────────────────────────────────────────
+const QuizCountdownDialog = ({
+    open,
+    countdown,
+    paused,
+    mandatory,
+    onTakeQuiz,
+    onPause,
+    onResume,
+    onSkip,
+}: {
+    open: boolean;
+    countdown: number;
+    paused: boolean;
+    mandatory: boolean;
+    onTakeQuiz: () => void;
+    onPause: () => void;
+    onResume: () => void;
+    onSkip?: () => void;
+}) => {
+    if (!open) return null;
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="rounded-2xl border border-border bg-card shadow-elevated p-8 max-w-sm w-full mx-4 text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                <div>
+                    <BrainCircuit className="h-10 w-10 text-primary mx-auto mb-3" />
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                        / lesson complete
+                    </p>
+                    <h2 className="font-display text-2xl font-semibold mt-1">
+                        {mandatory ? "Quiz time!" : "Want to retake?"}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-2">
+                        {mandatory
+                            ? "Pass the quiz to unlock the next lesson."
+                            : "You've already passed. Quiz is optional."}
+                    </p>
+                </div>
+
+                {/* Countdown ring */}
+                <div className="flex items-center justify-center">
+                    <div
+                        className={cn(
+                            "relative h-20 w-20 rounded-full border-4 flex items-center justify-center font-display text-3xl font-bold transition-colors",
+                            paused
+                                ? "border-muted-foreground/40 text-muted-foreground"
+                                : "border-primary text-primary",
+                        )}
+                    >
+                        {countdown}
+                    </div>
+                </div>
+
+                <div className="flex gap-2 justify-center">
+                    {!paused ? (
+                        <Button variant="outline" size="sm" onClick={onPause}>
+                            Pause
+                        </Button>
+                    ) : (
+                        <Button variant="outline" size="sm" onClick={onResume}>
+                            Resume
+                        </Button>
+                    )}
+                    <Button
+                        className="bg-gradient-lime text-primary-foreground shadow-glow gap-1.5"
+                        onClick={onTakeQuiz}
+                    >
+                        <BrainCircuit className="h-4 w-4" /> Take Quiz
+                    </Button>
+                </div>
+
+                {!mandatory && onSkip && (
+                    <button
+                        onClick={onSkip}
+                        className="text-xs text-muted-foreground hover:text-foreground font-mono transition-colors"
+                    >
+                        Skip for now
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// ── Sidebar module row ────────────────────────────────────────────────────────
 const SidebarRow = ({
     m,
     isCurrent,
@@ -144,9 +228,16 @@ const ModulePlayer = () => {
     const [unlocked, setUnlocked] = useState<boolean | null>(null);
     const [percent, setPercent] = useState(0);
     const [completed, setCompleted] = useState(false);
+    const [videoFinished, setVideoFinished] = useState(false);
+    const [mcqPassed, setMcqPassed] = useState(false);
     const [nextId, setNextId] = useState<string | null>(null);
     const [rewardFlash, setRewardFlash] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // Quiz countdown dialog
+    const [quizDialogOpen, setQuizDialogOpen] = useState(false);
+    const [quizCountdown, setQuizCountdown] = useState(10);
+    const [countdownPaused, setCountdownPaused] = useState(false);
 
     const [siblings, setSiblings] = useState<SiblingMod[]>([]);
     const [siblingProg, setSiblingProg] = useState<Map<string, SiblingProgress>>(new Map());
@@ -154,20 +245,25 @@ const ModulePlayer = () => {
     const lastSentRef = useRef(0);
     const playerRef = useRef<YouTubePlayerHandle>(null);
     const sidebarRef = useRef<HTMLDivElement>(null);
+    // snapshot of mcq_passed at page-load time; true = rewatch (quiz optional)
+    const loadedMcqPassedRef = useRef(false);
 
     // ── Load module ──────────────────────────────────────────────────────────
     useEffect(() => {
         if (!user || !id) return;
-        // Reset all per-module state before loading the new one
         setMod(null);
         setUnlocked(null);
         setPercent(0);
         setCompleted(false);
+        setVideoFinished(false);
+        setMcqPassed(false);
         setNextId(null);
         setRewardFlash(false);
         setSiblings([]);
         setSiblingProg(new Map());
+        setQuizDialogOpen(false);
         lastSentRef.current = 0;
+        loadedMcqPassedRef.current = false;
         setLoading(true);
         (async () => {
             const { data: m } = await supabase
@@ -177,20 +273,14 @@ const ModulePlayer = () => {
                 )
                 .eq("id", id)
                 .maybeSingle();
-            if (!m) {
-                setLoading(false);
-                return;
-            }
+            if (!m) { setLoading(false); return; }
 
             const { data: visibleCourse } = await supabase
                 .from("courses")
                 .select("id")
                 .eq("id", m.course_id)
                 .maybeSingle();
-            if (!visibleCourse) {
-                setLoading(false);
-                return;
-            }
+            if (!visibleCourse) { setLoading(false); return; }
 
             setMod(m);
 
@@ -205,7 +295,7 @@ const ModulePlayer = () => {
                     supabase.rpc("is_module_unlocked", { _user_id: user.id, _module_id: m.id }),
                     supabase
                         .from("module_progress")
-                        .select("percent_watched,completed,watch_time_seconds")
+                        .select("percent_watched,completed,watch_time_seconds,video_finished,mcq_passed")
                         .eq("user_id", user.id)
                         .eq("module_id", m.id)
                         .maybeSingle(),
@@ -221,6 +311,9 @@ const ModulePlayer = () => {
             if (p) {
                 setPercent(Number(p.percent_watched));
                 setCompleted(p.completed);
+                setVideoFinished(p.video_finished ?? false);
+                setMcqPassed(p.mcq_passed ?? false);
+                loadedMcqPassedRef.current = p.mcq_passed ?? false;
                 lastSentRef.current = p.watch_time_seconds;
             }
 
@@ -230,27 +323,46 @@ const ModulePlayer = () => {
             if (sibList.length) {
                 const { data: sp } = await supabase
                     .from("module_progress")
-                    .select("module_id,percent_watched,completed")
+                    .select("module_id,percent_watched,completed,mcq_passed")
                     .eq("user_id", user.id)
-                    .in(
-                        "module_id",
-                        sibList.map((s) => s.id),
-                    );
-                setSiblingProg(new Map((sp ?? []).map((x) => [x.module_id, x])));
+                    .in("module_id", sibList.map((s) => s.id));
+                setSiblingProg(new Map((sp ?? []).map((x) => [x.module_id, x as SiblingProgress])));
             }
 
             setLoading(false);
         })();
     }, [user, id]);
 
-    // ── Scroll current item into view when siblings load ──────────────────
+    // ── Countdown timer ──────────────────────────────────────────────────────
+    useEffect(() => {
+        if (!quizDialogOpen || countdownPaused) return;
+        if (quizCountdown <= 0) {
+            const mandatory = !loadedMcqPassedRef.current;
+            if (mandatory) {
+                navigate(`/quiz/${mod?.id}`, {
+                    state: {
+                        nextModuleId: nextId,
+                        courseId: mod?.course_id,
+                        mandatory: true,
+                    },
+                });
+            } else {
+                setQuizDialogOpen(false);
+            }
+            return;
+        }
+        const t = setTimeout(() => setQuizCountdown((q) => q - 1), 1000);
+        return () => clearTimeout(t);
+    }, [quizDialogOpen, countdownPaused, quizCountdown, mod, nextId, navigate]);
+
+    // ── Scroll current item into view ─────────────────────────────────────────
     useEffect(() => {
         if (!sidebarRef.current) return;
         const active = sidebarRef.current.querySelector("[data-current='true']");
         active?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }, [siblings.length]);
 
-    // ── Progress ─────────────────────────────────────────────────────────────
+    // ── Progress ──────────────────────────────────────────────────────────────
     const sendProgress = async (watch: number, force = false) => {
         if (!mod) return;
         if (!force && watch - lastSentRef.current < 5) return;
@@ -260,37 +372,55 @@ const ModulePlayer = () => {
             _watch_time: watch,
             _force_complete: force,
         });
-        if (error) {
-            toast.error(error.message);
-            return;
-        }
+        if (error) { toast.error(error.message); return; }
         if (data) {
             const row = data as any;
             setPercent(Number(row.percent_watched));
+            if (row.video_finished) setVideoFinished(true);
             if (row.completed && !completed) {
                 setCompleted(true);
                 setRewardFlash(true);
                 setTimeout(() => setRewardFlash(false), 3200);
-                toast.success("Module complete! 🎉", {
-                    description: "The next module is now unlocked.",
-                });
-                // refresh sibling progress
                 setSiblingProg((prev) => {
                     const next = new Map(prev);
-                    next.set(mod.id, { module_id: mod.id, percent_watched: 100, completed: true });
+                    next.set(mod.id, {
+                        module_id: mod.id,
+                        percent_watched: 100,
+                        completed: true,
+                        mcq_passed: prev.get(mod.id)?.mcq_passed ?? false,
+                    });
                     return next;
                 });
             }
         }
     };
 
-    // ── Sidebar module cards ─────────────────────────────────────────────────
+    const handleVideoEnded = async () => {
+        await sendProgress(lastSentRef.current, true);
+        setQuizDialogOpen(true);
+        setQuizCountdown(10);
+        setCountdownPaused(false);
+    };
+
+    const goToQuiz = () => {
+        setQuizDialogOpen(false);
+        navigate(`/quiz/${mod?.id}`, {
+            state: {
+                nextModuleId: nextId,
+                courseId: mod?.course_id,
+                mandatory: !loadedMcqPassedRef.current,
+            },
+        });
+    };
+
+    // ── Sidebar module cards ──────────────────────────────────────────────────
     const siblingCards = siblings.map((m, i) => {
         const p = siblingProg.get(m.id);
         const prev = i === 0 ? null : siblings[i - 1];
-        const prevDone = !prev || siblingProg.get(prev.id)?.completed;
+        const prevRow = prev ? siblingProg.get(prev.id) : null;
+        // unlock requires prev completed AND prev mcq_passed
+        const prevDone = !prev || (prevRow?.completed && prevRow?.mcq_passed);
         const isCompleted = p?.completed ?? false;
-        // current module uses live state
         const isCur = m.id === id;
         const isLocked = !isCompleted && !prevDone && !isCur;
         return {
@@ -305,8 +435,23 @@ const ModulePlayer = () => {
     if (authLoading) return null;
     if (!user) return <Navigate to="/auth" replace />;
 
+    // "video watched but quiz not yet taken" — show persistent banner
+    const needsQuizBanner = videoFinished && !mcqPassed;
+
     return (
         <AppShell>
+            {/* Quiz countdown overlay */}
+            <QuizCountdownDialog
+                open={quizDialogOpen}
+                countdown={quizCountdown}
+                paused={countdownPaused}
+                mandatory={!loadedMcqPassedRef.current}
+                onTakeQuiz={goToQuiz}
+                onPause={() => setCountdownPaused(true)}
+                onResume={() => setCountdownPaused(false)}
+                onSkip={loadedMcqPassedRef.current ? () => setQuizDialogOpen(false) : undefined}
+            />
+
             <div className="container max-w-[1400px] py-4 md:py-6">
                 {/* Back + breadcrumb */}
                 <div className="mb-4">
@@ -341,7 +486,7 @@ const ModulePlayer = () => {
                         <Lock className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
                         <h2 className="font-display text-3xl font-semibold">Module locked</h2>
                         <p className="text-muted-foreground mt-2">
-                            Complete the previous module to unlock this one.
+                            Complete the previous module's video and quiz to unlock this one.
                         </p>
                         <Button
                             className="mt-6"
@@ -362,61 +507,19 @@ const ModulePlayer = () => {
                             </h1>
                         </div>
 
-                        {/* ── Player (col 1, row 2) — defines the row height ── */}
+                        {/* ── Player (col 1, row 2) ── */}
                         <div className="relative mt-4 lg:mt-0 -mx-6 lg:mx-0 overflow-hidden border-y lg:border lg:rounded-2xl border-border shadow-card lg:col-start-1 lg:row-start-2">
                             <YouTubePlayer
                                 ref={playerRef}
                                 videoId={mod.youtube_video_id}
                                 onProgress={(s) => sendProgress(s)}
-                                onEnded={() => sendProgress(lastSentRef.current, true)}
+                                onEnded={handleVideoEnded}
                             />
-                            {completed && (
-                                <div className="pointer-events-none absolute inset-0 flex items-end justify-center p-4">
-                                    <div className="pointer-events-auto rounded-2xl border border-primary/40 bg-background/95 backdrop-blur px-5 py-3 shadow-glow flex flex-wrap items-center gap-3">
-                                        <div>
-                                            <p className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                                                / lesson complete
-                                            </p>
-                                            <p className="font-display text-base">
-                                                Stay focused — keep going on ZverTs
-                                            </p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => navigate(`/quiz/${mod.id}`)}
-                                                className="gap-1.5"
-                                            >
-                                                <BrainCircuit className="h-3.5 w-3.5" /> Quiz
-                                            </Button>
-                                            {nextId ? (
-                                                <Button
-                                                    onClick={() => navigate(`/learn/${nextId}`)}
-                                                    className="bg-gradient-lime text-primary-foreground shadow-glow"
-                                                >
-                                                    Next <ArrowRight className="ml-1.5 h-4 w-4" />
-                                                </Button>
-                                            ) : (
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() =>
-                                                        navigate(`/courses/${mod.course_id}`)
-                                                    }
-                                                >
-                                                    Done
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
-                        {/* ── Sidebar / playlist (col 2, row 2) — matches player height ── */}
+                        {/* ── Sidebar / playlist (col 2, row 2) ── */}
                         <aside className="mt-4 lg:mt-0 lg:col-start-2 lg:row-start-2 lg:self-stretch lg:relative">
                             <div className="flex flex-col rounded-2xl border border-border bg-card overflow-hidden h-[360px] lg:h-auto lg:absolute lg:inset-0">
-                                {/* header */}
                                 <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
                                     <div className="flex items-center gap-2">
                                         <ListVideo className="h-4 w-4 text-muted-foreground" />
@@ -429,7 +532,6 @@ const ModulePlayer = () => {
                                         {siblings.length}
                                     </span>
                                 </div>
-                                {/* list */}
                                 <div
                                     ref={sidebarRef}
                                     className="overflow-y-auto flex-1 min-h-0 p-2 space-y-0.5"
@@ -453,7 +555,7 @@ const ModulePlayer = () => {
                             </div>
                         </aside>
 
-                        {/* ── Lower content (col 1, row 3) — stays at player width ── */}
+                        {/* ── Lower content (col 1, row 3) ── */}
                         <div className="mt-4 lg:mt-0 lg:col-start-1 lg:row-start-3 space-y-4">
                             {/* Progress + actions */}
                             <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
@@ -469,32 +571,60 @@ const ModulePlayer = () => {
                                         />
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-between gap-3 flex-wrap">
-                                    {completed ? (
-                                        <span className="inline-flex items-center gap-2 text-sm font-medium text-primary">
-                                            <CheckCircle2 className="h-5 w-5" /> Lesson complete
-                                        </span>
-                                    ) : (
+
+                                {/* Quiz required banner */}
+                                {needsQuizBanner && (
+                                    <div className="rounded-xl border border-primary/40 bg-primary/5 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+                                        <div className="flex items-center gap-2">
+                                            <BrainCircuit className="h-4 w-4 text-primary shrink-0" />
+                                            <p className="text-sm font-medium">
+                                                Quiz required to unlock the next lesson
+                                            </p>
+                                        </div>
                                         <Button
-                                            variant="outline"
                                             size="sm"
-                                            onClick={() => sendProgress(lastSentRef.current, true)}
+                                            className="bg-gradient-lime text-primary-foreground shadow-glow gap-1.5 shrink-0"
+                                            onClick={() =>
+                                                navigate(`/quiz/${mod.id}`, {
+                                                    state: {
+                                                        nextModuleId: nextId,
+                                                        courseId: mod.course_id,
+                                                        mandatory: true,
+                                                    },
+                                                })
+                                            }
                                         >
-                                            Mark complete
+                                            <BrainCircuit className="h-3.5 w-3.5" /> Take Quiz
                                         </Button>
-                                    )}
+                                    </div>
+                                )}
+
+                                <div className="flex items-center justify-between gap-3 flex-wrap">
                                     <div className="flex items-center gap-2">
-                                        {completed && (
+                                        {completed && mcqPassed && (
+                                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary font-mono">
+                                                <CheckCircle2 className="h-4 w-4" /> Lesson &amp; quiz complete
+                                            </span>
+                                        )}
+                                        {completed && !mcqPassed && !videoFinished && (
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => navigate(`/quiz/${mod?.id}`)}
+                                                onClick={() =>
+                                                    navigate(`/quiz/${mod.id}`, {
+                                                        state: {
+                                                            nextModuleId: nextId,
+                                                            courseId: mod.course_id,
+                                                            mandatory: true,
+                                                        },
+                                                    })
+                                                }
                                                 className="gap-1.5"
                                             >
                                                 <BrainCircuit className="h-3.5 w-3.5" /> Take Quiz
                                             </Button>
                                         )}
-                                        {nextId && completed && (
+                                        {nextId && mcqPassed && (
                                             <Button
                                                 size="sm"
                                                 onClick={() => navigate(`/learn/${nextId}`)}
@@ -512,7 +642,9 @@ const ModulePlayer = () => {
                             <div className="grid lg:grid-cols-2 gap-4">
                                 <NotesPanel
                                     moduleId={mod.id}
-                                    getCurrentTime={() => playerRef.current?.getCurrentTime() ?? 0}
+                                    getCurrentTime={() =>
+                                        playerRef.current?.getCurrentTime() ?? 0
+                                    }
                                     onSeek={(s) => playerRef.current?.seekTo(s)}
                                 />
                                 <div className="rounded-2xl border border-border bg-card p-5 flex flex-col items-center justify-center text-center min-h-[140px]">
@@ -581,9 +713,7 @@ const ModulePlayer = () => {
                     </div>
                 )}
             </div>
-            {/* <Suspense fallback={null}> */}
-                <AITutorPanel moduleId={mod?.id ?? ""} />
-            {/* </Suspense> */}
+            <AITutorPanel moduleId={mod?.id ?? ""} />
         </AppShell>
     );
 };
