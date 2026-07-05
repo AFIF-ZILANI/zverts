@@ -15,7 +15,7 @@ import {
     Settings,
 } from "lucide-react";
 import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
-import { ThemeToggle, LanguageToggle } from "./ThemeToggle";
+import { ThemeToggle } from "./ThemeToggle";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
