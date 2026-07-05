@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Navigate, Link, useNavigate } from "react-router-dom";
+import { useParams, Navigate, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
     ArrowLeft,
     ArrowRight,
     RotateCcw,
-    Lock,
+    PlayCircle,
 } from "lucide-react";
 
 interface Question {
@@ -26,7 +26,14 @@ interface Question {
     position: number;
 }
 
-type QuizState = "loading" | "generating" | "no_questions" | "already_passed" | "quiz" | "submitted";
+type QuizState =
+    | "loading"
+    | "generating"
+    | "no_questions"
+    | "already_passed"
+    | "quiz"
+    | "submitted"
+    | "must_rewatch";
 
 const PASS_THRESHOLD = 8;
 
@@ -34,18 +41,27 @@ const Quiz = () => {
     const { id: moduleId } = useParams<{ id: string }>();
     const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Router state from ModulePlayer (optional)
+    const { nextModuleId, courseId: stateCourseId } =
+        (location.state as { nextModuleId?: string; courseId?: string; mandatory?: boolean } | null) ?? {};
 
     const [state, setState] = useState<QuizState>("loading");
     const [moduleTitle, setModuleTitle] = useState("");
-    const [courseId, setCourseId] = useState<string | null>(null);
+    const [courseId, setCourseId] = useState<string | null>(stateCourseId ?? null);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [answers, setAnswers] = useState<Record<string, number>>({});
     const [submitting, setSubmitting] = useState(false);
-    const [result, setResult] = useState<{ score: number; total: number; passed: boolean } | null>(
-        null,
-    );
+    const [result, setResult] = useState<{
+        score: number;
+        total: number;
+        passed: boolean;
+        fail_streak: number;
+    } | null>(null);
     const [prevPassed, setPrevPassed] = useState(false);
     const [prevScore, setPrevScore] = useState<{ score: number; total: number } | null>(null);
+    const [failStreak, setFailStreak] = useState(0);
 
     useEffect(() => {
         if (!user || !moduleId) return;
@@ -60,7 +76,7 @@ const Quiz = () => {
                     .maybeSingle(),
                 supabase
                     .from("module_progress")
-                    .select("mcq_passed")
+                    .select("mcq_passed, quiz_fail_streak")
                     .eq("user_id", user.id)
                     .eq("module_id", moduleId)
                     .maybeSingle(),
@@ -76,11 +92,13 @@ const Quiz = () => {
 
             if (mod) {
                 setModuleTitle(mod.title);
-                setCourseId(mod.course_id);
+                if (!stateCourseId) setCourseId(mod.course_id);
             }
-
             if (attempt) {
                 setPrevScore({ score: attempt.score, total: attempt.total });
+            }
+            if (prog?.quiz_fail_streak) {
+                setFailStreak(prog.quiz_fail_streak);
             }
 
             const { data: qs, error } = await (supabase.rpc as any)("get_mcq_questions", {
@@ -103,7 +121,9 @@ const Quiz = () => {
 
             if (parsed.length === 0) {
                 setState("generating");
-                const { data: { session } } = await supabase.auth.getSession();
+                const {
+                    data: { session },
+                } = await supabase.auth.getSession();
                 const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-mcq`;
                 const genRes = await fetch(fnUrl, {
                     method: "POST",
@@ -118,10 +138,10 @@ const Quiz = () => {
                     setState("no_questions");
                     return;
                 }
-                const { data: qs2, error: e2 } = await (supabase.rpc as any)(
-                    "get_mcq_questions",
-                    { _module_ids: [moduleId], _limit: 10 },
-                );
+                const { data: qs2, error: e2 } = await (supabase.rpc as any)("get_mcq_questions", {
+                    _module_ids: [moduleId],
+                    _limit: 10,
+                });
                 if (e2 || !qs2?.length) {
                     setState("no_questions");
                     return;
@@ -167,14 +187,34 @@ const Quiz = () => {
             toast.error(error.message);
             return;
         }
-        const r = data as { score: number; total: number; passed: boolean };
-        setResult(r);
-        setState("submitted");
+        const r = data as {
+            score: number;
+            total: number;
+            passed: boolean;
+            must_rewatch: boolean;
+            fail_streak: number;
+        };
+
         if (r.passed) {
+            setResult({ score: r.score, total: r.total, passed: true, fail_streak: 0 });
+            setFailStreak(0);
+            setState("submitted");
             toast.success(`Quiz passed! +1 Gem · +30 XP 🎉`);
+        } else if (r.must_rewatch) {
+            setResult({ score: r.score, total: r.total, passed: false, fail_streak: 0 });
+            setState("must_rewatch");
+            toast.message("3 failed attempts — you need to rewatch this lesson first.");
         } else {
+            setResult({
+                score: r.score,
+                total: r.total,
+                passed: false,
+                fail_streak: r.fail_streak,
+            });
+            setFailStreak(r.fail_streak);
+            setState("submitted");
             toast.message(
-                `Scored ${r.score}/${r.total} — need ${PASS_THRESHOLD} to pass. Try again!`,
+                `Scored ${r.score}/${r.total} — need ${PASS_THRESHOLD} to pass. ${3 - r.fail_streak} attempt${3 - r.fail_streak !== 1 ? "s" : ""} left.`,
             );
         }
     };
@@ -183,6 +223,11 @@ const Quiz = () => {
         setAnswers({});
         setResult(null);
         setState("quiz");
+    };
+
+    const goNext = () => {
+        if (nextModuleId) navigate(`/learn/${nextModuleId}`);
+        else navigate(courseId ? `/courses/${courseId}` : "/courses");
     };
 
     if (authLoading) return null;
@@ -211,19 +256,26 @@ const Quiz = () => {
                         {moduleTitle || "Quiz"}
                     </h1>
                     {state === "quiz" && (
-                        <p className="text-sm text-muted-foreground mt-2 font-mono">
-                            {questions.length} questions · score {PASS_THRESHOLD}/{questions.length}{" "}
-                            to pass
-                        </p>
+                        <div className="flex items-center gap-3 mt-2 flex-wrap">
+                            <p className="text-sm text-muted-foreground font-mono">
+                                {questions.length} questions · score {PASS_THRESHOLD}/
+                                {questions.length} to pass
+                            </p>
+                            {failStreak > 0 && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 border border-destructive/30 px-2.5 py-0.5 text-xs font-mono text-destructive">
+                                    Attempt {failStreak + 1}/3
+                                </span>
+                            )}
+                        </div>
                     )}
-                    {prevScore && state !== "submitted" && state !== "already_passed" && (
+                    {prevScore && state !== "submitted" && state !== "already_passed" && state !== "must_rewatch" && (
                         <p className="text-xs text-muted-foreground mt-1 font-mono">
                             Last attempt: {prevScore.score}/{prevScore.total}
                         </p>
                     )}
                 </div>
 
-                {/* States */}
+                {/* ── loading ── */}
                 {state === "loading" && (
                     <div className="space-y-4">
                         {Array.from({ length: 3 }).map((_, i) => (
@@ -239,6 +291,7 @@ const Quiz = () => {
                     </div>
                 )}
 
+                {/* ── generating ── */}
                 {state === "generating" && (
                     <div className="rounded-2xl border border-border bg-gradient-card p-8 text-center shadow-card">
                         <BrainCircuit className="h-10 w-10 text-primary mx-auto mb-4 animate-pulse" />
@@ -249,6 +302,7 @@ const Quiz = () => {
                     </div>
                 )}
 
+                {/* ── no questions ── */}
                 {state === "no_questions" && (
                     <div className="rounded-2xl border border-border bg-gradient-card p-8 text-center shadow-card">
                         <BrainCircuit className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
@@ -259,13 +313,16 @@ const Quiz = () => {
                         <Button
                             className="mt-6"
                             variant="outline"
-                            onClick={() => navigate(courseId ? `/courses/${courseId}` : "/courses")}
+                            onClick={() =>
+                                navigate(courseId ? `/courses/${courseId}` : "/courses")
+                            }
                         >
                             Back to course
                         </Button>
                     </div>
                 )}
 
+                {/* ── already passed ── */}
                 {state === "already_passed" && (
                     <div className="rounded-2xl border border-primary/40 bg-primary/5 p-8 text-center shadow-card">
                         <Trophy className="h-12 w-12 text-primary mx-auto mb-4" />
@@ -284,16 +341,40 @@ const Quiz = () => {
                             </Button>
                             <Button
                                 className="bg-gradient-lime text-primary-foreground shadow-glow gap-2"
-                                onClick={() =>
-                                    navigate(courseId ? `/courses/${courseId}` : "/courses")
-                                }
+                                onClick={goNext}
                             >
-                                Continue <ArrowRight className="h-4 w-4" />
+                                {nextModuleId ? "Next lesson" : "Continue"}{" "}
+                                <ArrowRight className="h-4 w-4" />
                             </Button>
                         </div>
                     </div>
                 )}
 
+                {/* ── must rewatch ── */}
+                {state === "must_rewatch" && (
+                    <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center shadow-card">
+                        <PlayCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                        <h2 className="font-display text-2xl">Rewatch required</h2>
+                        {result && (
+                            <p className="text-4xl font-display font-bold mt-3">
+                                <span className="text-foreground">{result.score}</span>
+                                <span className="text-muted-foreground text-2xl">/{result.total}</span>
+                            </p>
+                        )}
+                        <p className="text-sm text-muted-foreground mt-3 max-w-sm mx-auto">
+                            You've failed 3 times in a row. Rewatch the lesson carefully before
+                            trying the quiz again.
+                        </p>
+                        <Button
+                            className="mt-6 bg-gradient-lime text-primary-foreground shadow-glow gap-2"
+                            onClick={() => navigate(moduleId ? `/learn/${moduleId}` : "/courses")}
+                        >
+                            <PlayCircle className="h-4 w-4" /> Rewatch lesson
+                        </Button>
+                    </div>
+                )}
+
+                {/* ── submitted ── */}
                 {state === "submitted" && result && (
                     <div
                         className={cn(
@@ -320,7 +401,7 @@ const Quiz = () => {
                         <p className="text-sm text-muted-foreground mt-2">
                             {result.passed
                                 ? "+1 Gem · +30 XP earned"
-                                : `Need ${PASS_THRESHOLD} correct to pass`}
+                                : `Need ${PASS_THRESHOLD} correct to pass · ${3 - result.fail_streak} attempt${3 - result.fail_streak !== 1 ? "s" : ""} left`}
                         </p>
                         <div className="flex justify-center gap-3 mt-6">
                             {!result.passed && (
@@ -328,30 +409,20 @@ const Quiz = () => {
                                     <RotateCcw className="h-4 w-4" /> Try again
                                 </Button>
                             )}
-                            <Button
-                                className={cn(
-                                    "gap-2",
-                                    result.passed
-                                        ? "bg-gradient-lime text-primary-foreground shadow-glow"
-                                        : "",
-                                )}
-                                variant={result.passed ? "default" : "outline"}
-                                onClick={() =>
-                                    navigate(courseId ? `/courses/${courseId}` : "/courses")
-                                }
-                            >
-                                {result.passed ? (
-                                    <>
-                                        Continue <ArrowRight className="h-4 w-4" />
-                                    </>
-                                ) : (
-                                    "Back to course"
-                                )}
-                            </Button>
+                            {result.passed && (
+                                <Button
+                                    className="bg-gradient-lime text-primary-foreground shadow-glow gap-2"
+                                    onClick={goNext}
+                                >
+                                    {nextModuleId ? "Next lesson" : "Continue"}{" "}
+                                    <ArrowRight className="h-4 w-4" />
+                                </Button>
+                            )}
                         </div>
                     </div>
                 )}
 
+                {/* ── quiz ── */}
                 {state === "quiz" && (
                     <div className="space-y-5">
                         {questions.map((q, i) => (
