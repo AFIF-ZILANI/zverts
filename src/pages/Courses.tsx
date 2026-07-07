@@ -47,6 +47,24 @@ const Courses = () => {
     const [searching, setSearching] = useState(false);
     const [searched, setSearched] = useState(false);
     const [results, setResults] = useState<PlaylistSearchResult[]>([]);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [activeSuggestion, setActiveSuggestion] = useState(-1);
+
+    useEffect(() => {
+        setActiveSuggestion(-1);
+        if (query.trim().length < 2) {
+            setSuggestions([]);
+            return;
+        }
+        const timer = setTimeout(async () => {
+            const { data } = await supabase.functions.invoke("youtube-suggest", {
+                body: { query: query.trim() },
+            });
+            setSuggestions((data as { suggestions?: string[] })?.suggestions ?? []);
+        }, 250);
+        return () => clearTimeout(timer);
+    }, [query]);
 
     const load = async () => {
         if (!user) return;
@@ -124,11 +142,13 @@ const Courses = () => {
         setPreviewOpen(true);
     };
 
-    const searchPlaylists = async () => {
-        if (!query.trim()) return;
+    const searchPlaylists = async (queryOverride?: string) => {
+        const target = (queryOverride ?? query).trim();
+        if (!target) return;
+        setShowSuggestions(false);
         setSearching(true);
         const { data, error } = await supabase.functions.invoke("search-youtube-playlists", {
-            body: { query: query.trim() },
+            body: { query: target },
         });
         setSearching(false);
         setSearched(true);
@@ -138,6 +158,11 @@ const Courses = () => {
             return;
         }
         setResults((data as { results: PlaylistSearchResult[] })?.results ?? []);
+    };
+
+    const selectSuggestion = (s: string) => {
+        setQuery(s);
+        searchPlaylists(s);
     };
 
     const selectResult = (r: PlaylistSearchResult) => {
@@ -229,15 +254,57 @@ const Courses = () => {
 
                         <TabsContent value="search" className="mt-0 space-y-3">
                             <div className="flex flex-col sm:flex-row gap-2">
-                                <Input
-                                    placeholder="Search YouTube playlists…"
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    onKeyDown={(e) => e.key === "Enter" && searchPlaylists()}
-                                    className="flex-1 bg-background"
-                                />
+                                <div className="relative flex-1">
+                                    <Input
+                                        placeholder="Search YouTube playlists…"
+                                        value={query}
+                                        onChange={(e) => {
+                                            setQuery(e.target.value);
+                                            setShowSuggestions(true);
+                                        }}
+                                        onFocus={() => setShowSuggestions(true)}
+                                        onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                                        onKeyDown={(e) => {
+                                            const open = showSuggestions && suggestions.length > 0;
+                                            if (open && e.key === "ArrowDown") {
+                                                e.preventDefault();
+                                                setActiveSuggestion((i) => (i + 1) % suggestions.length);
+                                            } else if (open && e.key === "ArrowUp") {
+                                                e.preventDefault();
+                                                setActiveSuggestion((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+                                            } else if (e.key === "Enter") {
+                                                if (open && activeSuggestion >= 0) {
+                                                    selectSuggestion(suggestions[activeSuggestion]);
+                                                } else {
+                                                    searchPlaylists();
+                                                }
+                                            } else if (e.key === "Escape" && open) {
+                                                setShowSuggestions(false);
+                                            }
+                                        }}
+                                        className="bg-background"
+                                    />
+                                    {showSuggestions && suggestions.length > 0 && (
+                                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-popover shadow-elevated overflow-hidden">
+                                            {suggestions.map((s, i) => (
+                                                <button
+                                                    key={s}
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => selectSuggestion(s)}
+                                                    onMouseEnter={() => setActiveSuggestion(i)}
+                                                    className={`flex items-center gap-2 w-full text-left px-3 py-2 text-sm transition-colors ${
+                                                        i === activeSuggestion ? "bg-muted" : "hover:bg-muted"
+                                                    }`}
+                                                >
+                                                    <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                                    {s}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                                 <Button
-                                    onClick={searchPlaylists}
+                                    onClick={() => searchPlaylists()}
                                     disabled={searching || !query.trim()}
                                     className="bg-gradient-lime text-primary-foreground hover:opacity-90 shadow-glow shrink-0 w-full sm:w-auto"
                                 >
