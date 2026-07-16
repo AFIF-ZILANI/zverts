@@ -66,10 +66,12 @@ interface Course {
     completed_count?: number;
 }
 
-const fmt = (s: number) => {
-    const m = Math.floor(s / 60),
-        sec = s % 60;
-    return `${m}:${String(sec).padStart(2, "0")}`;
+const fmtDuration = (s: number) => {
+    if (s <= 0) return "0 min";
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    if (h > 0) return m > 0 ? `${h}h ${String(m).padStart(2, "0")}m` : `${h}h`;
+    return `${m} min`;
 };
 
 const PAGE_SIZE = 12;
@@ -100,7 +102,6 @@ const Courses = () => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [activeSuggestion, setActiveSuggestion] = useState(-1);
 
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastSearchRef = useRef<string | null>(null);
 
     const doSearch = useCallback(
@@ -133,17 +134,6 @@ const Courses = () => {
         },
         [],
     );
-
-    useEffect(() => {
-        if (!searched) return;
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => {
-            doSearch(query, contentType, searchPage);
-        }, 350);
-        return () => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-        };
-    }, [query, contentType]); // eslint-disable-line
 
     const searchManual = useCallback(() => {
         lastSearchRef.current = null;
@@ -538,7 +528,7 @@ const Courses = () => {
                                                     )}
                                                     {r.type === "video" && (
                                                         <div className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
-                                                            {fmt(r.duration)}
+                                                            {fmtDuration(r.duration)}
                                                         </div>
                                                     )}
                                                     {r.type === "playlist" && (
