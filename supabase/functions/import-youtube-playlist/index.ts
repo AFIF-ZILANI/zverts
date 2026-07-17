@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 function parseDuration(iso: string): number {
+    if (!iso) return 0;
     const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
     if (!m) return 0;
     return +(m[1] || 0) * 3600 + +(m[2] || 0) * 60 + +(m[3] || 0);
@@ -82,6 +83,8 @@ Deno.serve(async (req) => {
         }
 
         const { url } = await req.json();
+        if (!url) return json({ error: "URL is required" }, 400);
+
         const videoId = extractVideoId(url);
         const playlistId = !videoId ? extractPlaylistId(url) : null;
 
@@ -98,6 +101,11 @@ Deno.serve(async (req) => {
             const res = await fetch(
                 `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${apiKey}`,
             );
+            if (!res.ok) {
+                const errorBody = await res.json().catch(() => ({}));
+                console.error("YouTube video API error:", res.status, errorBody);
+                return json({ error: `YouTube API error: ${errorBody?.error?.message ?? `HTTP ${res.status}`}` }, 400);
+            }
             const j = await res.json();
             if (j.error) {
                 console.error("Video info error:", j.error);
@@ -178,6 +186,11 @@ Deno.serve(async (req) => {
         const plRes = await fetch(
             `https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=${playlistId}&key=${apiKey}`,
         );
+        if (!plRes.ok) {
+            const errorBody = await plRes.json().catch(() => ({}));
+            console.error("YouTube playlist API error:", plRes.status, errorBody);
+            return json({ error: `YouTube API error: ${errorBody?.error?.message ?? `HTTP ${plRes.status}`}` }, 400);
+        }
         const plJson = await plRes.json();
 
         if (plJson.error) {
@@ -208,6 +221,11 @@ Deno.serve(async (req) => {
                     pageToken ? `&pageToken=${pageToken}` : ""
                 }&key=${apiKey}`,
             );
+            if (!res.ok) {
+                const errorBody = await res.json().catch(() => ({}));
+                console.error("YouTube playlistItems API error:", res.status, errorBody);
+                return json({ error: `YouTube API error: ${errorBody?.error?.message ?? `HTTP ${res.status}`}` }, 400);
+            }
             const j = await res.json();
 
             if (j.error) {
@@ -251,10 +269,14 @@ Deno.serve(async (req) => {
             const r = await fetch(
                 `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${batch}&key=${apiKey}`,
             );
-            const j = await r.json();
-            (j.items ?? []).forEach((v: Record<string, unknown>) =>
-                durations.set(v.id as string, parseDuration((v.contentDetails as Record<string, unknown>).duration as string)),
-            );
+            if (r.ok) {
+                const j = await r.json();
+                (j.items ?? []).forEach((v: Record<string, unknown>) =>
+                    durations.set(v.id as string, parseDuration((v.contentDetails as Record<string, unknown>).duration as string)),
+                );
+            } else {
+                console.error("YouTube video duration fetch failed:", r.status);
+            }
         }
 
         const { data: course, error: cErr } = await supabase
@@ -286,7 +308,7 @@ Deno.serve(async (req) => {
             return {
                 course_id: course.id,
                 position: idx + 1,
-                title: it.snippet.title,
+                title: it.snippet.title ?? "Untitled video",
                 youtube_video_id: videoId,
                 duration_seconds: durations.get(videoId) ?? 0,
                 thumbnail_url:
@@ -340,7 +362,7 @@ Deno.serve(async (req) => {
                 : entitlement.playlist_conversions_left - 1,
         });
     } catch (e) {
-        console.error("Unexpected error:", e);
-        return json({ error: (e as Error).message }, 500);
+        console.error("import-youtube-playlist unexpected error:", e);
+        return json({ error: (e as Error).message ?? "An unexpected error occurred during import" }, 500);
     }
 });

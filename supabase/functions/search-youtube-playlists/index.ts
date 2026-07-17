@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
         const wantVideos = contentType === "both" || contentType === "videos";
 
         const PAGE_SIZE_YT = 50;
-        const MAX_PAGES = 20;
+        const MAX_PAGES = 5;
 
         async function fetchYouTubeSearch(
             type: "playlist" | "video",
@@ -45,8 +45,16 @@ Deno.serve(async (req) => {
             for (let i = 0; i < Math.min(pagesNeeded, MAX_PAGES); i++) {
                 const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=${type}&maxResults=${PAGE_SIZE_YT}&q=${encodeURIComponent(q)}${ytToken ? `&pageToken=${ytToken}` : ""}&key=${apiKey}`;
                 const res = await fetch(url);
+                if (!res.ok) {
+                    const errorBody = await res.json().catch(() => ({}));
+                    console.error(`YouTube search API error (${type}):`, res.status, errorBody);
+                    throw new Error(errorBody?.error?.message ?? `YouTube API returned ${res.status}`);
+                }
                 const j = await res.json();
-                if (j.error) throw new Error(j.error.message);
+                if (j.error) {
+                    console.error(`YouTube search error (${type}):`, j.error);
+                    throw new Error(j.error.message);
+                }
                 allItems.push(...(j.items ?? []));
                 if (!j.nextPageToken || allItems.length >= maxResults) break;
                 ytToken = j.nextPageToken;
@@ -76,8 +84,16 @@ Deno.serve(async (req) => {
                 const detailsRes = await fetch(
                     `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${batch}&key=${apiKey}`,
                 );
+                if (!detailsRes.ok) {
+                    const errorBody = await detailsRes.json().catch(() => ({}));
+                    console.error("YouTube playlist details API error:", detailsRes.status, errorBody);
+                    throw new Error(errorBody?.error?.message ?? `YouTube API returned ${detailsRes.status}`);
+                }
                 const detailsJson = await detailsRes.json();
-                if (detailsJson.error) return json({ error: detailsJson.error.message }, 400);
+                if (detailsJson.error) {
+                    console.error("YouTube playlist details error:", detailsJson.error);
+                    return json({ error: detailsJson.error.message }, 400);
+                }
 
                 playlistResults.push(
                     ...(detailsJson.items ?? []).map((it: Record<string, unknown>) => {
@@ -107,8 +123,16 @@ Deno.serve(async (req) => {
                 const detailsRes = await fetch(
                     `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${batch}&key=${apiKey}`,
                 );
+                if (!detailsRes.ok) {
+                    const errorBody = await detailsRes.json().catch(() => ({}));
+                    console.error("YouTube video details API error:", detailsRes.status, errorBody);
+                    throw new Error(errorBody?.error?.message ?? `YouTube API returned ${detailsRes.status}`);
+                }
                 const detailsJson = await detailsRes.json();
-                if (detailsJson.error) return json({ error: detailsJson.error.message }, 400);
+                if (detailsJson.error) {
+                    console.error("YouTube video details error:", detailsJson.error);
+                    return json({ error: detailsJson.error.message }, 400);
+                }
 
                 videoResults.push(
                     ...(detailsJson.items ?? []).map((it: Record<string, unknown>) => {
@@ -125,6 +149,7 @@ Deno.serve(async (req) => {
                             title: sn.title,
                             channel: sn.channelTitle,
                             duration: durationSecs,
+                            publishedAt: sn.publishedAt ?? null,
                             thumbnail:
                                 thumbs?.high?.url ?? thumbs?.medium?.url ?? thumbs?.default?.url ?? null,
                         };
@@ -153,6 +178,7 @@ Deno.serve(async (req) => {
             totalPages: Math.ceil(totalCount / pageSize),
         });
     } catch (e) {
-        return json({ error: (e as Error).message }, 500);
+        console.error("search-youtube-playlists error:", e);
+        return json({ error: (e as Error).message ?? "An unexpected error occurred" }, 500);
     }
 });

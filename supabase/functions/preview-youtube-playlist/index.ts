@@ -4,6 +4,7 @@ const corsHeaders = {
 };
 
 function parseDuration(iso: string): number {
+    if (!iso) return 0;
     const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
     if (!m) return 0;
     return +(m[1] || 0) * 3600 + +(m[2] || 0) * 60 + +(m[3] || 0);
@@ -54,6 +55,8 @@ Deno.serve(async (req) => {
         if (!user) return json({ error: "Unauthorized" }, 401);
 
         const { url } = await req.json();
+        if (!url) return json({ error: "URL is required" }, 400);
+
         const apiKey = Deno.env.get("YOUTUBE_API_KEY")!;
         if (!apiKey) return json({ error: "YouTube API key missing" }, 500);
 
@@ -68,23 +71,31 @@ Deno.serve(async (req) => {
             const res = await fetch(
                 `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${apiKey}`,
             );
+            if (!res.ok) {
+                const errorBody = await res.json().catch(() => ({}));
+                console.error("YouTube video API error:", res.status, errorBody);
+                return json({ error: errorBody?.error?.message ?? `YouTube API returned ${res.status}` }, 400);
+            }
             const j = await res.json();
-            if (j.error) return json({ error: j.error.message }, 400);
+            if (j.error) {
+                console.error("YouTube video error:", j.error);
+                return json({ error: j.error.message }, 400);
+            }
             if (!j.items?.length) return json({ error: "Video not found or is private" }, 404);
             const v = j.items[0];
             const sn = v.snippet;
             const duration = parseDuration(v.contentDetails?.duration ?? "PT0S");
             return json({
                 playlist: {
-                    title: sn.title,
-                    description: sn.description,
-                    channel: sn.channelTitle,
+                    title: sn.title ?? "Untitled video",
+                    description: sn.description ?? "",
+                    channel: sn.channelTitle ?? "Unknown channel",
                     thumbnail: sn.thumbnails?.high?.url ?? sn.thumbnails?.medium?.url ?? null,
                 },
                 videos: [
                     {
                         videoId,
-                        title: sn.title,
+                        title: sn.title ?? "Untitled video",
                         thumbnail: sn.thumbnails?.high?.url ?? sn.thumbnails?.medium?.url ?? null,
                         duration,
                     },
@@ -96,8 +107,16 @@ Deno.serve(async (req) => {
         const plRes = await fetch(
             `https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=${playlistId}&key=${apiKey}`,
         );
+        if (!plRes.ok) {
+            const errorBody = await plRes.json().catch(() => ({}));
+            console.error("YouTube playlist API error:", plRes.status, errorBody);
+            return json({ error: errorBody?.error?.message ?? `YouTube API returned ${plRes.status}` }, 400);
+        }
         const plJson = await plRes.json();
-        if (plJson.error) return json({ error: plJson.error.message }, 400);
+        if (plJson.error) {
+            console.error("YouTube playlist error:", plJson.error);
+            return json({ error: plJson.error.message }, 400);
+        }
         if (!plJson.items?.length) return json({ error: "Playlist not found or private" }, 404);
         const sn = plJson.items[0].snippet;
 
@@ -107,8 +126,16 @@ Deno.serve(async (req) => {
             const r = await fetch(
                 `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&maxResults=50&playlistId=${playlistId}${token ? `&pageToken=${token}` : ""}&key=${apiKey}`,
             );
+            if (!r.ok) {
+                const errorBody = await r.json().catch(() => ({}));
+                console.error("YouTube playlistItems API error:", r.status, errorBody);
+                return json({ error: errorBody?.error?.message ?? `YouTube API returned ${r.status}` }, 400);
+            }
             const j = await r.json();
-            if (j.error) return json({ error: j.error.message }, 400);
+            if (j.error) {
+                console.error("YouTube playlistItems error:", j.error);
+                return json({ error: j.error.message }, 400);
+            }
             items.push(...(j.items ?? []));
             if (!j.nextPageToken) break;
             token = j.nextPageToken;
@@ -125,22 +152,26 @@ Deno.serve(async (req) => {
             const r = await fetch(
                 `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${batch}&key=${apiKey}`,
             );
-            const j = await r.json();
-            (j.items ?? []).forEach((v: Record<string, unknown>) =>
-                durations.set(v.id as string, parseDuration((v.contentDetails as Record<string, unknown>).duration as string)),
-            );
+            if (r.ok) {
+                const j = await r.json();
+                (j.items ?? []).forEach((v: Record<string, unknown>) =>
+                    durations.set(v.id as string, parseDuration((v.contentDetails as Record<string, unknown>).duration as string)),
+                );
+            } else {
+                console.error("YouTube video duration fetch failed:", r.status);
+            }
         }
 
         return json({
             playlist: {
-                title: sn.title,
-                description: sn.description,
-                channel: sn.channelTitle,
+                title: sn.title ?? "Untitled playlist",
+                description: sn.description ?? "",
+                channel: sn.channelTitle ?? "Unknown channel",
                 thumbnail: sn.thumbnails?.high?.url ?? sn.thumbnails?.medium?.url ?? null,
             },
             videos: valid.map((it: Record<string, unknown>) => ({
                 videoId: it.snippet.resourceId.videoId,
-                title: it.snippet.title,
+                title: it.snippet.title ?? "Untitled video",
                 thumbnail:
                     it.snippet.thumbnails?.medium?.url ??
                     `https://i.ytimg.com/vi/${it.snippet.resourceId.videoId}/hqdefault.jpg`,
@@ -149,6 +180,7 @@ Deno.serve(async (req) => {
             total: valid.length,
         });
     } catch (e) {
-        return json({ error: (e as Error).message }, 500);
+        console.error("preview-youtube-playlist unexpected error:", e);
+        return json({ error: (e as Error).message ?? "An unexpected error occurred" }, 500);
     }
 });

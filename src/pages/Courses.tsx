@@ -21,6 +21,7 @@ import {
     Play,
     ChevronLeft,
     ChevronRight,
+    Clock,
 } from "lucide-react";
 import { PlaylistPreview } from "@/components/app/PlaylistPreview";
 
@@ -39,6 +40,7 @@ interface SearchVideoResult {
     title: string;
     channel: string;
     duration: number;
+    publishedAt?: string;
     thumbnail: string | null;
 }
 
@@ -74,7 +76,26 @@ const fmtDuration = (s: number) => {
     return `${m} min`;
 };
 
+const fmtPublishedDate = (iso?: string) => {
+    if (!iso) return "";
+    try {
+        const d = new Date(iso);
+        const now = new Date();
+        const diffMs = now.getTime() - d.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDays < 1) return "Today";
+        if (diffDays < 7) return `${diffDays}d ago`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+        if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+        return `${Math.floor(diffDays / 365)}y ago`;
+    } catch {
+        return "";
+    }
+};
+
 const PAGE_SIZE = 12;
+
+const searchCache = new Map<string, SearchResponse>();
 
 const Courses = () => {
     const { user, loading: authLoading } = useAuth();
@@ -102,6 +123,8 @@ const Courses = () => {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [activeSuggestion, setActiveSuggestion] = useState(-1);
 
+    const [convertingId, setConvertingId] = useState<string | null>(null);
+
     const lastSearchRef = useRef<string | null>(null);
 
     const doSearch = useCallback(
@@ -113,6 +136,17 @@ const Courses = () => {
             if (lastSearchRef.current === key) return;
             lastSearchRef.current = key;
 
+            const cacheKey = key;
+            const cached = searchCache.get(cacheKey);
+            if (cached) {
+                setResults(cached.results ?? []);
+                setTotalCount(cached.totalCount ?? 0);
+                setTotalPages(cached.totalPages ?? 0);
+                setSearchPage(cached.page ?? pg);
+                setSearched(true);
+                return;
+            }
+
             setSearching(true);
             const { data, error } = await supabase.functions.invoke("search-youtube-playlists", {
                 body: { query: trimmed, contentType: ct, page: pg, pageSize: PAGE_SIZE },
@@ -122,11 +156,13 @@ const Courses = () => {
 
             const dataErr = (data as Record<string, unknown>)?.error;
             if (error || dataErr) {
-                toast.error((dataErr as string) ?? error?.message ?? "Search failed");
+                const errMsg = (dataErr as string) ?? error?.message ?? "Search failed";
+                toast.error(errMsg, { description: "Please check your search query and try again." });
                 return;
             }
 
             const resp = data as SearchResponse;
+            searchCache.set(cacheKey, resp);
             setResults(resp.results ?? []);
             setTotalCount(resp.totalCount ?? 0);
             setTotalPages(resp.totalPages ?? 0);
@@ -233,7 +269,8 @@ const Courses = () => {
         setPreviewing(false);
         const dataErr = (data as Record<string, unknown>)?.error;
         if (error || dataErr) {
-            toast.error((dataErr as string) ?? error?.message ?? "Preview failed");
+            const errMsg = (dataErr as string) ?? error?.message ?? "Preview failed";
+            toast.error(errMsg, { description: "Could not load preview. Check the URL and try again." });
             return;
         }
         setPreview(data);
@@ -259,6 +296,29 @@ const Courses = () => {
         }
     };
 
+    const quickConvert = async (r: SearchResult) => {
+        const targetUrl = r.type === "playlist"
+            ? `https://www.youtube.com/playlist?list=${r.playlistId}`
+            : `https://www.youtube.com/watch?v=${r.videoId}`;
+        const id = r.type === "playlist" ? r.playlistId : r.videoId;
+        setConvertingId(id);
+        setImporting(true);
+        const { data, error } = await supabase.functions.invoke("import-youtube-playlist", {
+            body: { url: targetUrl },
+        });
+        setImporting(false);
+        setConvertingId(null);
+        const dataErr = (data as Record<string, unknown>)?.error;
+        if (error || dataErr) {
+            const errMsg = (dataErr as string) ?? error?.message ?? "Conversion failed";
+            toast.error(errMsg, { description: "Please try again or use the Preview button." });
+            return;
+        }
+        toast.success("Course created!", { description: `${r.title} has been imported.` });
+        if (data?.course_id) navigate(`/courses/${data.course_id}`);
+        else load();
+    };
+
     const importPlaylist = async () => {
         if (!url.trim()) return;
         setImporting(true);
@@ -266,11 +326,13 @@ const Courses = () => {
             body: { url: url.trim() },
         });
         setImporting(false);
-        if (error) {
-            toast.error(error.message);
+        const dataErr = (data as Record<string, unknown>)?.error;
+        if (error || dataErr) {
+            const errMsg = (dataErr as string) ?? error?.message ?? "Import failed";
+            toast.error(errMsg, { description: "Could not create course. Please try again." });
             return;
         }
-        toast.success("Course created!");
+        toast.success("Course created!", { description: "Your course is ready." });
         setUrl("");
         setPreviewOpen(false);
         setPreview(null);
@@ -462,7 +524,7 @@ const Courses = () => {
                                                     : "bg-muted text-muted-foreground hover:bg-muted/80"
                                             }`}
                                         >
-                                            {ct === "both" ? "Both" : ct === "videos" ? "Videos" : "Playlists"}
+                                            {ct === "both" ? "All" : ct === "videos" ? "Videos" : "Playlists"}
                                         </button>
                                     ))}
                                 </div>
@@ -498,65 +560,123 @@ const Courses = () => {
                             ) : (
                                 <div id="search-results">
                                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        {results.map((r) => (
-                                            <button
-                                                key={
-                                                    r.type === "playlist"
-                                                        ? `pl-${r.playlistId}`
-                                                        : `vid-${r.videoId}`
-                                                }
-                                                onClick={() => selectResult(r)}
-                                                disabled={previewing}
-                                                className="text-left rounded-xl border border-border bg-background overflow-hidden hover:border-primary/40 hover:shadow-elevated transition-all duration-200 disabled:opacity-50"
-                                            >
-                                                <div className="relative aspect-video bg-muted overflow-hidden">
-                                                    {r.thumbnail ? (
-                                                        <img
-                                                            src={r.thumbnail}
-                                                            alt=""
-                                                            className="w-full h-full object-cover"
-                                                            loading="lazy"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center">
-                                                            {r.type === "playlist" ? (
-                                                                <ListVideo className="h-8 w-8 text-muted-foreground/40" />
+                                        {results.map((r) => {
+                                            const itemId = r.type === "playlist" ? r.playlistId : r.videoId;
+                                            const isConverting = convertingId === itemId;
+                                            return (
+                                                <div
+                                                    key={
+                                                        r.type === "playlist"
+                                                            ? `pl-${r.playlistId}`
+                                                            : `vid-${r.videoId}`
+                                                    }
+                                                    className="text-left rounded-xl border border-border bg-background overflow-hidden hover:border-primary/40 hover:shadow-elevated transition-all duration-200"
+                                                >
+                                                    <button
+                                                        onClick={() => selectResult(r)}
+                                                        disabled={previewing || isConverting}
+                                                        className="w-full text-left disabled:opacity-50"
+                                                    >
+                                                        <div className="relative aspect-video bg-muted overflow-hidden">
+                                                            {r.thumbnail ? (
+                                                                <img
+                                                                    src={r.thumbnail}
+                                                                    alt=""
+                                                                    className="w-full h-full object-cover"
+                                                                    loading="lazy"
+                                                                />
                                                             ) : (
-                                                                <Play className="h-8 w-8 text-muted-foreground/40" />
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    {r.type === "playlist" ? (
+                                                                        <ListVideo className="h-8 w-8 text-muted-foreground/40" />
+                                                                    ) : (
+                                                                        <Play className="h-8 w-8 text-muted-foreground/40" />
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            {r.type === "video" && (
+                                                                <div className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
+                                                                    {fmtDuration(r.duration)}
+                                                                </div>
+                                                            )}
+                                                            {r.type === "playlist" && (
+                                                                <div className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-mono px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                                    <ListVideo className="h-3 w-3" />
+                                                                    {r.itemCount} videos
+                                                                </div>
+                                                            )}
+                                                            {r.type === "playlist" && (
+                                                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <Play className="h-10 w-10 text-white drop-shadow-lg" />
+                                                                </div>
                                                             )}
                                                         </div>
-                                                    )}
-                                                    {r.type === "video" && (
-                                                        <div className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
-                                                            {fmtDuration(r.duration)}
+                                                    </button>
+                                                    <div className="p-3 space-y-1.5">
+                                                        <h4 className="font-medium text-sm leading-tight line-clamp-2">
+                                                            {r.title}
+                                                        </h4>
+                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                                                            {r.type === "playlist" ? (
+                                                                <ListVideo className="h-3 w-3 shrink-0" />
+                                                            ) : (
+                                                                <Play className="h-3 w-3 shrink-0" />
+                                                            )}
+                                                            <span className="truncate">{r.channel}</span>
                                                         </div>
-                                                    )}
-                                                    {r.type === "playlist" && (
-                                                        <div className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
-                                                            {r.itemCount} videos
+                                                        <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                                                            <span className="flex items-center gap-1">
+                                                                {r.type === "playlist" ? (
+                                                                    <>
+                                                                        <ListVideo className="h-3 w-3" />
+                                                                        Playlist · {r.itemCount} videos
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Clock className="h-3 w-3" />
+                                                                        {fmtDuration(r.duration)}
+                                                                    </>
+                                                                )}
+                                                            </span>
+                                                            {r.type === "video" && r.publishedAt && (
+                                                                <span>{fmtPublishedDate(r.publishedAt)}</span>
+                                                            )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                                <div className="p-3 space-y-1">
-                                                    <h4 className="font-medium text-sm leading-tight line-clamp-2">
-                                                        {r.title}
-                                                    </h4>
-                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                                                        {r.type === "playlist" ? (
-                                                            <ListVideo className="h-3 w-3 shrink-0" />
-                                                        ) : (
-                                                            <Play className="h-3 w-3 shrink-0" />
-                                                        )}
-                                                        <span className="truncate">{r.channel}</span>
-                                                        <span className="shrink-0 ml-auto">
-                                                            {r.type === "playlist"
-                                                                ? "Playlist"
-                                                                : "Video"}
-                                                        </span>
+                                                        <div className="flex gap-1.5 pt-1">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="h-7 text-[10px] font-mono flex-1"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    selectResult(r);
+                                                                }}
+                                                                disabled={previewing || isConverting}
+                                                            >
+                                                                <Eye className="h-3 w-3 mr-1" />
+                                                                Preview
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                className="h-7 text-[10px] font-mono flex-1 bg-gradient-lime text-primary-foreground hover:opacity-90"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    quickConvert(r);
+                                                                }}
+                                                                disabled={importing || isConverting}
+                                                            >
+                                                                {isConverting ? (
+                                                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                                                ) : (
+                                                                    <BookOpen className="h-3 w-3 mr-1" />
+                                                                )}
+                                                                {isConverting ? "Creating…" : "Create course"}
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </button>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
