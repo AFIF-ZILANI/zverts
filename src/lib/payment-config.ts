@@ -1,7 +1,7 @@
 export const MERCHANT_NUMBERS = {
-    bkash: "01319711956",
-    nagad: "01319711956",
-    rocket: "01319711956",
+    bkash: "01341570410",
+    nagad: "01341570410",
+    rocket: "01341570410",
 } as const;
 
 export type PackageKey = "premium";
