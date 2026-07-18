@@ -52,7 +52,6 @@ const Payment = () => {
         setSubmitting(true);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await supabase.rpc("submit_payment" as any, {
-            _package: pkgKey,
             _method: method,
             _sender_number: sender,
             _trx_id: trx,
@@ -92,9 +91,7 @@ const Payment = () => {
                             selected plan
                         </div>
                         <div className="font-display text-2xl mt-1">{pkg.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                            Monthly subscription
-                        </div>
+                        <div className="text-sm text-muted-foreground">Monthly subscription</div>
                     </div>
                     <div className="text-right">
                         <div className="font-display text-4xl font-bold">
@@ -113,6 +110,7 @@ const Payment = () => {
                         {METHODS.map((m) => (
                             <button
                                 key={m}
+                                disabled={submitting || m === "rocket"}
                                 onClick={() => setMethod(m)}
                                 className={`rounded-xl border p-4 font-medium transition-all ${method === m ? "border-primary bg-primary/10 text-primary shadow-glow" : "border-border bg-card hover:border-primary/40"}`}
                             >
