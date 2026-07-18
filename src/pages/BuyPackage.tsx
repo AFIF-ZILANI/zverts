@@ -11,7 +11,6 @@ const BENEFITS = [
     "MCQ Test After Every Module Completion",
     "Focus Extension Protection",
     "Social Media Distraction Blocking",
-    "AI Site Blocking During Quiz",
     "Progress Tracking & Learning Analytics",
     "Priority Support",
 ];
@@ -77,12 +76,11 @@ const BuyPackage = () => {
                                 ))}
                             </ul>
 
-                            <Button
-                                size="lg"
-                                className="w-full bg-gradient-lime text-primary-foreground hover:opacity-90 shadow-glow text-base font-semibold h-12"
-                            >
-                                Upgrade to Premium
-                            </Button>
+                                <Link to="/payment?pkg=premium" className="w-full">
+                                    <Button className="w-full" size="lg">
+                                        Upgrade Now
+                                    </Button>
+                                </Link>
 
                             <p className="text-center text-xs text-muted-foreground font-mono">
                                 Cancel anytime. No hidden fees.
