@@ -1,4 +1,4 @@
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ const WHY_CHOOSE = [
 
 const BuyPackage = () => {
     const { user, loading } = useAuth();
+    const navigate = useNavigate();
     if (loading) return null;
     if (!user) return <Navigate to="/auth" replace />;
 
