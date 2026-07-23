@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { classifyEducational } from "../_shared/content-guard.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -94,6 +95,7 @@ Deno.serve(async (req) => {
 
         const apiKey = Deno.env.get("YOUTUBE_API_KEY")!;
         if (!apiKey) return json({ error: "YouTube API key not configured" }, 500);
+        const openrouterKey = Deno.env.get("OPENROUTER_API_KEY")!;
 
         if (videoId) {
             console.log("Importing single video:", videoId, "for user:", user.id);
@@ -119,6 +121,17 @@ Deno.serve(async (req) => {
             const duration = parseDuration(v.contentDetails?.duration ?? "PT0S");
             const thumb = sn.thumbnails?.high?.url ?? sn.thumbnails?.medium?.url ?? null;
             const authorChannelId = sn.channelId ?? null;
+
+            const [isEducational] = await classifyEducational(
+                [{ title: sn.title ?? "", channel: sn.channelTitle ?? "" }],
+                openrouterKey,
+            );
+            if (!isEducational) {
+                return json(
+                    { error: "This platform only supports educational content. That video doesn't look educational." },
+                    422,
+                );
+            }
 
             const { data: course, error: cErr } = await supabase
                 .from("courses")
@@ -211,6 +224,17 @@ Deno.serve(async (req) => {
         const authorChannelUrl = authorChannelId
             ? `https://www.youtube.com/channel/${authorChannelId}`
             : null;
+
+        const [playlistIsEducational] = await classifyEducational(
+            [{ title: playlistTitle, channel: authorName ?? "" }],
+            openrouterKey,
+        );
+        if (!playlistIsEducational) {
+            return json(
+                { error: "This platform only supports educational content. That playlist doesn't look educational." },
+                422,
+            );
+        }
 
         const items: Record<string, unknown>[] = [];
         let pageToken: string | undefined;

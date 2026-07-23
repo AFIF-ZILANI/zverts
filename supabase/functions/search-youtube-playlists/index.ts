@@ -1,3 +1,5 @@
+import { classifyEducational } from "../_shared/content-guard.ts";
+
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -157,6 +159,18 @@ Deno.serve(async (req) => {
                 );
             }
         }
+
+        const openrouterKey = Deno.env.get("OPENROUTER_API_KEY")!;
+        const plCount = playlistResults.length;
+        const flags = await classifyEducational(
+            [...playlistResults, ...videoResults].map((r) => ({
+                title: r.title as string,
+                channel: r.channel as string,
+            })),
+            openrouterKey,
+        );
+        playlistResults = playlistResults.filter((_, i) => flags[i]);
+        videoResults = videoResults.filter((_, i) => flags[plCount + i]);
 
         const allResults: Record<string, unknown>[] = [];
         let pi = 0, vi = 0;
