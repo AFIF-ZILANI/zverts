@@ -3,6 +3,7 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import "./lib/i18n";
+import { registerServiceWorker } from "./lib/push";
 
 // PWA / standalone scroll safety net.
 // Radix dialogs, sheets, drawers and the mobile menu all temporarily set
@@ -26,6 +27,8 @@ window.addEventListener("pageshow", releaseScrollLock);
 window.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") releaseScrollLock();
 });
+
+registerServiceWorker();
 
 createRoot(document.getElementById("root")!).render(
     <HelmetProvider>

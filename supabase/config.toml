@@ -10,3 +10,7 @@ verify_jwt = false
 # doesn't need to check an API key/JWT — keeps the cron working without legacy keys.
 [functions.notifications-scan]
 verify_jwt = false
+
+# Called by the notify_push() trigger; authenticated with the x-push-secret header.
+[functions.push-send]
+verify_jwt = false
