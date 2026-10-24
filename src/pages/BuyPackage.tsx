@@ -8,7 +8,7 @@ const BENEFITS = [
     "30 Playlist Converts Per Month",
     "AI Tutor Access",
     "Credits Never Expire",
-    "MCQ Test After Every Module Completion",
+    "Genuine Watch-Time Tracking",
     "Focus Extension Protection",
     "Social Media Distraction Blocking",
     "Progress Tracking & Learning Analytics",

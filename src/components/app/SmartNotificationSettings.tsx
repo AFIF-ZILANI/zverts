@@ -91,7 +91,7 @@ export const SmartNotificationSettings = () => {
                 {row("Gamification", "XP, level up, streak milestones, badges.", "gamification")}
                 {row(
                     "AI suggestions",
-                    "Summaries, generated quizzes, weak-topic alerts.",
+                    "Summaries and weak-topic alerts.",
                     "ai_suggestions",
                 )}
                 {row(

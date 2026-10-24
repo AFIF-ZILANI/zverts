@@ -251,12 +251,12 @@ export const ChatPanel = ({
     const suggestions = source
         ? [
               `Summarize "${source.moduleTitle}" in 5 bullets`,
-              `Generate 5 MCQs from this module`,
+              `What should I remember from this module?`,
               `Explain the hardest concept simply`,
           ]
         : [
               "What should I revise today?",
-              "Quiz me on my weakest topic",
+              "Explain my weakest topic simply",
               "Plan my study for the next 3 days",
           ];
 

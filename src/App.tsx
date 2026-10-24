@@ -40,7 +40,6 @@ const CourseDetail = lazyWithRetry(() => import("./pages/CourseDetail.tsx"));
 const Profile = lazyWithRetry(() => import("./pages/Profile.tsx"));
 const Settings = lazyWithRetry(() => import("./pages/Settings.tsx"));
 
-const Quiz = lazyWithRetry(() => import("./pages/Quiz.tsx"));
 const Growth = lazyWithRetry(() => import("./pages/Growth.tsx"));
 const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard.tsx"));
 const Admin = lazyWithRetry(() => import("./pages/Admin.tsx"));
@@ -118,7 +117,6 @@ const App = () => (
                                     {/* /explore removed per product decision */}
                                     <Route path="/learn" element={<Learn />} />
                                     <Route path="/learn/:id" element={<ModulePlayer />} />
-                                    <Route path="/quiz/:id" element={<Quiz />} />
                                     <Route path="/profile" element={<Profile />} />
                                     <Route path="/settings" element={<Settings />} />
 

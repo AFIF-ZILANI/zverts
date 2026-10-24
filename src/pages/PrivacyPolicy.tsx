@@ -70,7 +70,7 @@ const PrivacyPolicy = () => (
                     <ul className="space-y-1.5">
                         <Bullet>Name, email address, and profile picture (via OAuth or sign-up)</Bullet>
                         <Bullet>Payment details such as transaction IDs and phone numbers</Bullet>
-                        <Bullet>Course progress, quiz scores, and learning activity</Bullet>
+                        <Bullet>Course progress, watch time, and learning activity</Bullet>
                         <Bullet>Device type, browser, and usage analytics</Bullet>
                         <Bullet>IP address and approximate location</Bullet>
                     </ul>

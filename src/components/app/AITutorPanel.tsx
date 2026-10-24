@@ -94,7 +94,7 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
 
     const [streamingText, setStreamingText] = useState<string>("");
 
-    const send = async (override?: { text: string; mode?: "chat" | "summary" | "mcq" }) => {
+    const send = async (override?: { text: string; mode?: "chat" | "summary" }) => {
         const text = override?.text ?? input.trim();
         if (!text || busy) return;
         const id = ensureChat();
@@ -215,13 +215,8 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
         }
     };
 
-    const quick = (mode: "summary" | "mcq") => {
-        const text =
-            mode === "summary"
-                ? "Summarize the key points of this lesson."
-                : "Generate 5 MCQs to test my understanding.";
-        send({ text, mode });
-    };
+    const summarize = () =>
+        send({ text: "Summarize the key points of this lesson.", mode: "summary" });
 
     const copyMsg = async (content: string) => {
         await navigator.clipboard.writeText(content);
@@ -308,14 +303,13 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
                                     Vert AI is locked
                                 </p>
                                 <p className="text-sm text-muted-foreground mt-1.5 max-w-xs mx-auto">
-                                    Get instant explanations, lesson summaries, and MCQ quizzes —
-                                    grounded in this exact lesson.
+                                    Get instant explanations and lesson summaries — grounded in
+                                    this exact lesson.
                                 </p>
                             </div>
                             <ul className="text-left text-sm space-y-2 text-muted-foreground">
                                 {[
                                     "Explain any concept in English or Bangla",
-                                    "Generate MCQs to test your understanding",
                                     "Summarize the full lesson in seconds",
                                     "Ask follow-up questions with context",
                                 ].map((f) => (
@@ -485,27 +479,18 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
                                                 Ask Vert anything about this lesson
                                             </div>
                                             <div className="text-xs text-muted-foreground mt-1">
-                                                Math, code, summaries, MCQs — beautifully formatted.
+                                                Math, code and summaries — beautifully formatted.
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-2 px-4 max-w-sm mx-auto">
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => quick("summary")}
+                                                onClick={summarize}
                                                 className="justify-start"
                                             >
                                                 <FileText className="h-3.5 w-3.5 mr-2" /> Summarize
                                                 this lesson
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => quick("mcq")}
-                                                className="justify-start"
-                                            >
-                                                <ListChecks className="h-3.5 w-3.5 mr-2" /> Quiz me
-                                                with 5 MCQs
                                             </Button>
                                             <Button
                                                 size="sm"

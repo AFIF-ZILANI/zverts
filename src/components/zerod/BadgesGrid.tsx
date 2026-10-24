@@ -44,12 +44,6 @@ const BADGES: Record<string, { name: string; desc: string; icon: ElementType; co
         icon: Crown,
         color: "from-yellow-400 to-amber-600",
     },
-    quiz_master: {
-        name: "Quiz Master",
-        desc: "Passed 5 quizzes",
-        icon: Award,
-        color: "from-pink-500 to-rose-600",
-    },
     gems_100: {
         name: "Gem Collector",
         desc: "Earned 100 gems",
