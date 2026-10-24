@@ -6,14 +6,29 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const SUPABASE_URL = "https://jiprvhotnoobsutdlnrf.supabase.co";
-const SERVICE_ROLE_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppcHJ2aG90bm9vYnN1dGRsbnJmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDczNTg3NSwiZXhwIjoyMDk2MzExODc1fQ._zJsWVzB2VVS5hdA95K9sq3RSQBOuLPSw5C2uD9Q-oc";
+// Secrets come from the environment or the git-ignored .env — never commit them.
+const readEnv = (name: string): string | undefined => {
+    if (process.env[name]) return process.env[name];
+    const envFile = path.join(__dirname, "../.env");
+    if (!fs.existsSync(envFile)) return undefined;
+    const line = fs
+        .readFileSync(envFile, "utf-8")
+        .split("\n")
+        .find((l) => l.startsWith(`${name}=`));
+    return line?.slice(name.length + 1).trim();
+};
+
+const SUPABASE_URL = readEnv("VITE_SUPABASE_URL") ?? "https://jiprvhotnoobsutdlnrf.supabase.co";
+const SERVICE_ROLE_KEY = readEnv("SUPABASE_SERVICE_ROLE_KEY");
 const TEST_EMAIL = "afifzilani4566@gmail.com";
 const BASE_URL = "http://localhost:5173";
 const AUTH_FILE = path.join(__dirname, ".auth/state.json");
 
 export default async function globalSetup() {
+    if (!SERVICE_ROLE_KEY) {
+        throw new Error("[setup] Set SUPABASE_SERVICE_ROLE_KEY in the environment or .env");
+    }
+
     // Skip if a fresh auth state already exists (re-use across runs)
     if (fs.existsSync(AUTH_FILE)) {
         const age = Date.now() - fs.statSync(AUTH_FILE).mtimeMs;
