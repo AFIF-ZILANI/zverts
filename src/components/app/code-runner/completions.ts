@@ -566,7 +566,8 @@ export const registerCompletions = (monaco: M) => {
                         items.push({ label: m, kind: K.Module, insertText: m, range });
                     return { suggestions: items };
                 }
-                const kw = new Set(PY_KEYWORDS);
+                // Library names come with docs below; don't list them again as file words.
+                const kw = new Set([...PY_KEYWORDS, ...PY_BUILTINS.map(([n]) => n)]);
                 for (const w of docWords(text, kw, word.word))
                     items.push({
                         label: w,
@@ -636,7 +637,12 @@ export const registerCompletions = (monaco: M) => {
             }
 
             const keywords = lang === "c" ? C_KEYWORDS : CPP_KEYWORDS;
-            for (const w of docWords(text, new Set(keywords), word.word))
+            const known = new Set([
+                ...keywords,
+                ...C_FUNCTIONS.map(([n]) => n),
+                ...(lang === "cpp" ? STD.map(([n]) => n) : []),
+            ]);
+            for (const w of docWords(text, known, word.word))
                 items.push({ label: w, kind: K.Variable, insertText: w, range, sortText: "1" + w });
             for (const e of C_FUNCTIONS) items.push(fn(e, K.Function, range, "2"));
             if (lang === "cpp") for (const e of STD) items.push(fn(e, K.Class, range, "2"));
