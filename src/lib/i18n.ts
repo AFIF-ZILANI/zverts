@@ -113,6 +113,7 @@ const en = {
         rank: "Rank",
     },
     footer: { credit: "Made by Kazi Tauhid Rana" },
+    update: { available: "A new version of Zverts is available", reload: "Reload" },
 };
 
 const bn = {
@@ -226,6 +227,7 @@ const bn = {
         rank: "র‌্যাঙ্ক",
     },
     footer: { credit: "তৈরি করেছেন কাজী তৌহিদ রানা" },
+    update: { available: "Zverts-এর নতুন সংস্করণ এসেছে", reload: "রিলোড করুন" },
 };
 
 i18n.use(LanguageDetector)
