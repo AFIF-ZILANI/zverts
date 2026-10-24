@@ -13,6 +13,7 @@ import {
     TrendingUp,
     CreditCard,
     Settings,
+    LayoutGrid,
 } from "lucide-react";
 import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
@@ -63,6 +64,15 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     useAdminPaymentAlerts(isAdmin);
     useBrowserNotifications();
 
+    // Signed-in users get a bottom tab bar on phones. The attribute lets global
+    // CSS reserve space for it (--app-bottom-inset) so toasts and floating
+    // buttons sit above it.
+    useEffect(() => {
+        if (!user) return;
+        document.body.setAttribute("data-bottom-nav", "");
+        return () => document.body.removeAttribute("data-bottom-nav");
+    }, [user]);
+
     // Lock body scroll when mobile menu is open
     useEffect(() => {
         if (mobileOpen) {
@@ -98,18 +108,19 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         { to: "/payments", icon: CreditCard, label: "Payments" },
         ...(isAdmin ? [{ to: "/admin", icon: Shield, label: "Admin" }] : []),
     ];
+    const tabItems = navItems.filter((n) => n.to !== "/admin");
 
     return (
         <div
             className={cn(
-                "min-h-screen flex flex-col",
+                "min-h-screen flex flex-col pb-[var(--app-bottom-inset)] md:pb-0",
                 theme !== "dark" &&
                     "bg-[radial-gradient(ellipse_at_top,_hsl(142_71%_45%_/_0.06),_transparent_60%)]",
             )}
         >
             {/* ── Header ─────────────────────────────────────────────────────── */}
-            <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-                <div className="container relative flex h-14 items-center gap-3">
+            <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl pt-[env(safe-area-inset-top)] select-none">
+                <div className="container flex h-14 items-center gap-3">
                     {/* Logo */}
                     <Link
                         to={user ? "/dashboard" : "/"}
@@ -124,13 +135,15 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                         />
                     </Link>
 
-                    {/* Desktop nav — absolutely centered in the header */}
-                    {user && (
-                        <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-0.5">
+                    {/* Desktop nav — icons only until there's room for labels */}
+                    {user ? (
+                        <nav className="hidden md:flex flex-1 min-w-0 justify-center items-center gap-0.5">
                             {navItems.map((n) => (
                                 <NavLink
                                     key={n.to}
                                     to={n.to}
+                                    title={n.label}
+                                    aria-label={n.label}
                                     className={({ isActive }) =>
                                         cn(
                                             "relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
@@ -144,8 +157,8 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                                 >
                                     {({ isActive }) => (
                                         <>
-                                            <n.icon className="h-3.5 w-3.5 shrink-0" />
-                                            <span>{n.label}</span>
+                                            <n.icon className="h-4 w-4 lg:h-3.5 lg:w-3.5 shrink-0" />
+                                            <span className="hidden lg:inline">{n.label}</span>
                                             {isActive && (
                                                 <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-primary" />
                                             )}
@@ -154,13 +167,13 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                                 </NavLink>
                             ))}
                         </nav>
-                    )}
+                    ) : null}
 
-                    {/* Spacer */}
-                    <div className="flex-1" />
+                    {/* Spacer (the desktop nav fills this role when signed in) */}
+                    <div className={cn("flex-1", user && "md:hidden")} />
 
                     {/* Desktop right actions */}
-                    <div className="hidden md:flex items-center gap-4">
+                    <div className="hidden md:flex shrink-0 items-center gap-2 lg:gap-4">
                         {/* <LanguageToggle /> */}
                         <ThemeToggle />
                         {user ? (
@@ -173,9 +186,11 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                                 <Link to="/buy">
                                     <Button
                                         size="sm"
+                                        aria-label="Upgrade"
                                         className="bg-gradient-lime text-primary-foreground shadow-glow ml-1 gap-1.5"
                                     >
-                                        <Sparkles className="h-3.5 w-3.5" /> Upgrade
+                                        <Sparkles className="h-3.5 w-3.5" />
+                                        <span className="hidden lg:inline">Upgrade</span>
                                     </Button>
                                 </Link>
 
@@ -225,22 +240,24 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                                 <NotificationCenter />
                             </Suspense>
                         )}
-                        <button
-                            onClick={() => setMobileOpen((v) => !v)}
-                            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-                            className={cn(
-                                "flex items-center justify-center h-9 w-9 rounded-lg border transition-colors",
-                                mobileOpen
-                                    ? "border-primary bg-primary/10 text-primary"
-                                    : "border-border bg-card text-foreground hover:bg-muted",
-                            )}
-                        >
-                            {mobileOpen ? (
-                                <X className="h-4.5 w-4.5" />
-                            ) : (
-                                <Menu className="h-4.5 w-4.5" />
-                            )}
-                        </button>
+                        {!user && (
+                            <button
+                                onClick={() => setMobileOpen((v) => !v)}
+                                aria-label={mobileOpen ? "Close menu" : "Open menu"}
+                                className={cn(
+                                    "flex items-center justify-center h-9 w-9 rounded-lg border transition-colors",
+                                    mobileOpen
+                                        ? "border-primary bg-primary/10 text-primary"
+                                        : "border-border bg-card text-foreground hover:bg-muted",
+                                )}
+                            >
+                                {mobileOpen ? (
+                                    <X className="h-4.5 w-4.5" />
+                                ) : (
+                                    <Menu className="h-4.5 w-4.5" />
+                                )}
+                            </button>
+                        )}
                     </div>
                 </div>
             </header>
@@ -250,12 +267,20 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                 <>
                     {/* Backdrop */}
                     <div
-                        className="md:hidden fixed inset-0 top-14 z-30 bg-background/70 backdrop-blur-sm"
+                        className="md:hidden fixed inset-0 z-30 bg-background/70 backdrop-blur-sm"
+                        style={{ top: "var(--app-header-h)" }}
                         onClick={() => setMobileOpen(false)}
                     />
 
                     {/* Panel */}
-                    <div className="md:hidden fixed left-0 right-0 top-14 z-40 border-b border-border/60 bg-card/98 backdrop-blur-xl shadow-2xl animate-fade-in max-h-[calc(100dvh-3.5rem)] overflow-y-auto">
+                    <div
+                        className="md:hidden fixed left-0 right-0 z-40 border-b border-border/60 bg-card/98 backdrop-blur-xl shadow-2xl animate-fade-in overflow-y-auto overscroll-contain"
+                        style={{
+                            top: "var(--app-header-h)",
+                            maxHeight:
+                                "calc(100dvh - var(--app-header-h) - var(--app-bottom-inset))",
+                        }}
+                    >
                         {/* User identity */}
                         {user && (
                             <div className="flex items-center gap-3 px-4 py-4 border-b border-border/60">
@@ -400,6 +425,69 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             )}
 
             <main className="flex-1">{children}</main>
+
+            {/* ── Mobile bottom tab bar ──────────────────────────────────────── */}
+            {user && (
+                <nav
+                    aria-label="Primary"
+                    className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/90 backdrop-blur-xl safe-area-pb select-none"
+                >
+                    <div className="grid h-16 grid-cols-5">
+                        {tabItems.map((n) => (
+                            <NavLink
+                                key={n.to}
+                                to={n.to}
+                                onClick={() => setMobileOpen(false)}
+                                className={({ isActive }) =>
+                                    cn(
+                                        "flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors active:scale-95",
+                                        isActive && !mobileOpen
+                                            ? "text-primary"
+                                            : "text-muted-foreground",
+                                    )
+                                }
+                            >
+                                {({ isActive }) => (
+                                    <>
+                                        <span
+                                            className={cn(
+                                                "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
+                                                isActive && !mobileOpen && "bg-primary/12",
+                                            )}
+                                        >
+                                            <n.icon className="h-5 w-5" />
+                                        </span>
+                                        <span className="truncate max-w-full px-1">{n.label}</span>
+                                    </>
+                                )}
+                            </NavLink>
+                        ))}
+                        <button
+                            onClick={() => setMobileOpen((v) => !v)}
+                            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+                            aria-expanded={mobileOpen}
+                            className={cn(
+                                "flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors active:scale-95",
+                                mobileOpen ? "text-primary" : "text-muted-foreground",
+                            )}
+                        >
+                            <span
+                                className={cn(
+                                    "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
+                                    mobileOpen && "bg-primary/12",
+                                )}
+                            >
+                                {mobileOpen ? (
+                                    <X className="h-5 w-5" />
+                                ) : (
+                                    <LayoutGrid className="h-5 w-5" />
+                                )}
+                            </span>
+                            <span>Menu</span>
+                        </button>
+                    </div>
+                </nav>
+            )}
             <Suspense fallback={null}>
                 <SiteFooter />
             </Suspense>
