@@ -13,7 +13,6 @@ import {
     TrendingUp,
     CreditCard,
     Settings,
-    LayoutGrid,
     Code2,
 } from "lucide-react";
 import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
@@ -26,6 +25,53 @@ import { cn } from "@/lib/utils";
 import { useAdminPaymentAlerts } from "@/hooks/useAdminPaymentAlerts";
 import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 import { OfflineBanner } from "./OfflineBanner";
+import { CodeIcon, CoursesIcon, GrowthIcon, HomeIcon, MenuIcon, type TabIcon } from "./TabIcons";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
+
+const TAB_ICONS: Record<string, TabIcon> = {
+    "/dashboard": HomeIcon,
+    "/courses": CoursesIcon,
+    "/code": CodeIcon,
+    "/growth": GrowthIcon,
+};
+
+// One phone tab: the active one sits on a tinted glass pill and its icon switches to
+// the filled variant.
+const TabContent = ({
+    label,
+    on,
+    children,
+}: {
+    label: string;
+    on: boolean;
+    children: ReactNode;
+}) => (
+    <>
+        <span
+            aria-hidden="true"
+            className={cn(
+                "absolute inset-x-0.5 inset-y-1.5 rounded-[22px] bg-primary/12 ring-1 ring-inset ring-primary/15 transition-all duration-300",
+                on ? "opacity-100 scale-100" : "opacity-0 scale-90",
+            )}
+        />
+        <span
+            className={cn(
+                "relative transition-colors",
+                on ? "text-primary" : "text-muted-foreground",
+            )}
+        >
+            {children}
+        </span>
+        <span
+            className={cn(
+                "relative truncate max-w-full px-1 text-[11px] leading-none transition-colors",
+                on ? "text-primary font-semibold" : "text-muted-foreground font-medium",
+            )}
+        >
+            {label}
+        </span>
+    </>
+);
 
 const SiteFooter = lazy(() => import("./SiteFooter").then((m) => ({ default: m.SiteFooter })));
 const NotificationCenter = lazy(() =>
@@ -46,6 +92,8 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     const { t } = useTranslation();
     const { theme } = useTheme();
     const [mobileOpen, setMobileOpen] = useState(false);
+    // Phones: the tab bar slides away while scrolling down, back on scroll up.
+    const tabBarRef = useHideOnScroll<HTMLElement>(!!user && !mobileOpen, location.pathname);
     const attendanceMarkedFor = useRef<string | null>(null);
 
     // Mark today's attendance once per user per browser session.
@@ -122,7 +170,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             )}
         >
             {/* ── Header ─────────────────────────────────────────────────────── */}
-            <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl pt-[env(safe-area-inset-top)] select-none">
+            <header className="glass-bar sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] select-none">
                 <div className="container flex h-14 items-center gap-3">
                     {/* Logo */}
                     <Link
@@ -278,7 +326,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
 
                     {/* Panel */}
                     <div
-                        className="md:hidden fixed left-0 right-0 z-40 border-b border-border/60 bg-card/98 backdrop-blur-xl shadow-2xl animate-fade-in overflow-y-auto overscroll-contain"
+                        className="glass-bar md:hidden fixed left-0 right-0 z-40 border-b shadow-2xl animate-fade-in overflow-y-auto overscroll-contain"
                         style={{
                             top: "var(--app-header-h)",
                             maxHeight:
@@ -433,61 +481,40 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             {/* ── Mobile bottom tab bar ──────────────────────────────────────── */}
             {user && (
                 <nav
+                    ref={tabBarRef}
                     aria-label="Primary"
-                    className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/90 backdrop-blur-xl safe-area-pb select-none"
+                    className="glass-bar md:hidden fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 rounded-[28px] border shadow-elevated select-none will-change-transform"
                 >
-                    <div className="grid h-16 grid-cols-5">
-                        {tabItems.map((n) => (
-                            <NavLink
-                                key={n.to}
-                                to={n.to}
-                                onClick={() => setMobileOpen(false)}
-                                className={({ isActive }) =>
-                                    cn(
-                                        "flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors active:scale-95",
-                                        isActive && !mobileOpen
-                                            ? "text-primary"
-                                            : "text-muted-foreground",
-                                    )
-                                }
-                            >
-                                {({ isActive }) => (
-                                    <>
-                                        <span
-                                            className={cn(
-                                                "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
-                                                isActive && !mobileOpen && "bg-primary/12",
-                                            )}
-                                        >
-                                            <n.icon className="h-5 w-5" />
-                                        </span>
-                                        <span className="truncate max-w-full px-1">{n.label}</span>
-                                    </>
-                                )}
-                            </NavLink>
-                        ))}
+                    <div className="grid h-16 grid-cols-5 px-1.5">
+                        {tabItems.map((n) => {
+                            const Icon = TAB_ICONS[n.to] ?? HomeIcon;
+                            return (
+                                <NavLink
+                                    key={n.to}
+                                    to={n.to}
+                                    onClick={() => setMobileOpen(false)}
+                                    className="relative flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform"
+                                >
+                                    {({ isActive }) => {
+                                        const on = isActive && !mobileOpen;
+                                        return (
+                                            <TabContent label={n.label} on={on}>
+                                                <Icon active={on} />
+                                            </TabContent>
+                                        );
+                                    }}
+                                </NavLink>
+                            );
+                        })}
                         <button
                             onClick={() => setMobileOpen((v) => !v)}
                             aria-label={mobileOpen ? "Close menu" : "Open menu"}
                             aria-expanded={mobileOpen}
-                            className={cn(
-                                "flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors active:scale-95",
-                                mobileOpen ? "text-primary" : "text-muted-foreground",
-                            )}
+                            className="relative flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform"
                         >
-                            <span
-                                className={cn(
-                                    "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
-                                    mobileOpen && "bg-primary/12",
-                                )}
-                            >
-                                {mobileOpen ? (
-                                    <X className="h-5 w-5" />
-                                ) : (
-                                    <LayoutGrid className="h-5 w-5" />
-                                )}
-                            </span>
-                            <span>Menu</span>
+                            <TabContent label="Menu" on={mobileOpen}>
+                                <MenuIcon active={mobileOpen} />
+                            </TabContent>
                         </button>
                     </div>
                 </nav>
