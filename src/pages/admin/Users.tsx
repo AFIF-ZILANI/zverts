@@ -81,7 +81,7 @@ const AdminUsersInner = () => {
                                 <th>Email</th>
                                 <th>AI</th>
                                 <th>Paid</th>
-                                <th>Free used</th>
+                                <th>Free left</th>
                                 <th>Credits</th>
                                 <th>Total Tk</th>
                                 <th>Status</th>
@@ -95,7 +95,7 @@ const AdminUsersInner = () => {
                                     <td className="text-muted-foreground">{u.email}</td>
                                     <td>{u.ai_enabled ? "✨" : "—"}</td>
                                     <td>{u.is_paid_user ? "✓" : "—"}</td>
-                                    <td>{u.free_playlist_used}/3</td>
+                                    <td>{u.playlist_conversions_left}</td>
                                     <td className="text-primary font-medium">
                                         {u.convert_credits}
                                     </td>
