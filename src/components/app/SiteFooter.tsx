@@ -34,11 +34,11 @@ export const SiteFooter = () => {
     const { resolvedTheme } = useTheme();
 
     return (
-        <footer className="mt-10 border-t border-border/60 pb-[var(--app-bottom-inset)]">
-            <div className="container py-6 md:py-8">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                        <Link to="/" className="flex shrink-0 items-center gap-2">
+        <footer className="mt-10 border-t border-border/60">
+            <div className="container py-7 md:py-8">
+                <div className="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-10">
+                    <div>
+                        <Link to="/" className="inline-flex items-center gap-2">
                             <img
                                 src={
                                     resolvedTheme === "dark" ? "/hero-light.svg" : "/hero-dark.svg"
@@ -51,19 +51,33 @@ export const SiteFooter = () => {
                                 ZverTs
                             </span>
                         </Link>
-                        <span className="hidden h-5 w-px bg-border md:block" />
-                        <p className="hidden truncate text-sm text-muted-foreground md:block">
+                        <p className="mt-1.5 text-sm text-muted-foreground">
                             Learn with discipline. Grow every day.
                         </p>
                     </div>
 
-                    <div className="-mr-2 flex shrink-0 items-center">
+                    <nav
+                        aria-label="Footer"
+                        className="flex flex-wrap gap-x-5 gap-y-2.5 text-sm text-muted-foreground lg:justify-center"
+                    >
+                        {links.map((l) => (
+                            <Link
+                                key={l.to}
+                                to={l.to}
+                                className="transition-colors hover:text-foreground"
+                            >
+                                {l.label}
+                            </Link>
+                        ))}
+                    </nav>
+
+                    <div className="flex items-center gap-2">
                         {socials.map(({ Icon, href, label }) => (
                             <a
                                 key={label}
                                 href={href}
                                 aria-label={label}
-                                className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
                             >
                                 <Icon className="h-4 w-4" />
                             </a>
@@ -71,22 +85,7 @@ export const SiteFooter = () => {
                     </div>
                 </div>
 
-                <nav
-                    aria-label="Footer"
-                    className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground"
-                >
-                    {links.map((l) => (
-                        <Link
-                            key={l.to}
-                            to={l.to}
-                            className="transition-colors hover:text-foreground"
-                        >
-                            {l.label}
-                        </Link>
-                    ))}
-                </nav>
-
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-border/50 pt-4 text-xs text-muted-foreground">
+                <div className="mt-6 flex flex-col items-start gap-2 border-t border-border/50 pt-5 text-xs text-muted-foreground sm:flex-row sm:justify-between">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                         <span>© {year} ZverTs</span>
                         {legal.map((l) => (
