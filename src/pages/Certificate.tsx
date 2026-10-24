@@ -8,12 +8,15 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Award, Download } from "lucide-react";
 import { jsPDF } from "jspdf";
+import type { Database } from "@/integrations/supabase/types";
+
+type Cert = Database["public"]["Functions"]["issue_certificate"]["Returns"];
 
 const Certificate = () => {
     const { courseId } = useParams();
     const { user, loading } = useAuth();
     const { t } = useTranslation();
-    const [cert, setCert] = useState<Record<string, unknown> | null>(null);
+    const [cert, setCert] = useState<Cert | null>(null);
 
     useEffect(() => {
         if (!user || !courseId) return;

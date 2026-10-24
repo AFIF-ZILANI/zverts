@@ -1,0 +1,123 @@
+// Icons for the phone tab bar: a 24px outline set, each with a filled
+// variant shown on the active tab (the iOS / Material convention).
+import type { ComponentType } from "react";
+import { cn } from "@/lib/utils";
+
+export type TabIconProps = { active?: boolean; className?: string };
+export type TabIcon = ComponentType<TabIconProps>;
+
+const Svg = ({ active, className, children }: TabIconProps & { children: React.ReactNode }) => (
+    <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        className={cn("h-6 w-6", className)}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={active ? 2 : 1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        {children}
+    </svg>
+);
+
+export const HomeIcon: TabIcon = ({ active, className }) => (
+    <Svg active={active} className={className}>
+        {active ? (
+            <path
+                fill="currentColor"
+                stroke="none"
+                d="M12.64 2.83a1 1 0 0 0-1.28 0l-8 6.67a1 1 0 0 0-.36.77V20a1.5 1.5 0 0 0 1.5 1.5H9v-6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6h4.5A1.5 1.5 0 0 0 21 20v-9.73a1 1 0 0 0-.36-.77l-8-6.67Z"
+            />
+        ) : (
+            <path d="M3.75 10.4 12 3.6l8.25 6.8V20a1 1 0 0 1-1 1H15v-5.25a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1V21H4.75a1 1 0 0 1-1-1Z" />
+        )}
+    </Svg>
+);
+
+export const CoursesIcon: TabIcon = ({ active, className }) => (
+    <Svg active={active} className={className}>
+        {active ? (
+            <>
+                <path
+                    fill="currentColor"
+                    stroke="none"
+                    d="M11 6.15V20c-1.85-.95-4-1.45-6.5-1.45A1.5 1.5 0 0 1 3 17.05V5.5A1.5 1.5 0 0 1 4.5 4c2.65 0 4.8.7 6.5 2.15Z"
+                />
+                <path
+                    fill="currentColor"
+                    stroke="none"
+                    d="M13 6.15C14.7 4.7 16.85 4 19.5 4A1.5 1.5 0 0 1 21 5.5v11.55a1.5 1.5 0 0 1-1.5 1.5c-2.5 0-4.65.5-6.5 1.45Z"
+                />
+            </>
+        ) : (
+            <>
+                <path d="M12 6.6C10.3 5.25 7.95 4.6 4.75 4.6a1 1 0 0 0-1 1v11.55a1 1 0 0 0 1 1c3.05 0 5.4.65 7.25 1.95 1.85-1.3 4.2-1.95 7.25-1.95a1 1 0 0 0 1-1V5.6a1 1 0 0 0-1-1c-3.2 0-5.55.65-7.25 2Z" />
+                <path d="M12 6.6v13.5" />
+            </>
+        )}
+    </Svg>
+);
+
+export const CodeIcon: TabIcon = ({ active, className }) => (
+    <Svg active={active} className={className}>
+        {active ? (
+            <>
+                <rect
+                    x="2.75"
+                    y="3.75"
+                    width="18.5"
+                    height="16.5"
+                    rx="4"
+                    fill="currentColor"
+                    stroke="none"
+                />
+                <g className="stroke-background" strokeWidth={2}>
+                    <path d="m9.25 9.25-2.75 2.75 2.75 2.75" />
+                    <path d="m14.75 9.25 2.75 2.75-2.75 2.75" />
+                    <path d="m12.9 8.5-1.8 7" />
+                </g>
+            </>
+        ) : (
+            <>
+                <rect x="3" y="4" width="18" height="16" rx="3.5" />
+                <path d="m9.25 9.25-2.75 2.75 2.75 2.75" />
+                <path d="m14.75 9.25 2.75 2.75-2.75 2.75" />
+                <path d="m12.9 8.5-1.8 7" />
+            </>
+        )}
+    </Svg>
+);
+
+export const GrowthIcon: TabIcon = ({ active, className }) => (
+    <Svg active={active} className={className}>
+        <path d="M3.75 3.75v15.5a1 1 0 0 0 1 1h15.5" />
+        {active && (
+            <path
+                fill="currentColor"
+                stroke="none"
+                opacity={0.3}
+                d="M7.5 16.5 11 12.5l3 2.75 5.5-6.25v8.5a1 1 0 0 1-1 1h-11Z"
+            />
+        )}
+        <path d="m7.5 15 3.5-3.75 3 2.75 5.25-6" />
+        <path d="M15.75 8h3.5v3.5" />
+    </Svg>
+);
+
+export const MenuIcon: TabIcon = ({ active, className }) => (
+    <Svg active={active} className={className}>
+        {active ? (
+            <>
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+            </>
+        ) : (
+            <>
+                <path d="M4 7h16" />
+                <path d="M4 12h16" />
+                <path d="M4 17h10" />
+            </>
+        )}
+    </Svg>
+);

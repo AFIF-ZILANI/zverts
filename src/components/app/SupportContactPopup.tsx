@@ -61,8 +61,7 @@ export const SupportContactPopup = () => {
         (async () => {
             // Already submitted?
             const { data: existing } = await supabase
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                .from("support_contacts" as any)
+                .from("support_contacts")
                 .select("id")
                 .eq("user_id", user.id)
                 .maybeSingle();
@@ -70,14 +69,13 @@ export const SupportContactPopup = () => {
 
             // Recently dismissed?
             const { data: dismissal } = await supabase
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                .from("support_contact_dismissals" as any)
+                .from("support_contact_dismissals")
                 .select("dismissed_at")
                 .eq("user_id", user.id)
                 .maybeSingle();
             if (cancelled) return;
-            if (dismissal && (dismissal as { dismissed_at: string }).dismissed_at) {
-                const ageMs = Date.now() - new Date((dismissal as { dismissed_at: string }).dismissed_at).getTime();
+            if (dismissal?.dismissed_at) {
+                const ageMs = Date.now() - new Date(dismissal.dismissed_at).getTime();
                 if (ageMs < REMIND_AFTER_DAYS * 86400_000) return;
             }
 
@@ -113,8 +111,7 @@ export const SupportContactPopup = () => {
         if (!phoneRes.success) return toast.error(phoneRes.error.issues[0].message);
 
         setBusy(true);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await supabase.from("support_contacts" as any).upsert(
+        const { error } = await supabase.from("support_contacts").upsert(
             {
                 user_id: user.id,
                 name: nameRes.data,
@@ -135,8 +132,7 @@ export const SupportContactPopup = () => {
 
     const handleLater = async () => {
         if (!user) return setOpen(false);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await supabase.from("support_contact_dismissals" as any).upsert(
+        await supabase.from("support_contact_dismissals").upsert(
             {
                 user_id: user.id,
                 dismissed_at: new Date().toISOString(),

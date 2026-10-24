@@ -5,18 +5,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
+
+type UserRow = Database["public"]["Functions"]["admin_list_users"]["Returns"][number];
 
 const AdminUsersInner = () => {
     const [search, setSearch] = useState("");
-    const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+    const [rows, setRows] = useState<UserRow[]>([]);
     const load = async () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await supabase.rpc("admin_list_users" as any, {
+        const { data, error } = await supabase.rpc("admin_list_users", {
             _limit: 200,
-            _search: search || null,
+            _search: search || undefined,
         });
         if (error) toast.error(error.message);
-        else setRows((data as Record<string, unknown>[]) ?? []);
+        else setRows(data ?? []);
     };
     useEffect(() => {
         load(); /* eslint-disable-next-line */
@@ -31,8 +33,7 @@ const AdminUsersInner = () => {
             return;
         }
         const reason = prompt("Reason:") ?? "";
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await supabase.rpc("admin_adjust_credits" as any, {
+        const { error } = await supabase.rpc("admin_adjust_credits", {
             _target: id,
             _delta: delta,
             _reason: reason,
@@ -47,8 +48,7 @@ const AdminUsersInner = () => {
         const reason = locked
             ? (prompt("Reason for unlock:") ?? "")
             : (prompt("Reason for lock:") ?? "");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await supabase.rpc("admin_set_locked" as any, {
+        const { error } = await supabase.rpc("admin_set_locked", {
             _target: id,
             _locked: !locked,
             _reason: reason,

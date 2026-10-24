@@ -6,13 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import type { Tables } from "@/integrations/supabase/types";
 
 type Status = "pending" | "approved" | "rejected";
+type PaymentRow = Tables<"payments"> & {
+    profile?: Pick<Tables<"profiles">, "id" | "email" | "name">;
+};
 
 const AdminPaymentsInner = () => {
     const [status, setStatus] = useState<Status>("pending");
     const [search, setSearch] = useState("");
-    const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+    const [rows, setRows] = useState<PaymentRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [acting, setActing] = useState<string | null>(null);
 
@@ -26,8 +30,7 @@ const AdminPaymentsInner = () => {
             .limit(200);
 
         const { data } = await q;
-        console.log("DATA", data);
-        let list = (data as Record<string, unknown>[]) ?? [];
+        let list: PaymentRow[] = data ?? [];
         if (list.length) {
             const ids = Array.from(new Set(list.map((r) => r.user_id)));
             const { data: profiles } = await supabase
@@ -70,8 +73,7 @@ const AdminPaymentsInner = () => {
 
     const approve = async (id: string) => {
         setActing(id);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await supabase.rpc("approve_payment" as any, { _payment_id: id });
+        const { error } = await supabase.rpc("approve_payment", { _payment_id: id });
         setActing(null);
         if (error) toast.error(error.message);
         else {
@@ -80,10 +82,9 @@ const AdminPaymentsInner = () => {
         }
     };
     const reject = async (id: string) => {
-        const note = prompt("Reason (optional):") ?? null;
+        const note = prompt("Reason (optional):") ?? undefined;
         setActing(id);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await supabase.rpc("reject_payment" as any, {
+        const { error } = await supabase.rpc("reject_payment", {
             _payment_id: id,
             _note: note,
         });

@@ -46,13 +46,23 @@
             linear-gradient(180deg, hsl(0 0% 99%), hsl(150 6% 97%));
 
         --gradient-lime: linear-gradient(135deg, hsl(142 71% 45%), hsl(168 84% 40%));
-        --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(150 6% 98.5%));
+        --gradient-card: linear-gradient(180deg, hsl(0 0% 100% / 0.72), hsl(0 0% 100% / 0.52));
 
         --shadow-glow: 0 0 50px -8px hsl(142 71% 45% / 0.32);
         --shadow-card:
-            0 1px 0 hsl(0 0% 100% / 0.8) inset,
-            0 8px 24px -12px hsl(150 20% 20% / 0.12);
+            0 1px 0 hsl(0 0% 100% / 0.9) inset,
+            0 10px 32px -14px hsl(150 30% 20% / 0.2);
         --shadow-elevated: 0 20px 40px -16px hsl(150 20% 20% / 0.18);
+
+        /* Glass (see "Glass surfaces" below) */
+        --glass-bg: hsl(0 0% 100% / 0.6);
+        --glass-strong: hsl(0 0% 100% / 0.82);
+        --glass-border: hsl(240 10% 10% / 0.08);
+        --glass-filter: blur(20px) saturate(170%);
+        --ambient:
+            radial-gradient(40rem 30rem at 10% -5%, hsl(142 71% 45% / 0.16), transparent 70%),
+            radial-gradient(36rem 28rem at 100% 25%, hsl(190 85% 50% / 0.12), transparent 70%),
+            radial-gradient(40rem 30rem at 30% 105%, hsl(265 80% 65% / 0.1), transparent 70%);
 
         --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -102,13 +112,21 @@
             linear-gradient(180deg, hsl(150 12% 7%), hsl(150 10% 9%));
 
         --gradient-lime: linear-gradient(135deg, hsl(142 71% 60%), hsl(168 84% 50%));
-        --gradient-card: linear-gradient(180deg, hsl(150 10% 13%), hsl(150 10% 11%));
+        --gradient-card: linear-gradient(180deg, hsl(150 10% 16% / 0.58), hsl(150 10% 11% / 0.44));
 
         --shadow-glow: 0 0 50px -8px hsl(142 71% 60% / 0.38);
         --shadow-card:
-            0 1px 0 hsl(150 8% 92% / 0.04) inset,
-            0 20px 40px -20px hsl(150 20% 2% / 0.55);
+            0 1px 0 hsl(0 0% 100% / 0.07) inset,
+            0 20px 40px -20px hsl(150 20% 2% / 0.6);
         --shadow-elevated: 0 28px 56px -20px hsl(150 20% 2% / 0.65);
+
+        --glass-bg: hsl(150 10% 14% / 0.5);
+        --glass-strong: hsl(150 10% 10% / 0.8);
+        --glass-border: hsl(0 0% 100% / 0.09);
+        --ambient:
+            radial-gradient(40rem 30rem at 10% -5%, hsl(142 71% 45% / 0.14), transparent 70%),
+            radial-gradient(36rem 28rem at 100% 25%, hsl(190 85% 45% / 0.1), transparent 70%),
+            radial-gradient(40rem 30rem at 30% 105%, hsl(265 70% 55% / 0.1), transparent 70%);
 
         --sidebar-background: 150 10% 9%;
         --sidebar-foreground: 150 8% 82%;
@@ -132,6 +150,13 @@
     body {
         @apply bg-background text-foreground transition-colors;
         font-family: "Inter", system-ui, sans-serif;
+    }
+    /* A grid with only responsive columns (`grid lg:grid-cols-2`) gets one
+       implicit `auto` column on phones, which grows to fit the longest
+       unbreakable line (a truncated title) and pushes the page wider than the
+       screen. Default to one shrinkable column; any grid-cols-* utility wins. */
+    .grid {
+        grid-template-columns: minmax(0, 1fr);
     }
     h1,
     h2,
@@ -183,7 +208,8 @@
 }
 @media (max-width: 767px) {
     body[data-bottom-nav] {
-        --app-bottom-inset: calc(4rem + env(safe-area-inset-bottom));
+        /* the floating tab bar: 4rem tall, 0.75rem above the home indicator */
+        --app-bottom-inset: calc(4.75rem + env(safe-area-inset-bottom));
     }
     body[data-bottom-nav] [data-sonner-toaster][data-y-position="bottom"] {
         bottom: calc(var(--app-bottom-inset) + 0.75rem) !important;
@@ -229,5 +255,59 @@
     }
     .min-h-screen {
         min-height: 100dvh;
+    }
+}
+
+/* ── Glass surfaces (Apple-style frosted glass) ──────────────────────────── */
+/* Soft colour behind everything, so the frosted surfaces have something to blur. */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: var(--ambient);
+}
+
+/* Cards: see-through with a blur of what's behind them, a light top edge
+   (from --shadow-card) and a faint border. Unlayered so it follows the
+   Tailwind utilities; coloured borders (border-primary/40 …) are left alone. */
+.bg-card,
+.bg-gradient-card {
+    -webkit-backdrop-filter: var(--glass-filter);
+    backdrop-filter: var(--glass-filter);
+}
+.bg-card {
+    background-color: var(--glass-bg);
+}
+.border-border:is(.bg-card, .bg-gradient-card) {
+    border-color: var(--glass-border);
+}
+/* backdrop-filter makes a card the containing block for position:fixed
+   children; the code runner's full-screen mode and editor popups need the
+   viewport, so its card keeps the tint but drops the blur. */
+:is(.bg-card, .bg-gradient-card):has(.code-runner) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+/* Menus, selects and the header/tab bar: thicker glass, for legible text. */
+.bg-popover,
+.glass-bar {
+    background-color: var(--glass-strong);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+}
+.glass-bar {
+    border-color: var(--glass-border);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    :root,
+    .dark {
+        --glass-bg: hsl(var(--card));
+        --glass-strong: hsl(var(--background));
+        --gradient-card: linear-gradient(hsl(var(--card)), hsl(var(--card)));
+        --glass-filter: none;
     }
 }
