@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { announceProfileUpdate } from "@/hooks/useMyProfile";
 import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -255,7 +256,10 @@ const Settings = () => {
         toast.success(t("profile.saved"), { duration: 1500 });
         if (next.preferred_language !== i18n.language) i18n.changeLanguage(next.preferred_language);
     };
-    const saveProfile = () => persist(p);
+    const saveProfile = () => {
+        persist(p);
+        announceProfileUpdate({ name: p.name });
+    };
     const saveGoal = () => {
         const n = Math.max(5, Math.min(480, parseInt(goalDraft ?? "", 10) || p.daily_goal_minutes));
         setGoalDraft(null);
@@ -273,6 +277,7 @@ const Settings = () => {
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);
         await supabase.from("profiles").update({ avatar_url: data.publicUrl }).eq("id", user.id);
         update({ avatar_url: data.publicUrl });
+        announceProfileUpdate({ avatar_url: data.publicUrl });
         toast.success("Photo updated");
     };
 

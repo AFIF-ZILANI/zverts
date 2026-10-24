@@ -15,6 +15,7 @@ import {
 import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { useEntitlements } from "@/hooks/useEntitlements";
+import { useMyProfile } from "@/hooks/useMyProfile";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
@@ -138,12 +139,10 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         document.body.removeAttribute("data-scroll-locked");
     }, [location.pathname]);
 
-    const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
-    const displayName =
-        (user?.user_metadata?.full_name as string | undefined) ??
-        (user?.user_metadata?.name as string | undefined) ??
-        user?.email?.split("@")[0] ??
-        "You";
+    const { avatarUrl, name: displayName } = useMyProfile(user);
+    // A broken photo URL falls back to the initial.
+    const [avatarFailed, setAvatarFailed] = useState(false);
+    useEffect(() => setAvatarFailed(false), [avatarUrl]);
 
     // Core nav items (no Upgrade — that's a CTA button)
     const navItems = [
@@ -251,10 +250,12 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                                     aria-label="Settings"
                                     className="ml-1 flex items-center justify-center h-8 w-8 rounded-full overflow-hidden ring-1 ring-border hover:ring-primary transition-all"
                                 >
-                                    {avatarUrl ? (
+                                    {avatarUrl && !avatarFailed ? (
                                         <img
                                             src={avatarUrl}
                                             alt=""
+                                            referrerPolicy="no-referrer"
+                                            onError={() => setAvatarFailed(true)}
                                             className="w-full h-full object-cover"
                                         />
                                     ) : (
@@ -310,7 +311,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                 onOpenChange={setMobileOpen}
                 user={user}
                 displayName={displayName}
-                avatarUrl={avatarUrl}
+                avatarUrl={avatarFailed ? undefined : avatarUrl}
                 isAdmin={isAdmin}
                 credits={convert_credits}
                 onSignOut={async () => {
