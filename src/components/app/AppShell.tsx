@@ -104,7 +104,6 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     const navItems = [
         { to: "/dashboard", icon: LayoutDashboard, label: t("nav.dashboard") },
         { to: "/courses", icon: BookOpen, label: t("nav.courses") },
-        // { to: "/ai", icon: Bot, label: "Vert AI" },
         { to: "/growth", icon: TrendingUp, label: "Growth" },
         { to: "/payments", icon: CreditCard, label: "Payments" },
         ...(isAdmin ? [{ to: "/admin", icon: Shield, label: "Admin" }] : []),
@@ -383,7 +382,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                                         <div>
                                             <p className="text-sm font-semibold">Upgrade to Pro</p>
                                             <p className="text-xs opacity-80">
-                                                Unlock credits &amp; AI Tutor
+                                                Unlock more playlist credits
                                             </p>
                                         </div>
                                     </div>

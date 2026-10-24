@@ -19,7 +19,6 @@ const platform: NavLink[] = [
     { label: "Courses", to: "/courses" },
     { label: "Growth", to: "/growth" },
     { label: "Leaderboard", to: "/leaderboard" },
-    // { label: "Vert AI", to: "/ai" },
     { label: "Buy Credits", to: "/buy" },
 ];
 

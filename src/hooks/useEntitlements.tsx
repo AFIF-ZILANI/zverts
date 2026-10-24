@@ -9,7 +9,6 @@ export interface Entitlements {
     playlist_conversions_left: number;
     free_left: number;
     convert_credits: number;
-    ai_enabled: boolean;
     is_paid_user: boolean;
     total_paid: number;
     locked: boolean;
@@ -26,7 +25,6 @@ export const useEntitlements = (): Entitlements => {
     const [state, setState] = useState<{
         playlist_conversions_left: number;
         convert_credits: number;
-        ai_enabled: boolean;
         is_paid_user: boolean;
         total_paid: number;
         locked: boolean;
@@ -34,7 +32,6 @@ export const useEntitlements = (): Entitlements => {
     }>({
         playlist_conversions_left: 0,
         convert_credits: 0,
-        ai_enabled: false,
         is_paid_user: false,
         total_paid: 0,
         locked: false,
@@ -51,9 +48,7 @@ export const useEntitlements = (): Entitlements => {
         const [{ data: ent }, { data: profile }] = await Promise.all([
             supabase
                 .from("user_entitlements")
-                .select(
-                    "playlist_conversions_left,convert_credits,ai_enabled,is_paid_user,total_paid",
-                )
+                .select("playlist_conversions_left,convert_credits,is_paid_user,total_paid")
                 .eq("user_id", user.id)
                 .maybeSingle(),
             supabase.from("profiles").select("locked,role").eq("id", user.id).maybeSingle(),
@@ -61,7 +56,6 @@ export const useEntitlements = (): Entitlements => {
         setState({
             playlist_conversions_left: ent?.playlist_conversions_left ?? 0,
             convert_credits: ent?.convert_credits ?? 0,
-            ai_enabled: ent?.ai_enabled ?? false,
             is_paid_user: ent?.is_paid_user ?? false,
             total_paid: ent?.total_paid ?? 0,
             locked: profile?.locked ?? false,

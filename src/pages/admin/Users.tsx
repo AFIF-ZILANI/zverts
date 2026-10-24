@@ -79,7 +79,6 @@ const AdminUsersInner = () => {
                             <tr className="text-left text-xs font-mono uppercase text-muted-foreground border-b border-border">
                                 <th className="p-3">Name</th>
                                 <th>Email</th>
-                                <th>AI</th>
                                 <th>Paid</th>
                                 <th>Free left</th>
                                 <th>Credits</th>
@@ -93,7 +92,6 @@ const AdminUsersInner = () => {
                                 <tr key={u.id} className="border-b border-border/40">
                                     <td className="p-3">{u.name}</td>
                                     <td className="text-muted-foreground">{u.email}</td>
-                                    <td>{u.ai_enabled ? "✨" : "—"}</td>
                                     <td>{u.is_paid_user ? "✓" : "—"}</td>
                                     <td>{u.playlist_conversions_left}</td>
                                     <td className="text-primary font-medium">

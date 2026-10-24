@@ -3,7 +3,7 @@
 ZverTs is a gamified learning platform that turns YouTube playlists into
 structured, sequential courses. Students import playlists, progress through
 locked modules, track learning analytics, earn XP/gems, unlock achievements,
-and chat with an in-lesson AI tutor (Vert).
+and practise code (C, C++, Python) right next to each lesson.
 
 ## Core features
 
@@ -13,7 +13,7 @@ and chat with an in-lesson AI tutor (Vert).
 - Personal dashboard with progress, weekly activity, streaks, and resume cards
 - Gamification: XP, gems, streaks, daily challenge, badges
 - Smart notes with optional video timestamps and seek-on-click
-- AI tutor panel (Vert) with streaming responses in English and Bangla
+- Code runner under each lesson: Monaco editor with suggestions; C/C++ compile in the browser (Clang → WebAssembly), Python runs in Pyodide
 - Certificates with downloadable PDF generation on course completion
 - Leaderboard and Growth analytics page
 - Payments: package purchase, Bkash/Nagad manual payment flow, payment history
@@ -41,8 +41,7 @@ and chat with an in-lesson AI tutor (Vert).
 src/
   components/
     ui/                  # shadcn/ui primitives
-    app/                 # domain components (AppShell, player, tutor, notes, etc.)
-    ai/                  # AI chat panel sub-components
+    app/                 # domain components (AppShell, player, notes, code runner, etc.)
   hooks/                 # useAuth, useEntitlements, useNotifications, etc.
   integrations/supabase/ # typed Supabase client + generated types
   lib/                   # i18n, brand config, payment config, utils
@@ -66,9 +65,8 @@ supabase/
 | `/courses` | User courses + YouTube playlist importer |
 | `/courses/:id` | Course detail + module list management |
 | `/learn` | All user modules |
-| `/learn/:id` | Module player (video + progress + notes + AI) |
+| `/learn/:id` | Module player (video + progress + notes + code runner) |
 | `/quiz/:id` | Quiz (placeholder — MCQ backend exists) |
-| `/ai` | AI Workspace (standalone Vert AI chat) |
 | `/growth` | Growth analytics page |
 | `/leaderboard` | Leaderboard |
 | `/profile` | Public profile page |
@@ -104,7 +102,6 @@ Set these in your Supabase project dashboard under **Project Settings → Edge F
 | `SUPABASE_URL` | All functions |
 | `SUPABASE_SERVICE_ROLE_KEY` | All functions |
 | `YOUTUBE_API_KEY` | `preview-youtube-playlist`, `import-youtube-playlist`, `search-youtube-playlists` |
-| `LOVABLE_API_KEY` | `ai-tutor` |
 | `TELEGRAM_BOT_TOKEN` | `telegram-webhook`, `notify-admin` |
 | `TELEGRAM_ADMIN_CHAT_ID` | `notify-admin` |
 
@@ -157,8 +154,7 @@ Migrations in `supabase/migrations` define:
 | `preview-youtube-playlist` | Fetch playlist metadata before import |
 | `import-youtube-playlist` | Import playlist as a course with modules |
 | `fetch-playlist-author` | Resolve channel author name + URL for a course |
-| `transcribe-module` | Transcribe a lesson's YouTube audio |
-| `ai-tutor` | Streaming AI tutor (Vert) with transcript + notes context |
+| `run-code` | Fallback C/C++ runner (Wandbox, or Judge0 if configured) |
 | `notifications-scan` | Scan and fan-out scheduled notifications |
 | `notify-admin` | Send Telegram alert to admin on new payment |
 | `telegram-webhook` | Receive and handle Telegram bot webhook events |

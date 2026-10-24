@@ -6,7 +6,6 @@ import { Check, ShieldCheck } from "lucide-react";
 
 const BENEFITS = [
     "30 Playlist Converts Per Month",
-    "AI Tutor Access",
     "Credits Never Expire",
     "Genuine Watch-Time Tracking",
     "Focus Extension Protection",
@@ -18,7 +17,6 @@ const BENEFITS = [
 const WHY_CHOOSE = [
     "Finish courses faster",
     "Reduce distractions",
-    "Learn with AI assistance",
     "Test knowledge after every module",
     "Build consistent study habits",
 ];

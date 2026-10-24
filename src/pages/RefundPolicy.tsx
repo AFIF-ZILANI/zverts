@@ -68,7 +68,6 @@ const RefundPolicy = () => (
                     <p>ZverTs provides digital products and services, including:</p>
                     <ul className="space-y-1.5">
                         <Bullet>Playlist conversion credits</Bullet>
-                        <Bullet>AI feature access</Bullet>
                         <Bullet>Premium learning features</Bullet>
                     </ul>
                     <p>
@@ -95,7 +94,6 @@ const RefundPolicy = () => (
                     <p>Refunds may not be provided if:</p>
                     <ul className="space-y-1.5">
                         <Bullet>Credits were already used</Bullet>
-                        <Bullet>AI access was already activated</Bullet>
                         <Bullet>Wrong information was submitted by the user</Bullet>
                         <Bullet>User changed mind after successful activation</Bullet>
                         <Bullet>

@@ -23,10 +23,10 @@ const versionFile = (): Plugin => ({
 // worker caches on install: the entry, every route page, and everything they
 // import — including lazily loaded components (footer, notification panel,
 // charts), since one missing lazy chunk breaks the whole screen.
-// Left out: pages that need the network anyway (video player, AI, certificate)
+// Left out: pages that need the network anyway (video player, certificate)
 // and heavy on-demand libraries that only load on a button press.
-const ONLINE_ONLY_PAGES = ["ModulePlayer", "AIWorkspace", "Certificate"];
-const ON_DEMAND_LIBS = ["jspdf", "html2canvas", "ModelSelector"];
+const ONLINE_ONLY_PAGES = ["ModulePlayer", "Certificate"];
+const ON_DEMAND_LIBS = ["jspdf", "html2canvas"];
 
 const precacheManifest = (): Plugin => ({
     name: "precache-manifest",

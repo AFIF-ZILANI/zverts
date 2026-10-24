@@ -60,7 +60,7 @@ const TermsOfService = () => (
                     Terms of Service
                 </h1>
                 <p className="text-muted-foreground mt-3">
-                    Last updated: June 2026 — By using ZverTs you agree to these terms.
+                    Last updated: October 2026 — By using ZverTs you agree to these terms.
                 </p>
             </header>
 
@@ -95,7 +95,6 @@ const TermsOfService = () => (
                     <ul className="space-y-1.5">
                         <Bullet>Access and use the Platform for personal, non-commercial learning</Bullet>
                         <Bullet>Convert YouTube playlists into structured courses for your own study</Bullet>
-                        <Bullet>Use AI features within your allocated credit balance</Bullet>
                     </ul>
                     <p>
                         You may not copy, redistribute, or resell any content or features of the
@@ -139,8 +138,8 @@ const TermsOfService = () => (
 
                 <Section icon={ShieldAlert} title="6. Intellectual Property">
                     <p>
-                        All content, branding, and software on ZverTs — including course structures,
-                        UI, and AI-generated summaries — are the property of ZverTs or its licensors.
+                        All content, branding, and software on ZverTs — including course structures
+                        and UI — are the property of ZverTs or its licensors.
                         YouTube video content remains subject to YouTube&rsquo;s Terms of Service and
                         respective copyright holders.
                     </p>

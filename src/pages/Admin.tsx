@@ -98,7 +98,7 @@ const Admin = () => {
       to: "/admin/users",
       icon: UsersIcon,
       label: "Users",
-      desc: "Manage credits, AI access, lock/unlock",
+      desc: "Manage credits, lock/unlock",
       badge: null,
       iconBg: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
     },

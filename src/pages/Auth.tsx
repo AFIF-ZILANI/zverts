@@ -64,8 +64,8 @@ const Auth = () => {
                                 Welcome to ZverTs
                             </h1>
                             <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-xs">
-                                Learn smarter with AI-powered courses, gamified progress, and
-                                personalized guidance.
+                                Learn smarter with structured courses, gamified progress, and a
+                                built-in code runner.
                             </p>
                         </div>
 
