@@ -7,22 +7,18 @@ import { ContinueWatching } from "@/components/app/ContinueWatching";
 import { TodayMissionCard } from "@/components/app/TodayMissionCard";
 import { ProgressRing } from "@/components/app/ProgressRing";
 import { SectionTitle } from "@/components/app/SectionTitle";
-import { SettingsIcon } from "@/components/app/settings/SettingsUI";
+import { LearningMap } from "@/components/app/LearningMap";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import {
-    BookOpen,
     Calendar,
     CheckSquare,
     ChevronRight,
     Clock,
-    Code2,
     Flame,
     Gem,
     Play,
     Plus,
-    TrendingUp,
-    Trophy,
     Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -200,6 +196,11 @@ const Dashboard = () => {
     const progByMod = new Map(visibleProgress.map((p) => [p.module_id, p]));
     const completedCount = visibleProgress.filter((p) => p.completed).length;
     const totalWatch = visibleProgress.reduce((s, p) => s + p.watch_time_seconds, 0);
+    // Every finished module, including ones from courses since removed.
+    const completedAt = useMemo(
+        () => progress.filter((p) => p.completed).map((p) => p.completed_at ?? p.updated_at),
+        [progress],
+    );
 
     const courseSections = useMemo(() => {
         const map = new Map(visibleProgress.map((p) => [p.module_id, p]));
@@ -473,66 +474,17 @@ const Dashboard = () => {
                             </section>
                         </div>
 
-                        <aside className="min-w-0 space-y-6">
+                        <aside className="flex min-w-0 flex-col gap-6">
+                            {/* Last on phones, first in the desktop side column. */}
+                            <div className="order-last lg:order-first">
+                                <LearningMap completedAt={completedAt} />
+                            </div>
                             <Suspense fallback={<Skeleton className="h-56 rounded-3xl" />}>
                                 <BadgesGrid userId={user.id} />
                             </Suspense>
                             <Suspense fallback={<Skeleton className="h-56 rounded-3xl" />}>
                                 <AnalyticsPanel userId={user.id} />
                             </Suspense>
-
-                            {/* ── Shortcuts ─────────────────────────────────────── */}
-                            <section>
-                                <SectionTitle title="Explore" />
-                                <div className="grid grid-cols-2 gap-3">
-                                    {[
-                                        {
-                                            to: "/courses",
-                                            icon: BookOpen,
-                                            title: "Courses",
-                                            sub: courses.length
-                                                ? `${courses.length} course${courses.length !== 1 ? "s" : ""} · ${completedCount}/${modules.length} done`
-                                                : "Import a playlist",
-                                            tint: "bg-emerald-500",
-                                        },
-                                        {
-                                            to: "/leaderboard",
-                                            icon: Trophy,
-                                            title: "Leaderboard",
-                                            sub: "See your rank",
-                                            tint: "bg-amber-500",
-                                        },
-                                        {
-                                            to: "/growth",
-                                            icon: TrendingUp,
-                                            title: "Growth",
-                                            sub: "Missions & goals",
-                                            tint: "bg-sky-500",
-                                        },
-                                        {
-                                            to: "/code",
-                                            icon: Code2,
-                                            title: "Code",
-                                            sub: "Practice in the playground",
-                                            tint: "bg-violet-500",
-                                        },
-                                    ].map((q) => (
-                                        <Link
-                                            key={q.to}
-                                            to={q.to}
-                                            className="rounded-2xl border border-border bg-card p-4 shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/40 active:scale-[0.98]"
-                                        >
-                                            <SettingsIcon icon={q.icon} tint={q.tint} />
-                                            <div className="mt-3 text-sm font-semibold">
-                                                {q.title}
-                                            </div>
-                                            <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                                                {q.sub}
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </section>
                         </aside>
                     </div>
                 )}
