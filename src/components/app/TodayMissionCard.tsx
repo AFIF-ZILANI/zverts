@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Trophy, ArrowRight, Target } from "lucide-react";
+import { ChevronRight, Target, Trophy } from "lucide-react";
+import { ProgressRing } from "@/components/app/ProgressRing";
 
 type Mission = { total: number; done: number; rewarded_at: string | null };
 
@@ -42,49 +42,32 @@ export function TodayMissionCard({ userId }: { userId: string }) {
     const complete = !!m?.rewarded_at;
 
     return (
-        <div className="rounded-2xl border border-border bg-gradient-card p-6 shadow-card">
-            <div className="flex items-start justify-between gap-4 mb-4">
-                <div>
-                    <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                        / today's mission
-                    </div>
-                    <h2 className="font-display text-2xl mt-1 flex items-center gap-2">
-                        {complete ? (
-                            <>
-                                <Trophy className="h-5 w-5 text-primary" /> Mission complete
-                            </>
-                        ) : (
-                            <>
-                                <Target className="h-5 w-5 text-primary" /> Better than yesterday
-                            </>
-                        )}
-                    </h2>
+        <Link
+            to="/growth"
+            className="group flex items-center gap-4 rounded-3xl border border-border bg-card p-4 shadow-card transition-colors hover:border-primary/40 active:scale-[0.99] sm:p-5"
+        >
+            <ProgressRing value={complete ? 100 : pct} size={68} stroke={7}>
+                {complete ? (
+                    <Trophy className="h-6 w-6 text-primary" />
+                ) : (
+                    <span className="text-base font-semibold tabular-nums">
+                        {done}
+                        <span className="text-muted-foreground">/{total}</span>
+                    </span>
+                )}
+            </ProgressRing>
+            <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Target className="h-3.5 w-3.5 text-primary" /> Today's mission
                 </div>
-                <Link to="/growth">
-                    <Button variant="outline" size="sm">
-                        Open <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                    </Button>
-                </Link>
-            </div>
-
-            <div className="flex items-center gap-4">
-                <div className="font-display text-3xl font-semibold tabular-nums">
-                    {done}/{total}
+                <div className="mt-0.5 truncate text-base font-semibold">
+                    {complete ? "Mission complete" : "Better than yesterday"}
                 </div>
-                <div className="flex-1">
-                    <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                        <div
-                            className="h-full bg-gradient-lime transition-all"
-                            style={{ width: `${pct}%` }}
-                        />
-                    </div>
-                    <div className="text-[10px] font-mono text-muted-foreground mt-1">
-                        {complete
-                            ? "+50 XP, +10 Gems earned today"
-                            : `${pct}% of today's tasks done`}
-                    </div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                    {complete ? "+50 XP, +10 Gems earned today" : `${pct}% of today's tasks done`}
                 </div>
             </div>
-        </div>
+            <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        </Link>
     );
 }

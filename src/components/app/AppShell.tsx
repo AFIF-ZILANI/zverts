@@ -5,10 +5,7 @@ import {
     LogOut,
     LayoutDashboard,
     BookOpen,
-    User as UserIcon,
     Shield,
-    Menu,
-    X,
     Sparkles,
     TrendingUp,
     CreditCard,
@@ -25,7 +22,16 @@ import { cn } from "@/lib/utils";
 import { useAdminPaymentAlerts } from "@/hooks/useAdminPaymentAlerts";
 import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 import { OfflineBanner } from "./OfflineBanner";
-import { CodeIcon, CoursesIcon, GrowthIcon, HomeIcon, MenuIcon, type TabIcon } from "./TabIcons";
+import {
+    CodeIcon,
+    CoursesIcon,
+    GrowthIcon,
+    HomeIcon,
+    MenuIcon,
+    SettingsIcon,
+    type TabIcon,
+} from "./TabIcons";
+import { MobileMenu } from "./MobileMenu";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 const TAB_ICONS: Record<string, TabIcon> = {
@@ -33,6 +39,7 @@ const TAB_ICONS: Record<string, TabIcon> = {
     "/courses": CoursesIcon,
     "/code": CodeIcon,
     "/growth": GrowthIcon,
+    "/settings": SettingsIcon,
 };
 
 // One phone tab: the active one sits on a tinted glass pill and its icon switches to
@@ -86,7 +93,7 @@ const SupportContactPopup = lazy(() =>
 
 export const AppShell = ({ children }: { children: ReactNode }) => {
     const { user, signOut } = useAuth();
-    const { isAdmin } = useEntitlements();
+    const { isAdmin, convert_credits } = useEntitlements();
     const navigate = useNavigate();
     const location = useLocation();
     const { t } = useTranslation();
@@ -123,17 +130,6 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         return () => document.body.removeAttribute("data-bottom-nav");
     }, [user]);
 
-    // Lock body scroll when mobile menu is open
-    useEffect(() => {
-        if (mobileOpen) {
-            const prev = document.body.style.overflow;
-            document.body.style.overflow = "hidden";
-            return () => {
-                document.body.style.overflow = prev || "";
-            };
-        }
-    }, [mobileOpen]);
-
     // Restore scroll on route change (PWA safety)
     useEffect(() => {
         document.body.style.overflow = "";
@@ -158,8 +154,12 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
         { to: "/payments", icon: CreditCard, label: "Payments" },
         ...(isAdmin ? [{ to: "/admin", icon: Shield, label: "Admin" }] : []),
     ];
-    // Four tabs + Menu fit the phone bar; Payments and Admin stay in the menu.
-    const tabItems = navItems.filter((n) => n.to !== "/admin" && n.to !== "/payments");
+    // Phone tab bar: four places + Settings; everything else is in the menu
+    // (header, next to notifications).
+    const tabItems = [
+        ...navItems.filter((n) => n.to !== "/admin" && n.to !== "/payments"),
+        { to: "/settings", icon: Settings, label: "Settings" },
+    ];
 
     return (
         <div
@@ -284,197 +284,40 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                         )}
                     </div>
 
-                    {/* Mobile right: notifications + hamburger */}
-                    <div className="flex items-center gap-1 md:hidden">
+                    {/* Phones: notifications + menu */}
+                    <div className="flex items-center gap-1.5 md:hidden">
                         {user && (
                             <Suspense fallback={null}>
                                 <NotificationCenter />
                             </Suspense>
                         )}
-                        {!user && (
-                            <button
-                                onClick={() => setMobileOpen((v) => !v)}
-                                aria-label={mobileOpen ? "Close menu" : "Open menu"}
-                                className={cn(
-                                    "flex items-center justify-center h-9 w-9 rounded-lg border transition-colors",
-                                    mobileOpen
-                                        ? "border-primary bg-primary/10 text-primary"
-                                        : "border-border bg-card text-foreground hover:bg-muted",
-                                )}
-                            >
-                                {mobileOpen ? (
-                                    <X className="h-4.5 w-4.5" />
-                                ) : (
-                                    <Menu className="h-4.5 w-4.5" />
-                                )}
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            onClick={() => setMobileOpen(true)}
+                            aria-label="Open menu"
+                            aria-expanded={mobileOpen}
+                            className="flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted active:scale-95"
+                        >
+                            <MenuIcon className="h-6 w-6" />
+                        </button>
                     </div>
                 </div>
                 <OfflineBanner />
             </header>
 
-            {/* ── Mobile drawer ──────────────────────────────────────────────── */}
-            {mobileOpen && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="md:hidden fixed inset-0 z-30 bg-background/70 backdrop-blur-sm"
-                        style={{ top: "var(--app-header-h)" }}
-                        onClick={() => setMobileOpen(false)}
-                    />
-
-                    {/* Panel */}
-                    <div
-                        className="glass-bar md:hidden fixed left-0 right-0 z-40 border-b shadow-2xl animate-fade-in overflow-y-auto overscroll-contain"
-                        style={{
-                            top: "var(--app-header-h)",
-                            maxHeight:
-                                "calc(100dvh - var(--app-header-h) - var(--app-bottom-inset))",
-                        }}
-                    >
-                        {/* User identity */}
-                        {user && (
-                            <div className="flex items-center gap-3 px-4 py-4 border-b border-border/60">
-                                <div className="h-10 w-10 rounded-full overflow-hidden ring-1 ring-border shrink-0">
-                                    {avatarUrl ? (
-                                        <img
-                                            src={avatarUrl}
-                                            alt=""
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full bg-muted flex items-center justify-center text-sm font-semibold text-muted-foreground">
-                                            {displayName.charAt(0).toUpperCase()}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="font-medium text-sm truncate">{displayName}</p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                        {user.email}
-                                    </p>
-                                </div>
-                                {isAdmin && (
-                                    <span className="ml-auto shrink-0 rounded-full bg-amber-500/15 text-amber-500 text-[10px] font-mono uppercase px-2 py-0.5 border border-amber-500/30">
-                                        Admin
-                                    </span>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Nav items */}
-                        {user && (
-                            <nav className="px-3 py-3 grid grid-cols-2 gap-1.5">
-                                {navItems.map((n) => (
-                                    <NavLink
-                                        key={n.to}
-                                        to={n.to}
-                                        onClick={() => setMobileOpen(false)}
-                                        className={({ isActive }) =>
-                                            cn(
-                                                "flex items-center gap-2.5 px-3 py-3 rounded-xl text-sm font-medium transition-colors",
-                                                isActive
-                                                    ? "bg-primary/10 text-primary"
-                                                    : "bg-muted/40 text-foreground/80 hover:bg-muted hover:text-foreground",
-                                                n.to === "/admin" &&
-                                                    !{ isActive: false }.isActive &&
-                                                    "text-amber-500",
-                                            )
-                                        }
-                                    >
-                                        <n.icon className="h-4 w-4 shrink-0" />
-                                        <span>{n.label}</span>
-                                    </NavLink>
-                                ))}
-
-                                {/* Profile */}
-                                <NavLink
-                                    to="/profile"
-                                    onClick={() => setMobileOpen(false)}
-                                    className={({ isActive }) =>
-                                        cn(
-                                            "flex items-center gap-2.5 px-3 py-3 rounded-xl text-sm font-medium transition-colors",
-                                            isActive
-                                                ? "bg-primary/10 text-primary"
-                                                : "bg-muted/40 text-foreground/80 hover:bg-muted hover:text-foreground",
-                                        )
-                                    }
-                                >
-                                    <UserIcon className="h-4 w-4 shrink-0" />
-                                    <span>{t("nav.profile")}</span>
-                                </NavLink>
-
-                                {/* Settings */}
-                                <NavLink
-                                    to="/settings"
-                                    onClick={() => setMobileOpen(false)}
-                                    className={({ isActive }) =>
-                                        cn(
-                                            "flex items-center gap-2.5 px-3 py-3 rounded-xl text-sm font-medium transition-colors",
-                                            isActive
-                                                ? "bg-primary/10 text-primary"
-                                                : "bg-muted/40 text-foreground/80 hover:bg-muted hover:text-foreground",
-                                        )
-                                    }
-                                >
-                                    <Settings className="h-4 w-4 shrink-0" />
-                                    <span>Settings</span>
-                                </NavLink>
-                            </nav>
-                        )}
-
-                        {/* Upgrade CTA */}
-                        {user && (
-                            <div className="px-3 pb-3">
-                                <Link to="/buy" onClick={() => setMobileOpen(false)}>
-                                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-lime text-primary-foreground shadow-glow">
-                                        <Sparkles className="h-4 w-4 shrink-0" />
-                                        <div>
-                                            <p className="text-sm font-semibold">Upgrade to Pro</p>
-                                            <p className="text-xs opacity-80">
-                                                Unlock more playlist credits
-                                            </p>
-                                        </div>
-                                    </div>
-                                </Link>
-                            </div>
-                        )}
-
-                        {/* Preferences + sign out */}
-                        <div className="px-3 pb-4 pt-1 border-t border-border/60 flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1">
-                                {/* <LanguageToggle /> */}
-                                <ThemeToggle />
-                            </div>
-                            {user ? (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={async () => {
-                                        setMobileOpen(false);
-                                        await signOut();
-                                        navigate("/");
-                                    }}
-                                    className="gap-2"
-                                >
-                                    <LogOut className="h-3.5 w-3.5" /> {t("nav.signout")}
-                                </Button>
-                            ) : (
-                                <Button
-                                    size="sm"
-                                    onClick={() => {
-                                        setMobileOpen(false);
-                                        navigate("/auth");
-                                    }}
-                                >
-                                    {t("nav.signin")}
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                </>
-            )}
+            <MobileMenu
+                open={mobileOpen}
+                onOpenChange={setMobileOpen}
+                user={user}
+                displayName={displayName}
+                avatarUrl={avatarUrl}
+                isAdmin={isAdmin}
+                credits={convert_credits}
+                onSignOut={async () => {
+                    await signOut();
+                    navigate("/");
+                }}
+            />
 
             <main className="flex-1">{children}</main>
 
@@ -506,16 +349,6 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                                 </NavLink>
                             );
                         })}
-                        <button
-                            onClick={() => setMobileOpen((v) => !v)}
-                            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-                            aria-expanded={mobileOpen}
-                            className="relative flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform"
-                        >
-                            <TabContent label="Menu" on={mobileOpen}>
-                                <MenuIcon active={mobileOpen} />
-                            </TabContent>
-                        </button>
                     </div>
                 </nav>
             )}

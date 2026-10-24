@@ -217,6 +217,13 @@
 }
 
 @layer utilities {
+    /* Swipeable rows: scroll without a visible scrollbar. */
+    .scrollbar-none {
+        scrollbar-width: none;
+    }
+    .scrollbar-none::-webkit-scrollbar {
+        display: none;
+    }
     .safe-area-pb {
         padding-bottom: env(safe-area-inset-bottom);
     }

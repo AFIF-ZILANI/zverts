@@ -5,19 +5,25 @@ import { AppShell } from "@/components/app/AppShell";
 import { StatCard } from "@/components/app/StatCard";
 import { ContinueWatching } from "@/components/app/ContinueWatching";
 import { TodayMissionCard } from "@/components/app/TodayMissionCard";
-import { Button } from "@/components/ui/button";
+import { ProgressRing } from "@/components/app/ProgressRing";
+import { SectionTitle } from "@/components/app/SectionTitle";
+import { SettingsIcon } from "@/components/app/settings/SettingsUI";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import {
-    Clock,
-    CheckSquare,
-    Flame,
-    Calendar,
-    ArrowRight,
-    Gem,
-    Zap,
     BookOpen,
+    Calendar,
+    CheckSquare,
+    ChevronRight,
+    Clock,
+    Code2,
+    Flame,
+    Gem,
+    Play,
+    Plus,
+    TrendingUp,
     Trophy,
+    Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIslamicSettings } from "@/lib/islamic/dailyAyah";
@@ -195,34 +201,31 @@ const Dashboard = () => {
     const completedCount = visibleProgress.filter((p) => p.completed).length;
     const totalWatch = visibleProgress.reduce((s, p) => s + p.watch_time_seconds, 0);
 
-    const courseSections = useMemo(
-        () => {
-            const map = new Map(visibleProgress.map((p) => [p.module_id, p]));
-            return courses.map((course) => {
-                const courseModules = modules
-                    .filter((m) => m.course_id === course.id)
-                    .sort((a, b) => a.position - b.position);
-                const cards = courseModules.map((module, idx) => {
-                    const p = map.get(module.id);
-                    const prev = idx === 0 ? null : courseModules[idx - 1];
-                    const prevDone = !prev || map.get(prev.id)?.completed;
-                    let state: "locked" | "available" | "in_progress" | "completed" = "locked";
-                    if (p?.completed) state = "completed";
-                    else if (prevDone && p && p.percent_watched > 0) state = "in_progress";
-                    else if (prevDone) state = "available";
-                    return { ...module, state, percent: p?.percent_watched ?? 0 };
-                });
-                return { course, cards };
+    const courseSections = useMemo(() => {
+        const map = new Map(visibleProgress.map((p) => [p.module_id, p]));
+        return courses.map((course) => {
+            const courseModules = modules
+                .filter((m) => m.course_id === course.id)
+                .sort((a, b) => a.position - b.position);
+            const cards = courseModules.map((module, idx) => {
+                const p = map.get(module.id);
+                const prev = idx === 0 ? null : courseModules[idx - 1];
+                const prevDone = !prev || map.get(prev.id)?.completed;
+                let state: "locked" | "available" | "in_progress" | "completed" = "locked";
+                if (p?.completed) state = "completed";
+                else if (prevDone && p && p.percent_watched > 0) state = "in_progress";
+                else if (prevDone) state = "available";
+                return { ...module, state, percent: p?.percent_watched ?? 0 };
             });
-        },
-        [courses, modules, visibleProgress],
-    );
+            return { course, cards };
+        });
+    }, [courses, modules, visibleProgress]);
 
     if (authLoading) return null;
     if (!user) return <Navigate to="/auth" replace />;
 
     const nextModule = courseSections
-        .flatMap((s) => s.cards)
+        .flatMap((s) => s.cards.map((c) => ({ ...c, courseTitle: s.course.title })))
         .find((m) => m.state === "available" || m.state === "in_progress");
     const displayName =
         (user.user_metadata?.full_name as string | undefined)?.split(" ")[0] ??
@@ -237,181 +240,301 @@ const Dashboard = () => {
     });
 
     const level = userStats ? Math.floor(userStats.xp / 500) + 1 : 1;
+    const xpInLevel = (userStats?.xp ?? 0) % 500;
     const activeDays = weekly.filter((d) => d.minutes > 0).length;
+    const weekMinutes = weekly.reduce((s, d) => s + d.minutes, 0);
+
+    const hour = new Date().getHours();
+    const greeting =
+        hour >= 5 && hour < 12
+            ? "Good morning"
+            : hour >= 12 && hour < 17
+              ? "Good afternoon"
+              : "Good evening";
+    const today = new Date().toLocaleDateString("en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+    });
 
     return (
         <AppShell>
-            <section className="container py-8 md:py-12 max-w-6xl space-y-6">
+            <section className="container max-w-6xl space-y-6 py-5 md:py-10">
                 {/* ── Hero ─────────────────────────────────────────────────────── */}
-                <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div>
-                        <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                            / dashboard
-                        </div>
-                        <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight mt-2">
-                            Welcome back, <span className="italic text-primary">{displayName}</span>
-                        </h1>
-                        {/* Quick stats chips */}
-                        {userStats ? (
-                            <div className="flex flex-wrap items-center gap-2 mt-3">
-                                <span
-                                    className={cn(
-                                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border",
-                                        userStats.streak > 0
-                                            ? "bg-accent/10 border-accent/25 text-accent"
-                                            : "bg-muted border-border text-muted-foreground",
-                                    )}
-                                >
-                                    <Flame className="h-3 w-3" />
-                                    {userStats.streak > 0
-                                        ? `${userStats.streak}-day streak`
-                                        : "No streak yet"}
-                                </span>
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-mono text-primary">
-                                    <Gem className="h-3 w-3" /> {userStats.gems.toLocaleString()}{" "}
-                                    gems
-                                </span>
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-xs font-mono text-yellow-500">
-                                    <Zap className="h-3 w-3" /> {userStats.xp.toLocaleString()} XP
-                                </span>
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted border border-border text-xs font-mono text-muted-foreground">
-                                    Lv {level}
-                                </span>
-                            </div>
-                        ) : (
-                            <div className="flex gap-2 mt-3">
-                                {[72, 60, 56, 40].map((w, i) => (
-                                    <Skeleton
-                                        key={i}
-                                        className={`h-7 rounded-full`}
-                                        style={{ width: w }}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                <div className="relative overflow-hidden rounded-[28px] border border-border bg-card shadow-card">
+                    <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-28 -left-16 h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
 
-                    {nextModule && (
-                        <Link to={`/learn/${nextModule.id}`}>
-                            <Button
-                                size="lg"
-                                className="bg-gradient-lime text-primary-foreground shadow-glow gap-2 font-semibold"
-                            >
-                                Continue <ArrowRight className="h-4 w-4" />
-                            </Button>
-                        </Link>
-                    )}
+                    <div className="relative p-5 sm:p-7">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                                <p className="text-sm text-muted-foreground">{today}</p>
+                                <h1 className="mt-1 font-display text-[28px] font-semibold leading-tight tracking-tight sm:text-4xl">
+                                    {greeting}, <span className="text-primary">{displayName}</span>
+                                </h1>
+                                <p className="mt-1.5 text-sm text-muted-foreground">
+                                    {userStats
+                                        ? `${(500 - xpInLevel).toLocaleString()} XP to level ${level + 1}`
+                                        : "Loading your progress…"}
+                                </p>
+                            </div>
+                            <ProgressRing value={(xpInLevel / 500) * 100} size={68} stroke={6}>
+                                <span className="text-[10px] font-medium uppercase leading-none text-muted-foreground">
+                                    Level
+                                </span>
+                                <span className="text-xl font-semibold leading-tight tabular-nums">
+                                    {level}
+                                </span>
+                            </ProgressRing>
+                        </div>
+
+                        <div className="lg:mt-5 lg:grid lg:grid-cols-2 lg:items-center lg:gap-4">
+                            {/* Quick stats */}
+                            <div className="mt-5 grid grid-cols-3 gap-2 sm:max-w-md lg:mt-0 lg:max-w-none">
+                                {userStats
+                                    ? [
+                                          {
+                                              icon: Flame,
+                                              value: userStats.streak,
+                                              label:
+                                                  userStats.streak > 0 ? "Day streak" : "No streak",
+                                              tint: "text-orange-500",
+                                          },
+                                          {
+                                              icon: Gem,
+                                              value: userStats.gems.toLocaleString(),
+                                              label: "Gems",
+                                              tint: "text-sky-500",
+                                          },
+                                          {
+                                              icon: Zap,
+                                              value: userStats.xp.toLocaleString(),
+                                              label: "Total XP",
+                                              tint: "text-yellow-500",
+                                          },
+                                      ].map((s) => (
+                                          <div
+                                              key={s.label}
+                                              className="rounded-2xl bg-muted/60 px-3 py-2.5"
+                                          >
+                                              <div className="flex items-center gap-1.5">
+                                                  <s.icon className={cn("h-4 w-4", s.tint)} />
+                                                  <span className="text-base font-semibold tabular-nums">
+                                                      {s.value}
+                                                  </span>
+                                              </div>
+                                              <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                                                  {s.label}
+                                              </div>
+                                          </div>
+                                      ))
+                                    : [0, 1, 2].map((i) => (
+                                          <Skeleton key={i} className="h-[60px] rounded-2xl" />
+                                      ))}
+                            </div>
+
+                            {/* Up next */}
+                            {nextModule ? (
+                                <Link
+                                    to={`/learn/${nextModule.id}`}
+                                    className="mt-4 flex items-center gap-3 rounded-2xl bg-gradient-lime p-3.5 text-primary-foreground shadow-glow transition-transform active:scale-[0.99] sm:max-w-xl lg:mt-0 lg:max-w-none"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <div className="truncate text-xs font-medium opacity-80">
+                                            Up next · {nextModule.courseTitle}
+                                        </div>
+                                        <div className="mt-0.5 truncate font-semibold">
+                                            {nextModule.title}
+                                        </div>
+                                        {nextModule.percent > 0 && (
+                                            <div className="mt-2 h-1 overflow-hidden rounded-full bg-black/15">
+                                                <div
+                                                    className="h-full rounded-full bg-primary-foreground"
+                                                    style={{
+                                                        width: `${Math.min(100, nextModule.percent)}%`,
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-foreground text-primary shadow-md">
+                                        <Play className="ml-0.5 h-5 w-5 fill-current" />
+                                    </span>
+                                </Link>
+                            ) : (
+                                !loading &&
+                                !error &&
+                                courses.length === 0 && (
+                                    <Link
+                                        to="/courses"
+                                        className="mt-4 flex items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-3.5 transition-colors hover:bg-primary/10 sm:max-w-xl lg:mt-0 lg:max-w-none"
+                                    >
+                                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                                            <Plus className="h-5 w-5" />
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="font-semibold">
+                                                Start your first course
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                Import a YouTube playlist to get started
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                                    </Link>
+                                )
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {islamic.enabled && (
-                    <Suspense fallback={<Skeleton className="h-52 rounded-2xl mb-5" />}>
-                        <div className="mb-5">
-                            <DailyAyahCard />
-                        </div>
+                    <Suspense fallback={<Skeleton className="h-52 rounded-3xl" />}>
+                        <DailyAyahCard />
                     </Suspense>
                 )}
 
                 {error ? (
-                    <div className="rounded-2xl border border-destructive/40 bg-destructive/10 text-destructive p-5 text-sm font-mono">
+                    <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-5 text-sm text-destructive">
                         {error}
                     </div>
                 ) : loading ? (
                     <DashboardSkeleton />
                 ) : (
-                    <>
-                        {/* ── Continue Watching ────────────────────────────────────── */}
-                        <ContinueWatching userId={user.id} />
-
-                        {/* ── Mission ──────────────────────────────────────────────── */}
-                        <div className="grid lg:grid-cols-1 gap-5">
+                    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+                        <div className="min-w-0 space-y-6">
+                            {/* ── Mission ──────────────────────────────────────── */}
                             <TodayMissionCard userId={user.id} />
+
+                            {/* ── Continue Watching ────────────────────────────── */}
+                            <ContinueWatching userId={user.id} />
+
+                            {/* ── Progress ─────────────────────────────────────── */}
+                            <section>
+                                <SectionTitle title="Your progress" />
+                                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                                    <StatCard
+                                        icon={CheckSquare}
+                                        label="Completed"
+                                        value={completedCount}
+                                        sub={`of ${modules.length} modules`}
+                                        tint="bg-emerald-500/15 text-emerald-500"
+                                    />
+                                    <StatCard
+                                        icon={Clock}
+                                        label="Watch time"
+                                        value={fmtTime(totalWatch)}
+                                        sub="across all modules"
+                                        tint="bg-sky-500/15 text-sky-500"
+                                    />
+                                    <StatCard
+                                        icon={Flame}
+                                        label="Streak"
+                                        value={userStats?.streak ?? 0}
+                                        sub={
+                                            (userStats?.streak ?? 0) > 0
+                                                ? "Keep it going"
+                                                : "Open the app daily"
+                                        }
+                                        tint="bg-orange-500/15 text-orange-500"
+                                    />
+                                    <StatCard
+                                        icon={Calendar}
+                                        label="Active days"
+                                        value={activeDays}
+                                        sub="this week"
+                                        tint="bg-violet-500/15 text-violet-500"
+                                    />
+                                </div>
+
+                                <div className="mt-3 rounded-3xl border border-border bg-card p-5 shadow-card">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div className="text-sm font-medium text-muted-foreground">
+                                                This week
+                                            </div>
+                                            <div className="mt-0.5 font-display text-[28px] font-semibold leading-tight tabular-nums">
+                                                {weekMinutes}
+                                                <span className="ml-1 font-sans text-sm font-normal text-muted-foreground">
+                                                    min watched
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary tabular-nums">
+                                            {activeDays}/7 days active
+                                        </span>
+                                    </div>
+                                    <div className="mt-3">
+                                        <Suspense fallback={<div className="h-[150px]" />}>
+                                            <WeeklyActivityChart data={weekly} />
+                                        </Suspense>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
 
-                        {/* ── Stats + Activity ─────────────────────────────────────── */}
-                        <div className="rounded-2xl border border-border bg-gradient-card p-6 md:p-8 shadow-card space-y-6">
-                            <div>
-                                <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                                    / overview
-                                </div>
-                                <h2 className="font-display text-2xl mt-1">Your progress</h2>
-                            </div>
-                            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <StatCard
-                                    icon={CheckSquare}
-                                    label="Completed"
-                                    value={completedCount}
-                                    sub={`of ${modules.length} modules`}
-                                />
-                                <StatCard
-                                    icon={Clock}
-                                    label="Watch time"
-                                    value={fmtTime(totalWatch)}
-                                    sub="across all modules"
-                                />
-                                <StatCard
-                                    icon={Flame}
-                                    label="Streak"
-                                    value={userStats?.streak ?? 0}
-                                    sub={(userStats?.streak ?? 0) > 0 ? "Keep it going" : "Open the app daily"}
-                                />
-                                <StatCard
-                                    icon={Calendar}
-                                    label="Active days"
-                                    value={activeDays}
-                                    sub="this week"
-                                />
-                            </div>
-                            <div>
-                                <div className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-3">
-                                    Minutes watched · last 7 days
-                                </div>
-                                <Suspense fallback={<div className="h-[160px]" />}>
-                                    <WeeklyActivityChart data={weekly} />
-                                </Suspense>
-                            </div>
-                        </div>
-
-                        {/* ── Analytics + Badges ───────────────────────────────────── */}
-                        <div className="grid lg:grid-cols-2 gap-5">
-                            <Suspense fallback={<Skeleton className="h-64 rounded-2xl" />}>
-                                <AnalyticsPanel userId={user.id} />
-                            </Suspense>
-                            <Suspense fallback={<Skeleton className="h-64 rounded-2xl" />}>
+                        <aside className="min-w-0 space-y-6">
+                            <Suspense fallback={<Skeleton className="h-56 rounded-3xl" />}>
                                 <BadgesGrid userId={user.id} />
                             </Suspense>
-                        </div>
+                            <Suspense fallback={<Skeleton className="h-56 rounded-3xl" />}>
+                                <AnalyticsPanel userId={user.id} />
+                            </Suspense>
 
-                        {/* ── Courses CTA ──────────────────────────────────────────── */}
-                        <div className="rounded-2xl border border-border bg-gradient-card p-6 flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                                <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                                    / curriculum
+                            {/* ── Shortcuts ─────────────────────────────────────── */}
+                            <section>
+                                <SectionTitle title="Explore" />
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        {
+                                            to: "/courses",
+                                            icon: BookOpen,
+                                            title: "Courses",
+                                            sub: courses.length
+                                                ? `${courses.length} course${courses.length !== 1 ? "s" : ""} · ${completedCount}/${modules.length} done`
+                                                : "Import a playlist",
+                                            tint: "bg-emerald-500",
+                                        },
+                                        {
+                                            to: "/leaderboard",
+                                            icon: Trophy,
+                                            title: "Leaderboard",
+                                            sub: "See your rank",
+                                            tint: "bg-amber-500",
+                                        },
+                                        {
+                                            to: "/growth",
+                                            icon: TrendingUp,
+                                            title: "Growth",
+                                            sub: "Missions & goals",
+                                            tint: "bg-sky-500",
+                                        },
+                                        {
+                                            to: "/code",
+                                            icon: Code2,
+                                            title: "Code",
+                                            sub: "Practice in the playground",
+                                            tint: "bg-violet-500",
+                                        },
+                                    ].map((q) => (
+                                        <Link
+                                            key={q.to}
+                                            to={q.to}
+                                            className="rounded-2xl border border-border bg-card p-4 shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/40 active:scale-[0.98]"
+                                        >
+                                            <SettingsIcon icon={q.icon} tint={q.tint} />
+                                            <div className="mt-3 text-sm font-semibold">
+                                                {q.title}
+                                            </div>
+                                            <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                                                {q.sub}
+                                            </div>
+                                        </Link>
+                                    ))}
                                 </div>
-                                <h2 className="font-display text-xl mt-1">
-                                    {courses.length
-                                        ? `${courses.length} course${courses.length !== 1 ? "s" : ""} imported`
-                                        : "No courses yet"}
-                                </h2>
-                                <p className="text-sm text-muted-foreground mt-0.5">
-                                    {courses.length
-                                        ? `${completedCount} of ${modules.length} module${modules.length !== 1 ? "s" : ""} completed`
-                                        : "Import a YouTube playlist to get started"}
-                                </p>
-                            </div>
-                            <div className="flex gap-2">
-                                <Link to="/leaderboard">
-                                    <Button variant="ghost" size="sm" className="gap-1.5">
-                                        <Trophy className="h-3.5 w-3.5" /> Leaderboard
-                                    </Button>
-                                </Link>
-                                <Link to="/courses">
-                                    <Button variant="outline" className="gap-2">
-                                        <BookOpen className="h-4 w-4" /> Browse courses
-                                    </Button>
-                                </Link>
-                            </div>
-                        </div>
-                    </>
+                            </section>
+                        </aside>
+                    </div>
                 )}
             </section>
         </AppShell>
@@ -419,16 +542,19 @@ const Dashboard = () => {
 };
 
 const DashboardSkeleton = () => (
-    <div className="space-y-5">
-        <Skeleton className="h-36 rounded-2xl" />
-        <div className="grid lg:grid-cols-2 gap-5">
-            <Skeleton className="h-44 rounded-2xl" />
-            <Skeleton className="h-44 rounded-2xl" />
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-6">
+            <Skeleton className="h-[100px] rounded-3xl" />
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {[0, 1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-[108px] rounded-2xl" />
+                ))}
+            </div>
+            <Skeleton className="h-60 rounded-3xl" />
         </div>
-        <Skeleton className="h-72 rounded-2xl" />
-        <div className="grid lg:grid-cols-2 gap-5">
-            <Skeleton className="h-56 rounded-2xl" />
-            <Skeleton className="h-56 rounded-2xl" />
+        <div className="space-y-6">
+            <Skeleton className="h-56 rounded-3xl" />
+            <Skeleton className="h-56 rounded-3xl" />
         </div>
     </div>
 );

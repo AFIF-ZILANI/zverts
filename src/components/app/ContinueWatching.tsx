@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Play } from "lucide-react";
+import { SectionTitle } from "@/components/app/SectionTitle";
 
 interface Row {
     module_id: string;
@@ -42,38 +42,33 @@ export const ContinueWatching = ({ userId }: { userId: string }) => {
     if (loading || items.length === 0) return null;
 
     return (
-        <div className="rounded-2xl border border-border bg-gradient-card p-6 shadow-card">
-            <div className="flex items-center justify-between mb-4">
-                <div>
-                    <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                        / continue watching
-                    </div>
-                    <h2 className="font-display text-2xl mt-1">Pick up where you left off</h2>
-                </div>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <section>
+            <SectionTitle title="Continue watching" note="Pick up where you left off" />
+            {/* Swipeable row on phones, a grid on wider screens. */}
+            <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 scrollbar-none sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3">
                 {items.map((it) => (
                     <Link
                         key={it.module_id}
                         to={`/learn/${it.module_id}`}
-                        className="group rounded-xl border border-border bg-background/50 overflow-hidden hover:border-primary/40 hover:-translate-y-0.5 transition-all"
+                        className="group w-[72%] shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/40 active:scale-[0.98] sm:w-auto"
                     >
                         <div className="relative aspect-video bg-muted">
                             {it.modules?.thumbnail_url && (
                                 <img
                                     src={it.modules.thumbnail_url}
                                     alt=""
-                                    className="w-full h-full object-cover"
+                                    className="h-full w-full object-cover"
                                     loading="lazy"
                                 />
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <div className="h-12 w-12 rounded-full bg-primary/90 flex items-center justify-center shadow-glow">
-                                    <Play className="h-5 w-5 text-primary-foreground fill-primary-foreground ml-0.5" />
-                                </div>
-                            </div>
-                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+                            <span className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform group-hover:scale-110">
+                                <Play className="ml-0.5 h-4 w-4 fill-black text-black" />
+                            </span>
+                            <span className="absolute bottom-3 left-3 rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur">
+                                {Math.round(it.percent_watched)}%
+                            </span>
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
                                 <div
                                     className="h-full bg-gradient-lime"
                                     style={{ width: `${Math.min(100, it.percent_watched)}%` }}
@@ -81,19 +76,16 @@ export const ContinueWatching = ({ userId }: { userId: string }) => {
                             </div>
                         </div>
                         <div className="p-3">
-                            <div className="text-[10px] font-mono text-muted-foreground uppercase truncate">
+                            <div className="truncate text-[11px] font-medium text-muted-foreground">
                                 {it.modules?.courses?.title}
                             </div>
-                            <div className="text-sm font-medium leading-tight line-clamp-2 mt-0.5">
+                            <div className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug">
                                 {it.modules?.title}
-                            </div>
-                            <div className="text-[10px] font-mono text-primary mt-1">
-                                {Math.round(it.percent_watched)}% • Resume
                             </div>
                         </div>
                     </Link>
                 ))}
             </div>
-        </div>
+        </section>
     );
 };
