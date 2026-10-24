@@ -339,8 +339,8 @@ const Leaderboard = () => {
                 {tab === "universal" && (
                     <>
                         <p className="text-sm text-muted-foreground mb-8">
-                            Ranked by <span className="text-accent font-medium">streak</span> →{" "}
-                            <span className="text-primary font-medium">gems</span> →{" "}
+                            Ranked by <span className="text-primary font-medium">gems</span> →{" "}
+                            <span className="text-accent font-medium">streak</span> →{" "}
                             <span className="text-foreground font-medium">XP</span>. Updates in real time.
                         </p>
 

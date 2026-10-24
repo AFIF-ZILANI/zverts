@@ -1,14 +1,33 @@
-import { useEffect, useMemo, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SettingsGroup, SettingsNavRow, SettingsRow } from "@/components/app/settings/SettingsUI";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { Camera, Gem, Flame, Sparkles, Trophy, UserCircle2 } from "lucide-react";
+import {
+    Camera,
+    Flame,
+    Gem,
+    Globe,
+    Loader2,
+    Lock,
+    Medal,
+    Settings as SettingsGear,
+    Star,
+    TrendingUp,
+    Trophy,
+    Zap,
+} from "lucide-react";
+
+const BadgesGrid = lazy(() =>
+    import("@/components/app/BadgesGrid").then((m) => ({ default: m.BadgesGrid })),
+);
 
 const Profile = () => {
     const { user, loading } = useAuth();
@@ -24,6 +43,9 @@ const Profile = () => {
         profile_public: true,
     });
     const [busy, setBusy] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    // Last saved values, so Save only lights up when something changed.
+    const [saved, setSaved] = useState({ name: "", certName: "" });
 
     const firstName = useMemo(() => {
         const source =
@@ -54,6 +76,7 @@ const Profile = () => {
         ]).then(([{ data: prof }, { data: prog }, { data: pref }]) => {
             setName(prof?.name ?? "");
             setCertName(prof?.certificate_name ?? "");
+            setSaved({ name: prof?.name ?? "", certName: prof?.certificate_name ?? "" });
             setAvatar(prof?.avatar_url ?? null);
             setStats({
                 total_xp: prog?.total_xp ?? 0,
@@ -75,168 +98,238 @@ const Profile = () => {
             .update({ name, certificate_name: certName })
             .eq("id", user.id);
         setBusy(false);
+        setSaved({ name, certName });
         toast.success(t("profile.saved"));
     };
 
     const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        setUploading(true);
         const path = `${user.id}/avatar-${Date.now()}.${file.name.split(".").pop()}`;
         const { error } = await supabase.storage
             .from("avatars")
             .upload(path, file, { upsert: true });
         if (error) {
+            setUploading(false);
             toast.error(error.message);
             return;
         }
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);
         await supabase.from("profiles").update({ avatar_url: data.publicUrl }).eq("id", user.id);
         setAvatar(data.publicUrl);
+        setUploading(false);
         toast.success("Photo updated");
     };
 
+    const dirty = name !== saved.name || certName !== saved.certName;
+    const xpInLevel = stats.total_xp % 500;
+    const visibility = stats.profile_public ? "Public" : "Private";
+
     return (
         <AppShell>
-            <section className="container py-10 md:py-14 max-w-5xl">
-                <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-                    <div className="rounded-3xl border border-border/60 bg-gradient-card p-8 md:p-10 shadow-elevated overflow-hidden relative">
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_35%)] pointer-events-none" />
-                        <div className="relative flex flex-col gap-8">
-                            <div className="flex flex-wrap items-start justify-between gap-6">
-                                <div className="flex items-center gap-5">
-                                    <div className="h-24 w-24 rounded-3xl bg-muted overflow-hidden border border-border/60 shadow-card flex items-center justify-center">
-                                        {avatar ? (
-                                            <img
-                                                src={avatar}
-                                                alt="Profile avatar"
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <UserCircle2 className="h-14 w-14 text-muted-foreground" />
-                                        )}
-                                    </div>
-                                    <div>
-                                        <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                                            / profile
-                                        </div>
-                                        <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight mt-2">
-                                            {firstName}
-                                        </h1>
-                                        <p className="mt-2 text-muted-foreground max-w-md">
-                                            Your personal ZverTs identity, learning rewards, and
-                                            account settings.
-                                        </p>
-                                    </div>
-                                </div>
-                                <label className="cursor-pointer">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={upload}
-                                    />
-                                    <span className="inline-flex items-center justify-center rounded-xl border border-input bg-background/70 hover:bg-accent hover:text-accent-foreground h-10 px-4 text-sm font-medium">
-                                        <Camera className="h-4 w-4 mr-2" /> {t("profile.upload")}
+            <section className="container max-w-4xl space-y-6 py-5 md:py-10">
+                {/* ── Header: cover, avatar, name, stats ───────────────────── */}
+                <div className="overflow-hidden rounded-[28px] border border-border bg-card shadow-card">
+                    <img
+                        src="/profile-banner.webp"
+                        alt=""
+                        className="block aspect-[1500/420] max-h-48 w-full bg-[#0c0f0e] object-cover"
+                    />
+                    <div className="px-5 pb-5 sm:px-7 sm:pb-7">
+                        <div className="-mt-12 flex items-end justify-between gap-3 sm:-mt-14">
+                            <label
+                                className="group relative cursor-pointer"
+                                title={t("profile.upload")}
+                            >
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={upload}
+                                    disabled={uploading}
+                                />
+                                <span className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-lime font-display text-4xl text-primary-foreground ring-4 ring-card sm:h-28 sm:w-28">
+                                    {avatar ? (
+                                        <img
+                                            src={avatar}
+                                            alt="Profile avatar"
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        firstName.charAt(0).toUpperCase()
+                                    )}
+                                </span>
+                                <span className="absolute bottom-0.5 right-0.5 flex h-8 w-8 items-center justify-center rounded-full border-2 border-card bg-foreground text-background shadow-md transition-transform group-hover:scale-110">
+                                    {uploading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Camera className="h-4 w-4" />
+                                    )}
+                                </span>
+                                <span className="sr-only">{t("profile.upload")}</span>
+                            </label>
+                            <Link
+                                to="/settings"
+                                className="mb-1 inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background/70 px-4 text-sm font-medium hover:bg-muted"
+                            >
+                                <SettingsGear className="h-4 w-4" /> Settings
+                            </Link>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight sm:text-3xl">
+                                {name || firstName}
+                            </h1>
+                            <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                                Level {level}
+                            </span>
+                        </div>
+                        <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                            <span className="inline-flex items-center gap-1">
+                                {stats.profile_public ? (
+                                    <Globe className="h-3.5 w-3.5" />
+                                ) : (
+                                    <Lock className="h-3.5 w-3.5" />
+                                )}
+                                {visibility} profile
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                                <Medal className="h-3.5 w-3.5" /> Best streak {stats.longest_streak}{" "}
+                                day{stats.longest_streak !== 1 ? "s" : ""}
+                            </span>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="mt-5 grid grid-cols-4 divide-x divide-border rounded-2xl bg-muted/50">
+                            {[
+                                { icon: Star, label: "Level", value: level, tint: "text-primary" },
+                                {
+                                    icon: Zap,
+                                    label: "XP",
+                                    value: stats.total_xp.toLocaleString(),
+                                    tint: "text-yellow-500",
+                                },
+                                {
+                                    icon: Gem,
+                                    label: "Gems",
+                                    value: stats.total_gems.toLocaleString(),
+                                    tint: "text-sky-500",
+                                },
+                                {
+                                    icon: Flame,
+                                    label: "Streak",
+                                    value: stats.current_streak,
+                                    tint: "text-orange-500",
+                                },
+                            ].map((s) => (
+                                <div
+                                    key={s.label}
+                                    className="flex flex-col items-center gap-0.5 px-1 py-3"
+                                >
+                                    <s.icon className={cn("h-4 w-4", s.tint)} />
+                                    <span className="text-base font-semibold tabular-nums">
+                                        {s.value}
                                     </span>
-                                </label>
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                                {[
-                                    { label: "Level", value: level, icon: Sparkles },
-                                    { label: "XP", value: stats.total_xp, icon: Trophy },
-                                    { label: "Gems", value: stats.total_gems, icon: Gem },
-                                    { label: "Streak", value: stats.current_streak, icon: Flame },
-                                ].map((item) => (
-                                    <div
-                                        key={item.label}
-                                        className="rounded-2xl border border-border/60 bg-background/50 p-4 shadow-card"
-                                    >
-                                        <div className="flex items-center justify-between text-muted-foreground">
-                                            <span className="text-xs font-mono uppercase tracking-widest">
-                                                {item.label}
-                                            </span>
-                                            <item.icon className="h-4 w-4 text-primary" />
-                                        </div>
-                                        <div className="mt-3 font-display text-3xl">
-                                            {item.value}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="rounded-2xl border border-border/60 bg-background/40 p-5">
-                                <div className="flex items-center justify-between gap-4">
-                                    <div>
-                                        <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                                            Learning identity
-                                        </div>
-                                        <div className="mt-2 text-sm text-muted-foreground">
-                                            Certificate name:{" "}
-                                            <span className="text-foreground font-medium">
-                                                {certName || name || user.email}
-                                            </span>
-                                        </div>
-                                        <div className="mt-1 text-sm text-muted-foreground">
-                                            Longest streak:{" "}
-                                            <span className="text-foreground font-medium">
-                                                {stats.longest_streak} days
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="rounded-xl border border-border/60 px-4 py-3 text-right">
-                                        <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                                            Visibility
-                                        </div>
-                                        <div className="mt-2 font-medium text-foreground">
-                                            {stats.profile_public
-                                                ? "Public profile"
-                                                : "Private profile"}
-                                        </div>
-                                    </div>
+                                    <span className="text-[11px] text-muted-foreground">
+                                        {s.label}
+                                    </span>
                                 </div>
-                            </div>
+                            ))}
                         </div>
-                    </div>
 
-                    <div className="rounded-3xl border border-border bg-gradient-card p-8 shadow-card space-y-6">
-                        <div>
-                            <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                                / edit details
+                        {/* Level progress */}
+                        <div className="mt-4">
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium">Level {level}</span>
+                                <span className="tabular-nums text-muted-foreground">
+                                    {xpInLevel} / 500 XP
+                                </span>
                             </div>
-                            <h2 className="font-display text-3xl font-semibold tracking-tight mt-2">
-                                Update your profile
-                            </h2>
-                        </div>
-                        <div className="space-y-5">
-                            <div>
-                                <Label>{t("profile.email")}</Label>
-                                <Input value={user.email ?? ""} disabled className="mt-1.5" />
-                            </div>
-                            <div>
-                                <Label>{t("profile.name")}</Label>
-                                <Input
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="mt-1.5"
+                            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
+                                <div
+                                    className="h-full rounded-full bg-gradient-lime transition-[width] duration-700"
+                                    style={{ width: `${(xpInLevel / 500) * 100}%` }}
                                 />
                             </div>
-                            <div>
-                                <Label>{t("profile.certificateName")}</Label>
+                            <p className="mt-1.5 text-xs text-muted-foreground">
+                                {500 - xpInLevel} XP to level {level + 1}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+                    {/* ── Edit details ─────────────────────────────────────── */}
+                    <SettingsGroup
+                        title="Profile details"
+                        footer="Your certificate name is printed on course certificates."
+                    >
+                        <SettingsRow
+                            title={t("profile.name")}
+                            stack
+                            control={
+                                <Input value={name} onChange={(e) => setName(e.target.value)} />
+                            }
+                        />
+                        <SettingsRow
+                            title={t("profile.certificateName")}
+                            stack
+                            control={
                                 <Input
                                     value={certName}
                                     onChange={(e) => setCertName(e.target.value)}
-                                    className="mt-1.5"
+                                    placeholder={name || user.email}
                                 />
-                            </div>
+                            }
+                        />
+                        <SettingsRow
+                            title={t("profile.email")}
+                            stack
+                            control={<Input value={user.email ?? ""} disabled />}
+                        />
+                        <div className="px-4 py-3">
                             <Button
                                 onClick={save}
-                                disabled={busy}
-                                className="w-full bg-gradient-lime text-primary-foreground hover:opacity-90 shadow-glow"
+                                disabled={busy || !dirty}
+                                className="w-full bg-gradient-lime text-primary-foreground shadow-glow hover:opacity-90"
                             >
-                                {t("common.save")}
+                                {busy ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    t("common.save")
+                                )}
                             </Button>
                         </div>
+                    </SettingsGroup>
+
+                    <div className="space-y-6">
+                        <Suspense fallback={<Skeleton className="h-56 rounded-3xl" />}>
+                            <BadgesGrid userId={user.id} />
+                        </Suspense>
+
+                        <SettingsGroup title="Account">
+                            <SettingsNavRow
+                                to="/settings/privacy"
+                                icon={stats.profile_public ? Globe : Lock}
+                                tint="bg-indigo-500"
+                                title="Profile visibility"
+                                value={visibility}
+                            />
+                            <SettingsNavRow
+                                to="/settings/progress"
+                                icon={TrendingUp}
+                                tint="bg-emerald-500"
+                                title="Learning progress"
+                            />
+                            <SettingsNavRow
+                                to="/leaderboard"
+                                icon={Trophy}
+                                tint="bg-amber-500"
+                                title="Leaderboard"
+                            />
+                        </SettingsGroup>
                     </div>
                 </div>
             </section>

@@ -36,8 +36,9 @@ export function rankRows(rows: RankRow[]): RankedRow[] {
             };
         })
         .sort((a, b) => {
-            if (b.streak !== a.streak) return b.streak - a.streak;
+            // Gems, then streak, then XP; matches list_public_profiles().
             if (b.gems !== a.gems) return b.gems - a.gems;
+            if (b.streak !== a.streak) return b.streak - a.streak;
             if (b.xp !== a.xp) return b.xp - a.xp;
             return (a.name ?? "").localeCompare(b.name ?? "");
         });
