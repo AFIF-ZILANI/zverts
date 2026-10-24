@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
@@ -40,9 +40,11 @@ import {
     ShieldAlert,
     RotateCcw,
     Pencil,
+    MoonStar,
 } from "lucide-react";
 import { SmartNotificationSettings } from "@/components/app/SmartNotificationSettings";
 import { PushToggle } from "@/components/app/PushToggle";
+import { IslamicModeSettings } from "@/components/app/IslamicModeSettings";
 
 type Profile = {
     name: string | null;
@@ -66,6 +68,8 @@ type Profile = {
 
 const Settings = () => {
     const { user, loading, signOut } = useAuth();
+    // ?tab=islamic (etc.) opens that tab directly.
+    const [searchParams] = useSearchParams();
     const { t, i18n } = useTranslation();
     const [p, setP] = useState<Profile | null>(null);
     const [busy, setBusy] = useState(false);
@@ -245,7 +249,7 @@ const Settings = () => {
                     </p>
                 </div>
 
-                <Tabs defaultValue="profile" className="space-y-6">
+                <Tabs defaultValue={searchParams.get("tab") ?? "profile"} className="space-y-6">
                     <TabsList className="flex flex-wrap h-auto gap-1 bg-card/60 border border-border p-1">
                         <TabsTrigger value="profile">
                             <UserIcon className="h-3.5 w-3.5 mr-1.5" />
@@ -258,6 +262,10 @@ const Settings = () => {
                         <TabsTrigger value="prefs">
                             <BookOpen className="h-3.5 w-3.5 mr-1.5" />
                             Learning
+                        </TabsTrigger>
+                        <TabsTrigger value="islamic">
+                            <MoonStar className="h-3.5 w-3.5 mr-1.5" />
+                            Islamic
                         </TabsTrigger>
                         <TabsTrigger value="notifications">
                             <Bell className="h-3.5 w-3.5 mr-1.5" />
@@ -429,6 +437,11 @@ const Settings = () => {
                                 {t("common.save")}
                             </Button>
                         </div>
+                    </TabsContent>
+
+                    {/* ISLAMIC MODE */}
+                    <TabsContent value="islamic">
+                        <IslamicModeSettings />
                     </TabsContent>
 
                     {/* NOTIFICATIONS */}
