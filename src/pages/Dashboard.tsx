@@ -20,6 +20,7 @@ import {
     Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIslamicSettings } from "@/lib/islamic/dailyAyah";
 
 const WeeklyActivityChart = lazy(() =>
     import("@/components/app/WeeklyActivityChart").then((m) => ({
@@ -32,6 +33,8 @@ const AnalyticsPanel = lazy(() =>
 const BadgesGrid = lazy(() =>
     import("@/components/app/BadgesGrid").then((m) => ({ default: m.BadgesGrid })),
 );
+// Islamic Mode only; the card carries the ayat data, so it loads only when on.
+const DailyAyahCard = lazy(() => import("@/components/app/DailyAyahCard"));
 
 interface CourseRow {
     id: string;
@@ -74,6 +77,7 @@ const dhakaDateKey = (ms: number) => dhakaDay(ms).toISOString().slice(0, 10);
 
 const Dashboard = () => {
     const { user, loading: authLoading } = useAuth();
+    const [islamic] = useIslamicSettings();
     const [courses, setCourses] = useState<CourseRow[]>([]);
     const [modules, setModules] = useState<ModuleRow[]>([]);
     const [progress, setProgress] = useState<ProgressRow[]>([]);
@@ -298,6 +302,14 @@ const Dashboard = () => {
                         </Link>
                     )}
                 </div>
+
+                {islamic.enabled && (
+                    <Suspense fallback={<Skeleton className="h-52 rounded-2xl mb-5" />}>
+                        <div className="mb-5">
+                            <DailyAyahCard />
+                        </div>
+                    </Suspense>
+                )}
 
                 {error ? (
                     <div className="rounded-2xl border border-destructive/40 bg-destructive/10 text-destructive p-5 text-sm font-mono">
