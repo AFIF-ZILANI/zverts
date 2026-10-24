@@ -131,8 +131,11 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, 
 
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
         if (!playerRef.current) return;
-        const tag = (e.target as HTMLElement).tagName.toLowerCase();
-        if (tag === "input" || tag === "textarea" || (e.target as HTMLElement).isContentEditable) return;
+        const target = e.target as HTMLElement;
+        const tag = target.tagName.toLowerCase();
+        if (tag === "input" || tag === "textarea" || target.isContentEditable) return;
+        // Monaco (code runner) types through an EditContext div, not a textarea.
+        if (target.closest?.(".monaco-editor")) return;
 
         switch (e.key) {
             case " ":

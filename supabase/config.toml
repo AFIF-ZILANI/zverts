@@ -14,3 +14,7 @@ verify_jwt = false
 # Called by the notify_push() trigger; authenticated with the x-push-secret header.
 [functions.push-send]
 verify_jwt = false
+
+# run-code trusts the gateway's JWT check and only reads the claims itself.
+[functions.run-code]
+verify_jwt = true

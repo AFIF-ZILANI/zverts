@@ -8,6 +8,7 @@ import {
     type YouTubePlayerHandle,
 } from "@/components/app/YouTubePlayer";
 import { NotesPanel } from "@/components/app/NotesPanel";
+import { CodeRunner } from "@/components/app/code-runner/CodeRunner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -486,6 +487,8 @@ const ModulePlayer = () => {
                                     </p>
                                 </div>
                             </div>
+
+                            <CodeRunner moduleId={mod.id} />
 
                             {/* Reward flash */}
                             <div
