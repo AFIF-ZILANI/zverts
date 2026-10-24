@@ -2,7 +2,11 @@ import { lazy, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
-import { YouTubePlayer, type YouTubePlayerHandle } from "@/components/app/YouTubePlayer";
+import {
+    YouTubePlayer,
+    type WatchReport,
+    type YouTubePlayerHandle,
+} from "@/components/app/YouTubePlayer";
 import { NotesPanel } from "@/components/app/NotesPanel";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +21,6 @@ import {
     PlayCircle,
     ListVideo,
     Clock,
-    BrainCircuit,
 } from "lucide-react";
 
 const AITutorPanel = lazy(() =>
@@ -44,8 +47,11 @@ interface SiblingProgress {
     module_id: string;
     percent_watched: number;
     completed: boolean;
-    mcq_passed: boolean;
 }
+
+// Lessons count as complete (and unlock the next one) at this share of the video
+// actually watched — must match record_watch_progress.
+const COMPLETE_PERCENT = 90;
 
 const fmt = (s: number) => {
     const h = Math.floor(s / 3600),
@@ -53,88 +59,11 @@ const fmt = (s: number) => {
     return h ? `${h}h ${m}m` : `${m}m`;
 };
 
-// ── Quiz countdown overlay ────────────────────────────────────────────────────
-const QuizCountdownDialog = ({
-    open,
-    countdown,
-    paused,
-    mandatory,
-    onTakeQuiz,
-    onPause,
-    onResume,
-    onSkip,
-}: {
-    open: boolean;
-    countdown: number;
-    paused: boolean;
-    mandatory: boolean;
-    onTakeQuiz: () => void;
-    onPause: () => void;
-    onResume: () => void;
-    onSkip?: () => void;
-}) => {
-    if (!open) return null;
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <div className="rounded-2xl border border-border bg-card shadow-elevated p-8 max-w-sm w-full mx-4 text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
-                <div>
-                    <BrainCircuit className="h-10 w-10 text-primary mx-auto mb-3" />
-                    <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                        / lesson complete
-                    </p>
-                    <h2 className="font-display text-2xl font-semibold mt-1">
-                        {mandatory ? "Quiz time!" : "Want to retake?"}
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-2">
-                        {mandatory
-                            ? "Pass the quiz to unlock the next lesson."
-                            : "You've already passed. Quiz is optional."}
-                    </p>
-                </div>
-
-                {/* Countdown ring */}
-                <div className="flex items-center justify-center">
-                    <div
-                        className={cn(
-                            "relative h-20 w-20 rounded-full border-4 flex items-center justify-center font-display text-3xl font-bold transition-colors",
-                            paused
-                                ? "border-muted-foreground/40 text-muted-foreground"
-                                : "border-primary text-primary",
-                        )}
-                    >
-                        {countdown}
-                    </div>
-                </div>
-
-                <div className="flex gap-2 justify-center">
-                    {!paused ? (
-                        <Button variant="outline" size="sm" onClick={onPause}>
-                            Pause
-                        </Button>
-                    ) : (
-                        <Button variant="outline" size="sm" onClick={onResume}>
-                            Resume
-                        </Button>
-                    )}
-                    <Button
-                        className="bg-gradient-lime text-primary-foreground shadow-glow gap-1.5"
-                        onClick={onTakeQuiz}
-                    >
-                        <BrainCircuit className="h-4 w-4" /> Take Quiz
-                    </Button>
-                </div>
-
-                {!mandatory && onSkip && (
-                    <button
-                        onClick={onSkip}
-                        className="text-xs text-muted-foreground hover:text-foreground font-mono transition-colors"
-                    >
-                        Skip for now
-                    </button>
-                )}
-            </div>
-        </div>
-    );
+const fmtWatched = (s: number) => {
+    const h = Math.floor(s / 3600),
+        m = Math.floor((s % 3600) / 60),
+        sec = Math.floor(s % 60);
+    return h ? `${h}h ${m}m` : m ? `${m}m ${sec}s` : `${sec}s`;
 };
 
 // ── Sidebar module row ────────────────────────────────────────────────────────
@@ -228,25 +157,16 @@ const ModulePlayer = () => {
     const [unlocked, setUnlocked] = useState<boolean | null>(null);
     const [percent, setPercent] = useState(0);
     const [completed, setCompleted] = useState(false);
-    const [videoFinished, setVideoFinished] = useState(false);
-    const [mcqPassed, setMcqPassed] = useState(false);
+    const [watchSeconds, setWatchSeconds] = useState(0);
     const [nextId, setNextId] = useState<string | null>(null);
     const [rewardFlash, setRewardFlash] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // Quiz countdown dialog
-    const [quizDialogOpen, setQuizDialogOpen] = useState(false);
-    const [quizCountdown, setQuizCountdown] = useState(10);
-    const [countdownPaused, setCountdownPaused] = useState(false);
-
     const [siblings, setSiblings] = useState<SiblingMod[]>([]);
     const [siblingProg, setSiblingProg] = useState<Map<string, SiblingProgress>>(new Map());
 
-    const lastSentRef = useRef(0);
     const playerRef = useRef<YouTubePlayerHandle>(null);
     const sidebarRef = useRef<HTMLDivElement>(null);
-    // snapshot of mcq_passed at page-load time; true = rewatch (quiz optional)
-    const loadedMcqPassedRef = useRef(false);
 
     // ── Load module ──────────────────────────────────────────────────────────
     useEffect(() => {
@@ -255,15 +175,11 @@ const ModulePlayer = () => {
         setUnlocked(null);
         setPercent(0);
         setCompleted(false);
-        setVideoFinished(false);
-        setMcqPassed(false);
+        setWatchSeconds(0);
         setNextId(null);
         setRewardFlash(false);
         setSiblings([]);
         setSiblingProg(new Map());
-        setQuizDialogOpen(false);
-        lastSentRef.current = 0;
-        loadedMcqPassedRef.current = false;
         setLoading(true);
         (async () => {
             const { data: m } = await supabase
@@ -295,7 +211,7 @@ const ModulePlayer = () => {
                     supabase.rpc("is_module_unlocked", { _user_id: user.id, _module_id: m.id }),
                     supabase
                         .from("module_progress")
-                        .select("percent_watched,completed,watch_time_seconds,video_finished,mcq_passed")
+                        .select("percent_watched,completed,watch_time_seconds")
                         .eq("user_id", user.id)
                         .eq("module_id", m.id)
                         .maybeSingle(),
@@ -311,10 +227,7 @@ const ModulePlayer = () => {
             if (p) {
                 setPercent(Number(p.percent_watched));
                 setCompleted(p.completed);
-                setVideoFinished(p.video_finished ?? false);
-                setMcqPassed(p.mcq_passed ?? false);
-                loadedMcqPassedRef.current = p.mcq_passed ?? false;
-                lastSentRef.current = p.watch_time_seconds;
+                setWatchSeconds(p.watch_time_seconds);
             }
 
             const sibList = sibs ?? [];
@@ -323,7 +236,7 @@ const ModulePlayer = () => {
             if (sibList.length) {
                 const { data: sp } = await supabase
                     .from("module_progress")
-                    .select("module_id,percent_watched,completed,mcq_passed")
+                    .select("module_id,percent_watched,completed")
                     .eq("user_id", user.id)
                     .in("module_id", sibList.map((s) => s.id));
                 setSiblingProg(new Map((sp ?? []).map((x) => [x.module_id, x as SiblingProgress])));
@@ -333,28 +246,6 @@ const ModulePlayer = () => {
         })();
     }, [user, id]);
 
-    // ── Countdown timer ──────────────────────────────────────────────────────
-    useEffect(() => {
-        if (!quizDialogOpen || countdownPaused) return;
-        if (quizCountdown <= 0) {
-            const mandatory = !loadedMcqPassedRef.current;
-            if (mandatory) {
-                navigate(`/quiz/${mod?.id}`, {
-                    state: {
-                        nextModuleId: nextId,
-                        courseId: mod?.course_id,
-                        mandatory: true,
-                    },
-                });
-            } else {
-                setQuizDialogOpen(false);
-            }
-            return;
-        }
-        const t = setTimeout(() => setQuizCountdown((q) => q - 1), 1000);
-        return () => clearTimeout(t);
-    }, [quizDialogOpen, countdownPaused, quizCountdown, mod, nextId, navigate]);
-
     // ── Scroll current item into view ─────────────────────────────────────────
     useEffect(() => {
         if (!sidebarRef.current) return;
@@ -363,54 +254,39 @@ const ModulePlayer = () => {
     }, [siblings.length]);
 
     // ── Progress ──────────────────────────────────────────────────────────────
-    const sendProgress = async (watch: number, force = false) => {
+    // The player reports only genuinely watched time; the server re-checks it
+    // against the clock, so seeking ahead never counts as watching.
+    const recordWatch = async (report: WatchReport) => {
         if (!mod) return;
-        if (!force && watch - lastSentRef.current < 5) return;
-        lastSentRef.current = watch;
-        const { data, error } = await supabase.rpc("update_module_progress", {
+        const { data, error } = await supabase.rpc("record_watch_progress", {
             _module_id: mod.id,
-            _watch_time: watch,
-            _force_complete: force,
+            _watched_seconds: report.watchedSeconds,
+            _segments: report.segments,
+            _video_duration: report.duration,
         });
-        if (error) { toast.error(error.message); return; }
-        if (data) {
-            const row = data as { percent_watched: number; video_finished: boolean; completed: boolean; mcq_passed: boolean };
-            setPercent(Number(row.percent_watched));
-            if (row.video_finished) setVideoFinished(true);
-            if (row.completed && !completed) {
-                setCompleted(true);
-                setRewardFlash(true);
-                setTimeout(() => setRewardFlash(false), 3200);
-                setSiblingProg((prev) => {
-                    const next = new Map(prev);
-                    next.set(mod.id, {
-                        module_id: mod.id,
-                        percent_watched: 100,
-                        completed: true,
-                        mcq_passed: prev.get(mod.id)?.mcq_passed ?? false,
-                    });
-                    return next;
-                });
-            }
+        if (error) {
+            toast.error(error.message);
+            return;
         }
-    };
-
-    const handleVideoEnded = async () => {
-        await sendProgress(lastSentRef.current, true);
-        setQuizDialogOpen(true);
-        setQuizCountdown(10);
-        setCountdownPaused(false);
-    };
-
-    const goToQuiz = () => {
-        setQuizDialogOpen(false);
-        navigate(`/quiz/${mod?.id}`, {
-            state: {
-                nextModuleId: nextId,
-                courseId: mod?.course_id,
-                mandatory: !loadedMcqPassedRef.current,
-            },
+        if (!data) return;
+        const row = data;
+        setPercent(Number(row.percent_watched));
+        setWatchSeconds(row.watch_time_seconds);
+        setSiblingProg((prev) => {
+            const next = new Map(prev);
+            next.set(mod.id, {
+                module_id: mod.id,
+                percent_watched: Number(row.percent_watched),
+                completed: row.completed,
+            });
+            return next;
         });
+        if (row.completed && !completed) {
+            setCompleted(true);
+            setRewardFlash(true);
+            setTimeout(() => setRewardFlash(false), 3200);
+            toast.success("Lesson complete — next lesson unlocked!");
+        }
     };
 
     // ── Sidebar module cards ──────────────────────────────────────────────────
@@ -418,8 +294,7 @@ const ModulePlayer = () => {
         const p = siblingProg.get(m.id);
         const prev = i === 0 ? null : siblings[i - 1];
         const prevRow = prev ? siblingProg.get(prev.id) : null;
-        // unlock requires prev completed AND prev mcq_passed
-        const prevDone = !prev || (prevRow?.completed && prevRow?.mcq_passed);
+        const prevDone = !prev || prevRow?.completed;
         const isCompleted = p?.completed ?? false;
         const isCur = m.id === id;
         const isLocked = !isCompleted && !prevDone && !isCur;
@@ -435,23 +310,8 @@ const ModulePlayer = () => {
     if (authLoading) return null;
     if (!user) return <Navigate to="/auth" replace />;
 
-    // "video watched but quiz not yet taken" — show persistent banner
-    const needsQuizBanner = videoFinished && !mcqPassed;
-
     return (
         <AppShell>
-            {/* Quiz countdown overlay */}
-            <QuizCountdownDialog
-                open={quizDialogOpen}
-                countdown={quizCountdown}
-                paused={countdownPaused}
-                mandatory={!loadedMcqPassedRef.current}
-                onTakeQuiz={goToQuiz}
-                onPause={() => setCountdownPaused(true)}
-                onResume={() => setCountdownPaused(false)}
-                onSkip={loadedMcqPassedRef.current ? () => setQuizDialogOpen(false) : undefined}
-            />
-
             <div className="container max-w-[1400px] py-4 md:py-6">
                 {/* Back + breadcrumb */}
                 <div className="mb-4">
@@ -486,7 +346,7 @@ const ModulePlayer = () => {
                         <Lock className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
                         <h2 className="font-display text-3xl font-semibold">Module locked</h2>
                         <p className="text-muted-foreground mt-2">
-                            Complete the previous module's video and quiz to unlock this one.
+                            Watch at least 90% of the previous lesson to unlock this one.
                         </p>
                         <Button
                             className="mt-6"
@@ -512,8 +372,7 @@ const ModulePlayer = () => {
                             <YouTubePlayer
                                 ref={playerRef}
                                 videoId={mod.youtube_video_id}
-                                onProgress={(s) => sendProgress(s)}
-                                onEnded={handleVideoEnded}
+                                onWatch={recordWatch}
                             />
                         </div>
 
@@ -562,7 +421,9 @@ const ModulePlayer = () => {
                                 <div>
                                     <div className="flex justify-between font-mono text-xs text-muted-foreground mb-1.5">
                                         <span>Watch progress</span>
-                                        <span>{Math.round(percent)}% · 90% to complete</span>
+                                        <span>
+                                            {Math.round(percent)}% · {COMPLETE_PERCENT}% to complete
+                                        </span>
                                     </div>
                                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                                         <div
@@ -570,71 +431,36 @@ const ModulePlayer = () => {
                                             style={{ width: `${Math.min(100, percent)}%` }}
                                         />
                                     </div>
+                                    <p className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground mt-1.5">
+                                        <Clock className="h-3 w-3" />
+                                        Time watched: {fmtWatched(watchSeconds)}
+                                        <span className="opacity-70">· skipped parts don't count</span>
+                                    </p>
                                 </div>
 
-                                {/* Quiz required banner */}
-                                {needsQuizBanner && (
-                                    <div className="rounded-xl border border-primary/40 bg-primary/5 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
-                                        <div className="flex items-center gap-2">
-                                            <BrainCircuit className="h-4 w-4 text-primary shrink-0" />
-                                            <p className="text-sm font-medium">
-                                                Quiz required to unlock the next lesson
-                                            </p>
-                                        </div>
-                                        <Button
-                                            size="sm"
-                                            className="bg-gradient-lime text-primary-foreground shadow-glow gap-1.5 shrink-0"
-                                            onClick={() =>
-                                                navigate(`/quiz/${mod.id}`, {
-                                                    state: {
-                                                        nextModuleId: nextId,
-                                                        courseId: mod.course_id,
-                                                        mandatory: true,
-                                                    },
-                                                })
-                                            }
-                                        >
-                                            <BrainCircuit className="h-3.5 w-3.5" /> Take Quiz
-                                        </Button>
-                                    </div>
-                                )}
-
                                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                                    <div className="flex items-center gap-2">
-                                        {completed && mcqPassed && (
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        {completed ? (
                                             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary font-mono">
-                                                <CheckCircle2 className="h-4 w-4" /> Lesson &amp; quiz complete
+                                                <CheckCircle2 className="h-4 w-4" /> Lesson complete
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
+                                                <Lock className="h-3.5 w-3.5 shrink-0" />
+                                                Watch {COMPLETE_PERCENT}% of this video to unlock the next lesson
                                             </span>
                                         )}
-                                        {completed && !mcqPassed && !videoFinished && (
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() =>
-                                                    navigate(`/quiz/${mod.id}`, {
-                                                        state: {
-                                                            nextModuleId: nextId,
-                                                            courseId: mod.course_id,
-                                                            mandatory: true,
-                                                        },
-                                                    })
-                                                }
-                                                className="gap-1.5"
-                                            >
-                                                <BrainCircuit className="h-3.5 w-3.5" /> Take Quiz
-                                            </Button>
-                                        )}
-                                        {nextId && mcqPassed && (
-                                            <Button
-                                                size="sm"
-                                                onClick={() => navigate(`/learn/${nextId}`)}
-                                                className="bg-gradient-lime text-primary-foreground shadow-glow"
-                                            >
-                                                Next lesson{" "}
-                                                <ArrowRight className="ml-1.5 h-4 w-4" />
-                                            </Button>
-                                        )}
                                     </div>
+                                    {nextId && (
+                                        <Button
+                                            size="sm"
+                                            disabled={!completed}
+                                            onClick={() => navigate(`/learn/${nextId}`)}
+                                            className="bg-gradient-lime text-primary-foreground shadow-glow"
+                                        >
+                                            Next lesson <ArrowRight className="ml-1.5 h-4 w-4" />
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
 
@@ -652,8 +478,8 @@ const ModulePlayer = () => {
                                         Need help understanding?
                                     </p>
                                     <p className="text-sm text-muted-foreground max-w-xs">
-                                        Open Vert to explain concepts, summarize this lesson, or
-                                        quiz you in English or Bangla.
+                                        Open Vert to explain concepts or summarize this lesson in
+                                        English or Bangla.
                                     </p>
                                     <p className="text-xs font-mono text-muted-foreground mt-3">
                                         Tap "Chat with Vert" → bottom-right

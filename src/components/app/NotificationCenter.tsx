@@ -19,7 +19,6 @@ const categoryEmoji: Record<string, string> = {
     badge_unlocked: "🏅",
     xp_gain: "✨",
     ai_summary: "🧠",
-    ai_quiz: "🧩",
     ai_recommendation: "💡",
     weak_topic: "🎯",
     system_success: "✅",
@@ -35,7 +34,6 @@ const categoryEmoji: Record<string, string> = {
     evening_push: "🌆",
     night_push: "🌙",
     unfinished_lesson: "📚",
-    quiz_reminder: "📝",
     playlist_ready: "🎬",
 };
 

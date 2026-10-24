@@ -15,7 +15,6 @@ import {
     CheckCircle2,
     Circle,
     PlayCircle,
-    BrainCircuit,
     Trophy,
     Sparkles,
     Flame,
@@ -27,11 +26,14 @@ import {
 // ── Domain types ────────────────────────────────────────────────────────────
 
 type Task = {
-    kind: "lesson" | "quiz";
+    kind: "lesson" | "watch";
     title: string;
     done: boolean;
     module_id?: string;
     course_id?: string;
+    /** watch task: daily goal and genuine minutes watched so far today */
+    goal_minutes?: number;
+    progress_minutes?: number;
 };
 
 type Mission = {
@@ -43,7 +45,7 @@ type Mission = {
     rewarded_at: string | null;
 };
 
-type DayStats = { lessons: number; quizzes: number; minutes: number };
+type DayStats = { lessons: number; minutes: number };
 type GrowthData = { today: DayStats; yesterday: DayStats };
 
 const pct = (today: number, yest: number) => {
@@ -218,26 +220,6 @@ const Growth = () => {
                 },
                 () => void load(true),
             )
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "mcq_attempts",
-                    filter: `user_id=eq.${user.id}`,
-                },
-                () => void load(true),
-            )
-            .on(
-                "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "daily_challenges",
-                    filter: `user_id=eq.${user.id}`,
-                },
-                () => void load(true),
-            )
             .subscribe();
         return () => {
             void supabase.removeChannel(ch);
@@ -359,8 +341,7 @@ const Growth = () => {
                             ) : (
                                 <ul className="space-y-2">
                                     {mission.tasks.map((t, i) => {
-                                        const Icon =
-                                            t.kind === "lesson" ? PlayCircle : BrainCircuit;
+                                        const Icon = t.kind === "lesson" ? PlayCircle : Clock;
                                         const href =
                                             t.kind === "lesson" && t.module_id
                                                 ? `/learn/${t.module_id}`
@@ -390,6 +371,12 @@ const Growth = () => {
                                                 >
                                                     {t.title}
                                                 </span>
+                                                {t.kind === "watch" && (
+                                                    <span className="font-mono text-xs text-muted-foreground tabular-nums shrink-0">
+                                                        {Math.min(t.progress_minutes ?? 0, t.goal_minutes ?? 0)}/
+                                                        {t.goal_minutes} min
+                                                    </span>
+                                                )}
                                                 {!t.done && (
                                                     <Link to={href}>
                                                         <Button
@@ -433,18 +420,12 @@ const Growth = () => {
                                         Yesterday vs Today
                                     </h2>
                                 </div>
-                                <div className="grid sm:grid-cols-3 gap-3">
+                                <div className="grid sm:grid-cols-2 gap-3">
                                     <GrowthCell
                                         icon={PlayCircle}
                                         label="Lessons"
                                         today={growth.today.lessons}
                                         yest={growth.yesterday.lessons}
-                                    />
-                                    <GrowthCell
-                                        icon={BrainCircuit}
-                                        label="Quizzes"
-                                        today={growth.today.quizzes}
-                                        yest={growth.yesterday.quizzes}
                                     />
                                     <GrowthCell
                                         icon={Clock}

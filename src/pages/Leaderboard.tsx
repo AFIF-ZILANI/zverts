@@ -3,7 +3,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import {
-    Trophy, Flame, Gem, Medal, BookOpen, BrainCircuit, Globe,
+    Trophy, Flame, Gem, Medal, BookOpen, Globe,
     ChevronDown, Check, Search,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,7 +28,6 @@ interface PlaylistRow {
     name: string | null;
     avatar_url: string | null;
     completed_count: number;
-    quiz_passes: number;
     total_modules: number;
     completion_pct: number;
 }
@@ -441,8 +440,7 @@ const Leaderboard = () => {
                 {tab === "playlist" && (
                     <>
                         <p className="text-sm text-muted-foreground mb-4">
-                            Ranked by <span className="text-primary font-medium">completion %</span> →{" "}
-                            <span className="text-foreground font-medium">quizzes passed</span> within a playlist.
+                            Ranked by <span className="text-primary font-medium">completion %</span> within a playlist.
                         </p>
 
                         {/* Searchable playlist combobox */}
@@ -505,7 +503,7 @@ const Leaderboard = () => {
                                             avatar_url: p.avatar_url,
                                             rank: p.rank,
                                             line1: `${p.completion_pct}% done`,
-                                            line2: `${p.completed_count}/${p.total_modules} · 🧠${p.quiz_passes}`,
+                                            line2: `${p.completed_count}/${p.total_modules} lessons`,
                                         }))}
                                     />
                                 )}
@@ -549,9 +547,6 @@ const Leaderboard = () => {
                                                 <span className="font-mono text-xs text-muted-foreground tabular-nums hidden sm:inline-block text-right" title="Completed / Total">
                                                     {r.completed_count}/{r.total_modules}
                                                 </span>
-                                                <span className="font-mono text-xs text-primary inline-flex items-center gap-1 tabular-nums w-10 justify-end" title="Quizzes passed">
-                                                    <BrainCircuit className="h-3 w-3" />{r.quiz_passes}
-                                                </span>
                                             </div>
                                         );
                                     })}
@@ -563,9 +558,6 @@ const Leaderboard = () => {
                                         <span className="flex-1 font-medium truncate">You</span>
                                         <span className="font-mono text-xs text-muted-foreground">
                                             {myPlaylistRow.completed_count}/{myPlaylistRow.total_modules}
-                                        </span>
-                                        <span className="font-mono text-xs text-primary inline-flex items-center gap-1">
-                                            <BrainCircuit className="h-3 w-3" />{myPlaylistRow.quiz_passes}
                                         </span>
                                         <span className="font-mono text-xs text-muted-foreground">
                                             {Number(myPlaylistRow.completion_pct)}%

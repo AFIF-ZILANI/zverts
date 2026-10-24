@@ -428,6 +428,7 @@ export type Database = {
                     completed_at: string | null;
                     created_at: string;
                     id: string;
+                    last_watch_at: string | null;
                     mcq_passed: boolean;
                     module_id: string;
                     percent_watched: number;
@@ -436,12 +437,14 @@ export type Database = {
                     user_id: string;
                     video_finished: boolean;
                     watch_time_seconds: number;
+                    watched_ranges: unknown;
                 };
                 Insert: {
                     completed?: boolean;
                     completed_at?: string | null;
                     created_at?: string;
                     id?: string;
+                    last_watch_at?: string | null;
                     mcq_passed?: boolean;
                     module_id: string;
                     percent_watched?: number;
@@ -450,12 +453,14 @@ export type Database = {
                     user_id: string;
                     video_finished?: boolean;
                     watch_time_seconds?: number;
+                    watched_ranges?: unknown;
                 };
                 Update: {
                     completed?: boolean;
                     completed_at?: string | null;
                     created_at?: string;
                     id?: string;
+                    last_watch_at?: string | null;
                     mcq_passed?: boolean;
                     module_id?: string;
                     percent_watched?: number;
@@ -464,6 +469,7 @@ export type Database = {
                     user_id?: string;
                     video_finished?: boolean;
                     watch_time_seconds?: number;
+                    watched_ranges?: unknown;
                 };
                 Relationships: [
                     {
@@ -1121,6 +1127,27 @@ export type Database = {
                     },
                 ];
             };
+            watch_daily: {
+                Row: {
+                    date: string;
+                    seconds: number;
+                    updated_at: string;
+                    user_id: string;
+                };
+                Insert: {
+                    date: string;
+                    seconds?: number;
+                    updated_at?: string;
+                    user_id: string;
+                };
+                Update: {
+                    date?: string;
+                    seconds?: number;
+                    updated_at?: string;
+                    user_id?: string;
+                };
+                Relationships: [];
+            };
         };
         Views: {
             [_ in never]: never;
@@ -1329,23 +1356,28 @@ export type Database = {
                 Returns: Json;
             };
             unread_notification_count: { Args: never; Returns: number };
-            update_module_progress: {
+            record_watch_progress: {
                 Args: {
-                    _force_complete?: boolean;
                     _module_id: string;
-                    _watch_time: number;
+                    _segments: Json;
+                    _video_duration?: number;
+                    _watched_seconds: number;
                 };
                 Returns: {
                     completed: boolean;
                     completed_at: string | null;
                     created_at: string;
                     id: string;
+                    last_watch_at: string | null;
                     mcq_passed: boolean;
                     module_id: string;
                     percent_watched: number;
+                    quiz_fail_streak: number;
                     updated_at: string;
                     user_id: string;
+                    video_finished: boolean;
                     watch_time_seconds: number;
+                    watched_ranges: unknown;
                 };
                 SetofOptions: {
                     from: "*";

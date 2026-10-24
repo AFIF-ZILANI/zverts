@@ -37,45 +37,6 @@ import { Check, Copy } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 
-type MCQ = {
-    q: string;
-    options: { letter: string; text: string }[];
-    answer: string;
-    explanation: string;
-};
-
-// Parse blocks like:
-// **Q1.** What is X?
-// - A) ...
-// - B) ...
-// **Answer:** B — explanation
-function parseMCQs(text: string): { mcqs: MCQ[]; rest: string } | null {
-    const re =
-        /\*\*Q\d+\.\*\*\s*([\s\S]*?)\n((?:\s*[-*]\s*[A-D]\)[^\n]*\n?){2,5})\s*\*\*Answer:\*\*\s*([A-D])\s*[—\-:]?\s*([^\n]*)/g;
-    const mcqs: MCQ[] = [];
-    let m: RegExpExecArray | null;
-    let last = 0;
-    let consumedAll = true;
-    while ((m = re.exec(text)) !== null) {
-        if (m.index > last && text.slice(last, m.index).trim().length > 0) consumedAll = false;
-        const optLines = m[2]
-            .split("\n")
-            .map((l) => l.trim())
-            .filter(Boolean);
-        const options = optLines
-            .map((l) => {
-                const mm = l.match(/^[-*]\s*([A-D])\)\s*(.+)$/);
-                return mm ? { letter: mm[1], text: mm[2].trim() } : null;
-            })
-            .filter(Boolean) as MCQ["options"];
-        mcqs.push({ q: m[1].trim(), options, answer: m[3], explanation: (m[4] || "").trim() });
-        last = m.index + m[0].length;
-    }
-    if (mcqs.length === 0) return null;
-    if (text.slice(last).trim().length > 0) consumedAll = false;
-    return { mcqs, rest: consumedAll ? "" : text };
-}
-
 const CodeBlock = ({
     language,
     value,
@@ -121,65 +82,15 @@ const CodeBlock = ({
     );
 };
 
-const McqCard = ({ mcq, idx }: { mcq: MCQ; idx: number }) => (
-    <div className="my-4 rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm p-4 space-y-3">
-        <div className="flex items-start gap-2">
-            <span className="shrink-0 inline-flex items-center justify-center h-6 min-w-6 px-1.5 rounded-md bg-primary/15 text-primary text-xs font-mono font-semibold">
-                Q{idx + 1}
-            </span>
-            <p className="font-medium text-sm leading-relaxed">{mcq.q}</p>
-        </div>
-        <ul className="space-y-1.5">
-            {mcq.options.map((o) => {
-                const correct = o.letter === mcq.answer;
-                return (
-                    <li
-                        key={o.letter}
-                        className={cn(
-                            "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
-                            correct
-                                ? "border-primary/60 bg-primary/10 text-foreground"
-                                : "border-border/50 bg-background/40",
-                        )}
-                    >
-                        <span
-                            className={cn(
-                                "h-6 w-6 shrink-0 rounded-md grid place-items-center text-xs font-semibold",
-                                correct
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-muted text-muted-foreground",
-                            )}
-                        >
-                            {o.letter}
-                        </span>
-                        <span>{o.text}</span>
-                        {correct && <Check className="ml-auto h-4 w-4 text-primary" />}
-                    </li>
-                );
-            })}
-        </ul>
-        {mcq.explanation && (
-            <div className="rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground leading-relaxed">
-                <span className="font-semibold text-foreground">Explanation: </span>
-                {mcq.explanation}
-            </div>
-        )}
-    </div>
-);
-
 function MessageContentInner({ content }: { content: string }) {
     const { resolvedTheme } = useTheme();
     const isDark = resolvedTheme !== "light";
 
     const normalized = normalizeLatex(content);
 
-    const mcqResult = parseMCQs(normalized);
-
     return (
         <div className="space-y-2">
-            {mcqResult && mcqResult.mcqs.map((mcq, i) => <McqCard key={i} mcq={mcq} idx={i} />)}
-            {(!mcqResult || mcqResult.rest) && (
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-headings:mt-3 prose-headings:mb-2 prose-pre:p-0 prose-pre:bg-transparent prose-code:before:content-none prose-code:after:content-none">
+            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-headings:mt-3 prose-headings:mb-2 prose-pre:p-0 prose-pre:bg-transparent prose-code:before:content-none prose-code:after:content-none">
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
                         rehypePlugins={[
@@ -214,10 +125,9 @@ function MessageContentInner({ content }: { content: string }) {
                             },
                         }}
                     >
-                        {mcqResult ? mcqResult.rest : normalized}
+                        {normalized}
                     </ReactMarkdown>
                 </div>
-            )}
         </div>
     );
 }

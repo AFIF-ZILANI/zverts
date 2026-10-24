@@ -31,16 +31,6 @@ const MODE_PROMPTS: Record<string, string> = {
         "Mode: coding mentor. Always include a runnable code snippet. Explain time/space complexity. Suggest one refactor.",
     summary:
         "Task: Produce a 5-7 bullet point summary of the key concepts likely covered in this lesson based on the title and any provided transcript.",
-    mcq: `Task: Generate exactly 5 multiple-choice questions about this lesson's likely content.
-Output ONLY the questions in this STRICT format (no preamble, no closing text):
-**Q1.** question text
-- A) option
-- B) option
-- C) option
-- D) option
-**Answer:** B — short explanation
-
-(repeat for Q2..Q5, separated by a blank line)`,
 };
 
 Deno.serve(async (req) => {

@@ -1,32 +1,25 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingDown, Target, Clock, Activity } from "lucide-react";
+import { TrendingDown, Clock, Activity } from "lucide-react";
 
 export const AnalyticsPanel = ({ userId }: { userId: string }) => {
     const [stats, setStats] = useState<{
         avgWatch: number;
-        quizAcc: number;
         weakest: { title: string; pct: number }[];
     } | null>(null);
 
     useEffect(() => {
         (async () => {
-            const [{ data: prog }, { data: attempts }] = await Promise.all([
-                supabase
-                    .from("module_progress")
-                    .select("watch_time_seconds, percent_watched, completed, modules!inner(title)")
-                    .eq("user_id", userId),
-                supabase.from("mcq_attempts").select("score, total").eq("user_id", userId),
-            ]);
+            const { data: prog } = await supabase
+                .from("module_progress")
+                .select("watch_time_seconds, percent_watched, completed, modules!inner(title)")
+                .eq("user_id", userId);
             const p = prog ?? [];
             const avgWatch = p.length
                 ? Math.round(
                       p.reduce((s: number, r: { watch_time_seconds: number }) => s + r.watch_time_seconds, 0) / p.length / 60,
                   )
                 : 0;
-            const totalQ = (attempts ?? []).reduce((s: number, r: { total: number }) => s + r.total, 0);
-            const totalC = (attempts ?? []).reduce((s: number, r: { score: number }) => s + r.score, 0);
-            const acc = totalQ ? Math.round((totalC / totalQ) * 100) : 0;
             const weakest = (p as { completed: boolean; percent_watched: number; modules?: { title: string } | null }[])
                 .filter((r) => !r.completed && r.percent_watched > 0 && r.percent_watched < 60)
                 .sort((a, b) => a.percent_watched - b.percent_watched)
@@ -35,7 +28,7 @@ export const AnalyticsPanel = ({ userId }: { userId: string }) => {
                     title: r.modules?.title ?? "Module",
                     pct: Math.round(Number(r.percent_watched)),
                 }));
-            setStats({ avgWatch, quizAcc: acc, weakest });
+            setStats({ avgWatch, weakest });
         })();
     }, [userId]);
 
@@ -47,7 +40,7 @@ export const AnalyticsPanel = ({ userId }: { userId: string }) => {
                 / analytics
             </div>
             <h2 className="font-display text-2xl mt-1 mb-5">Learning insights</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid gap-4">
                 <div className="rounded-xl border border-border/60 p-4 bg-background/30">
                     <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground uppercase">
                         <Clock className="h-3.5 w-3.5" /> Avg watch / module
@@ -55,15 +48,6 @@ export const AnalyticsPanel = ({ userId }: { userId: string }) => {
                     <div className="font-display text-3xl mt-2">
                         {stats.avgWatch}
                         <span className="text-base text-muted-foreground"> min</span>
-                    </div>
-                </div>
-                <div className="rounded-xl border border-border/60 p-4 bg-background/30">
-                    <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground uppercase">
-                        <Target className="h-3.5 w-3.5" /> Quiz accuracy
-                    </div>
-                    <div className="font-display text-3xl mt-2">
-                        {stats.quizAcc}
-                        <span className="text-base text-muted-foreground">%</span>
                     </div>
                 </div>
             </div>

@@ -61,7 +61,7 @@ const PAGES: Page[] = [
                     "AI learning assistance",
                     "Gamification",
                     "Personalized study recommendations",
-                    "Smart quizzes",
+                    "Genuine watch-time tracking",
                     "Progress tracking",
                     "Bangla-first student-friendly experience",
                 ],
@@ -84,7 +84,7 @@ const PAGES: Page[] = [
         sections: [
             {
                 heading: "1. What is ZverTs?",
-                body: "ZverTs is an AI-powered learning app that helps users learn through videos, quizzes, AI summaries, progress tracking, and gamified learning.",
+                body: "ZverTs is an AI-powered learning app that helps users learn through videos, AI summaries, progress tracking, and gamified learning.",
             },
             {
                 heading: "2. Is ZverTs free?",
@@ -96,7 +96,7 @@ const PAGES: Page[] = [
             },
             {
                 heading: "4. Does ZverTs use AI?",
-                body: "Yes. AI helps with summaries, quiz generation, recommendations, and weak-topic analysis.",
+                body: "Yes. AI helps with summaries, explanations, recommendations, and weak-topic analysis.",
             },
             {
                 heading: "5. Can I track progress?",

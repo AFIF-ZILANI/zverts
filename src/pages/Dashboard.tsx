@@ -26,9 +26,6 @@ const WeeklyActivityChart = lazy(() =>
         default: m.WeeklyActivityChart,
     })),
 );
-const DailyChallenge = lazy(() =>
-    import("@/components/app/DailyChallenge").then((m) => ({ default: m.DailyChallenge })),
-);
 const AnalyticsPanel = lazy(() =>
     import("@/components/app/AnalyticsPanel").then((m) => ({ default: m.AnalyticsPanel })),
 );
@@ -74,6 +71,8 @@ const Dashboard = () => {
     const [courses, setCourses] = useState<CourseRow[]>([]);
     const [modules, setModules] = useState<ModuleRow[]>([]);
     const [progress, setProgress] = useState<ProgressRow[]>([]);
+    // Genuine seconds watched per UTC day (last 7 days), from record_watch_progress.
+    const [dailyWatch, setDailyWatch] = useState<Map<string, number>>(new Map());
     const [userStats, setUserStats] = useState<UserStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -104,7 +103,12 @@ const Dashboard = () => {
                 });
 
             const courseIds = (ownCourses ?? []).map((c) => c.id);
-            const [{ data: mods, error: mErr }, { data: prog, error: pErr }] = await Promise.all([
+            const weekStart = new Date(Date.now() - 6 * 86_400_000).toISOString().slice(0, 10);
+            const [
+                { data: mods, error: mErr },
+                { data: prog, error: pErr },
+                { data: daily, error: dErr },
+            ] = await Promise.all([
                 courseIds.length
                     ? supabase
                           .from("modules")
@@ -121,13 +125,21 @@ const Dashboard = () => {
                         "module_id,watch_time_seconds,percent_watched,completed,updated_at,completed_at",
                     )
                     .eq("user_id", uid),
+                supabase
+                    .from("watch_daily")
+                    .select("date,seconds")
+                    .eq("user_id", uid)
+                    .gte("date", weekStart),
             ]);
             if (mErr) throw mErr;
             if (pErr) throw pErr;
+            // The weekly chart is secondary: if it can't load, show the rest of the dashboard.
+            if (dErr) console.warn("watch_daily unavailable:", dErr.message);
 
             setCourses(ownCourses ?? []);
             setModules(mods ?? []);
             setProgress(prog ?? []);
+            setDailyWatch(new Map((daily ?? []).map((d) => [d.date, d.seconds])));
         } catch (e: unknown) {
             setError((e as Error)?.message ?? "Failed to load dashboard");
         } finally {
@@ -208,20 +220,11 @@ const Dashboard = () => {
         user.email?.split("@")[0] ??
         "there";
 
-    const today = new Date();
+    // Days are UTC to match watch_daily and the daily mission.
     const weekly = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(today);
-        d.setDate(d.getDate() - (6 - i));
-        d.setHours(0, 0, 0, 0);
-        const next = new Date(d);
-        next.setDate(next.getDate() + 1);
-        const minutes = visibleProgress
-            .filter((p) => {
-                const u = new Date(p.updated_at);
-                return u >= d && u < next;
-            })
-            .reduce((s, p) => s + Math.round(p.watch_time_seconds / 60), 0);
-        return { day: DAYS[d.getDay()], minutes };
+        const d = new Date(Date.now() - (6 - i) * 86_400_000);
+        const minutes = Math.floor((dailyWatch.get(d.toISOString().slice(0, 10)) ?? 0) / 60);
+        return { day: DAYS[d.getUTCDay()], minutes };
     });
 
     const level = userStats ? Math.floor(userStats.xp / 500) + 1 : 1;
@@ -302,12 +305,9 @@ const Dashboard = () => {
                         {/* ── Continue Watching ────────────────────────────────────── */}
                         <ContinueWatching userId={user.id} />
 
-                        {/* ── Mission + Daily Challenge ────────────────────────────── */}
+                        {/* ── Mission ──────────────────────────────────────────────── */}
                         <div className="grid lg:grid-cols-1 gap-5">
                             <TodayMissionCard userId={user.id} />
-                            {/* <Suspense fallback={<Skeleton className="h-64 rounded-2xl" />}>
-                                <DailyChallenge userId={user.id} />
-                            </Suspense> */}
                         </div>
 
                         {/* ── Stats + Activity ─────────────────────────────────────── */}

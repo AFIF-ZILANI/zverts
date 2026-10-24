@@ -132,7 +132,7 @@ const Index = () => {
                             n: "03",
                             icon: LineChart,
                             title: "Learn With Tracking",
-                            body: "Watch time, quizzes, gems, XP and streaks — all measured server-side.",
+                            body: "Watch time, gems, XP and streaks — all measured server-side.",
                         },
                     ].map((p) => (
                         <div
@@ -177,13 +177,13 @@ const Index = () => {
                         },
                         {
                             icon: Brain,
-                            title: "MCQ Quizzes",
-                            body: "Take a quiz after each module to reinforce learning and earn +1 Gem, +30 XP.",
+                            title: "No Skipping Ahead",
+                            body: "Skipped or fast-forwarded parts don't count. Watch 90% of a lesson to unlock the next.",
                         },
                         {
                             icon: Gem,
                             title: "Gems & XP",
-                            body: "Earn rewards for every completed module and quiz.",
+                            body: "Earn rewards for every completed module.",
                         },
                         {
                             icon: CalendarCheck,
@@ -378,7 +378,7 @@ function AnalyticsMockup() {
                 <div className="mt-6 grid grid-cols-3 gap-3 border-t border-border/50 pt-5">
                     {[
                         { k: "24", v: "Modules" },
-                        { k: "6", v: "Quizzes" },
+                        { k: "18h", v: "Watched" },
                         { k: "3", v: "Certificates" },
                     ].map((s) => (
                         <div key={s.v}>

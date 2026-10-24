@@ -91,12 +91,6 @@ const T = {
     ai_summary: [
         () => ({ title: "Summary ready ⚡", body: "৩০ সেকেন্ডে পুরা lesson ধরেন" }),
     ] as Tpl[],
-    ai_quiz: [
-        () => ({ title: "নতুন quiz generated 🧩", body: "২ মিনিট = solid revision" }),
-    ] as Tpl[],
-    quiz_reminder: [
-        () => ({ title: "আগের quiz এ একটু miss হইছে 😅", body: "Quick practice দিবেন?" }),
-    ] as Tpl[],
     unfinished_lesson: [
         (c) => ({
             title: "Lesson half-done 👀",
