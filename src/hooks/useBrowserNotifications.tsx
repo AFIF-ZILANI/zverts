@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import type { RealtimePostgresInsertPayload } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import type { Tables } from "@/integrations/supabase/types";
 
-type NotifRecord = Record<string, unknown>;
+type NotifRecord = Tables<"notifications">;
 
 /**
  * For every newly delivered notification for the current user:

@@ -8,7 +8,7 @@ interface Video {
     thumbnail: string;
     duration: number;
 }
-interface Preview {
+export interface Preview {
     playlist: { title: string; description: string; channel: string; thumbnail: string | null };
     videos: Video[];
     total: number;

@@ -23,7 +23,7 @@ import {
     ChevronRight,
     Clock,
 } from "lucide-react";
-import { PlaylistPreview } from "@/components/app/PlaylistPreview";
+import { PlaylistPreview, type Preview } from "@/components/app/PlaylistPreview";
 
 interface SearchPlaylistResult {
     type: "playlist";
@@ -105,7 +105,7 @@ const Courses = () => {
     const [url, setUrl] = useState("");
     const [importing, setImporting] = useState(false);
     const [previewing, setPreviewing] = useState(false);
-    const [preview, setPreview] = useState<Record<string, unknown> | null>(null);
+    const [preview, setPreview] = useState<Preview | null>(null);
     const [previewOpen, setPreviewOpen] = useState(false);
 
     const [mine, setMine] = useState<Course[]>([]);

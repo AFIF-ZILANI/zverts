@@ -6,17 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
+
+type AdminRow = Database["public"]["Functions"]["list_admin_users"]["Returns"][number];
+type AppRole = Database["public"]["Enums"]["app_role"];
 
 const AdminManagementInner = () => {
-    const [admins, setAdmins] = useState<Record<string, unknown>[]>([]);
+    const [admins, setAdmins] = useState<AdminRow[]>([]);
     const [email, setEmail] = useState("");
     const [role, setRole] = useState<"admin" | "super_admin">("admin");
     const [busy, setBusy] = useState(false);
 
     const load = async () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data } = await supabase.rpc("list_admin_users" as any);
-        setAdmins((data as Record<string, unknown>[]) ?? []);
+        const { data } = await supabase.rpc("list_admin_users");
+        setAdmins(data ?? []);
     };
     useEffect(() => {
         load();
@@ -25,8 +28,7 @@ const AdminManagementInner = () => {
     const grant = async () => {
         if (!email.trim()) return;
         setBusy(true);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await supabase.rpc("admin_set_role" as any, {
+        const { error } = await supabase.rpc("admin_set_role", {
             _email: email.trim(),
             _role: role,
             _grant: true,
@@ -39,10 +41,9 @@ const AdminManagementInner = () => {
             load();
         }
     };
-    const revoke = async (userEmail: string, r: string) => {
+    const revoke = async (userEmail: string, r: AppRole) => {
         if (!confirm(`Remove ${r} from ${userEmail}?`)) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await supabase.rpc("admin_set_role" as any, {
+        const { error } = await supabase.rpc("admin_set_role", {
             _email: userEmail,
             _role: r,
             _grant: false,
@@ -113,7 +114,7 @@ const AdminManagementInner = () => {
                                     <div className="text-xs text-muted-foreground">{a.email}</div>
                                 </div>
                                 <div className="flex gap-2 flex-wrap">
-                                    {a.roles.map((r: string) => (
+                                    {(a.roles as AppRole[]).map((r) => (
                                         <button
                                             key={r}
                                             onClick={() => revoke(a.email, r)}

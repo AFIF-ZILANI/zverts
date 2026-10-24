@@ -11,6 +11,15 @@ import {
   CheckCircle2, XCircle, AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Tables } from "@/integrations/supabase/types";
+
+// Declared outside the component so the row type can be inferred from the select.
+const usersQuery = () =>
+  supabase
+    .from("profiles")
+    .select("id,name,email,last_active,user_progress(total_gems,total_xp,current_streak)")
+    .order("last_active", { ascending: false });
+type AdminUser = NonNullable<Awaited<ReturnType<typeof usersQuery>>["data"]>[number];
 
 const fmtDate = (s: string) => {
   try { return new Date(s).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }); }
@@ -38,8 +47,8 @@ const Admin = () => {
   const { t } = useTranslation();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isSuper, setIsSuper] = useState(false);
-  const [users, setUsers] = useState<Record<string, unknown>[]>([]);
-  const [logs, setLogs] = useState<Record<string, unknown>[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [logs, setLogs] = useState<Tables<"email_logs">[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -59,10 +68,7 @@ const Admin = () => {
       setIsAdmin(!!data);
       if (!data) return;
       const [{ data: u }, { data: l }, { data: s }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("id,name,email,last_active,user_progress(total_gems,total_xp,current_streak)")
-          .order("last_active", { ascending: false }),
+        usersQuery(),
         supabase.from("email_logs").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.rpc("has_role", { _user_id: user.id, _role: "super_admin" }),
       ]);
@@ -248,7 +254,7 @@ const Admin = () => {
                 </thead>
                 <tbody className="divide-y divide-border/40">
                   {users.map((u) => {
-                    const prog = u.user_progress as Record<string, unknown> | null;
+                    const prog = u.user_progress;
                     const streak = prog?.current_streak ?? 0;
                     const gems = prog?.total_gems ?? 0;
                     const xp = prog?.total_xp ?? 0;
