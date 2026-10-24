@@ -7,8 +7,15 @@ const CodeWorkspace = lazy(() => import("./CodeWorkspace"));
 
 const OPEN_KEY = "zverts.codeRunner.open";
 
-export const CodeRunner = ({ moduleId }: { moduleId: string }) => {
-    const [open, setOpen] = useState(() => {
+export const CodeRunner = ({
+    moduleId,
+    alwaysOpen = false,
+}: {
+    moduleId: string;
+    /** The playground page: editor shown straight away, no Hide toggle. */
+    alwaysOpen?: boolean;
+}) => {
+    const [storedOpen, setOpen] = useState(() => {
         try {
             return localStorage.getItem(OPEN_KEY) === "1";
         } catch {
@@ -16,6 +23,7 @@ export const CodeRunner = ({ moduleId }: { moduleId: string }) => {
         }
     });
 
+    const open = alwaysOpen || storedOpen;
     const toggle = () => {
         const next = !open;
         setOpen(next);
@@ -34,12 +42,14 @@ export const CodeRunner = ({ moduleId }: { moduleId: string }) => {
                 <span className="hidden sm:inline text-xs font-mono text-muted-foreground">
                     C · C++ · Python
                 </span>
-                <Button size="sm" variant="ghost" className="ml-auto h-8" onClick={toggle}>
-                    {open ? "Hide" : "Open editor"}
-                    <ChevronDown
-                        className={`h-4 w-4 ml-1 transition-transform ${open ? "rotate-180" : ""}`}
-                    />
-                </Button>
+                {!alwaysOpen && (
+                    <Button size="sm" variant="ghost" className="ml-auto h-8" onClick={toggle}>
+                        {open ? "Hide" : "Open editor"}
+                        <ChevronDown
+                            className={`h-4 w-4 ml-1 transition-transform ${open ? "rotate-180" : ""}`}
+                        />
+                    </Button>
+                )}
             </div>
             {!open && (
                 <p className="text-sm text-muted-foreground mt-2">

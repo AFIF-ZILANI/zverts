@@ -43,6 +43,7 @@ const Settings = lazyWithRetry(() => import("./pages/Settings.tsx"));
 
 const Growth = lazyWithRetry(() => import("./pages/Growth.tsx"));
 const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard.tsx"));
+const CodePlayground = lazyWithRetry(() => import("./pages/CodePlayground.tsx"));
 const Admin = lazyWithRetry(() => import("./pages/Admin.tsx"));
 const Certificate = lazyWithRetry(() => import("./pages/Certificate.tsx"));
 const BuyPackage = lazyWithRetry(() => import("./pages/BuyPackage.tsx"));
@@ -123,6 +124,7 @@ const App = () => (
 
                                     <Route path="/growth" element={<Growth />} />
                                     <Route path="/leaderboard" element={<Leaderboard />} />
+                                    <Route path="/code" element={<CodePlayground />} />
                                     <Route path="/admin" element={<Admin />} />
                                     <Route path="/admin/payments" element={<AdminPayments />} />
                                     <Route path="/admin/users" element={<AdminUsers />} />

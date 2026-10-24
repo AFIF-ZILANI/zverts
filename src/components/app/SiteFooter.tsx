@@ -17,6 +17,7 @@ type NavLink = { label: string; to: string; external?: boolean };
 const platform: NavLink[] = [
     { label: "Dashboard", to: "/dashboard" },
     { label: "Courses", to: "/courses" },
+    { label: "Code Playground", to: "/code" },
     { label: "Growth", to: "/growth" },
     { label: "Leaderboard", to: "/leaderboard" },
     { label: "Buy Credits", to: "/buy" },

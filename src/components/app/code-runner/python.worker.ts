@@ -3,7 +3,7 @@
 // trip. Lives in a worker so an infinite loop can be killed (the page
 // terminates the worker on timeout) without freezing the tab.
 
-const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.28.3/full/";
+import { PYODIDE_URL } from "./cdn";
 
 interface Pyodide {
     runPython: (code: string) => unknown;

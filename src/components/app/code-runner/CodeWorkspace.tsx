@@ -22,6 +22,7 @@ import { ClangUnavailable, preloadClang, runNative, setClangProgress } from "./c
 import { ACCEPTED, LANGUAGES, TEMPLATES, type RunLanguage, type RunResult } from "./languages";
 import { SymbolBar } from "./SymbolBar";
 import { InputPrompt } from "./InputPrompt";
+import { OfflineStatus } from "./OfflineStatus";
 import { readsInput } from "./readsInput";
 import "./code-runner.css";
 
@@ -57,6 +58,9 @@ const write = (k: string, v: string) => {
 };
 
 const isLang = (v: string | null): v is RunLanguage => LANGUAGES.some((l) => l.id === v);
+
+const NOT_OFFLINE_YET = (what: string) =>
+    `${what} isn't saved for offline use yet. Connect to the internet once and tap "Download for offline".`;
 
 export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
     const { resolvedTheme } = useTheme();
@@ -126,12 +130,17 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         if (lang === "python" || clang === "unavailable") return;
         let cancelled = false;
         setClangProgress((p) => !cancelled && setClangPercent(p));
-        preloadClang()
-            .then(() => !cancelled && setClang("ready"))
-            .catch(() => !cancelled && setClang("unavailable"));
+        const load = () =>
+            preloadClang()
+                .then(() => !cancelled && setClang("ready"))
+                // Offline is not "unavailable": try again once the connection is back.
+                .catch(() => !cancelled && navigator.onLine && setClang("unavailable"));
+        void load();
+        window.addEventListener("online", load);
         return () => {
             cancelled = true;
             setClangProgress(null);
+            window.removeEventListener("online", load);
         };
     }, [lang, clang]);
 
@@ -164,7 +173,13 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                 setPyReady(true);
             } catch (e) {
                 setPyReady(false);
-                toast.error(e instanceof Error ? e.message : "Python failed to run");
+                toast.error(
+                    navigator.onLine
+                        ? e instanceof Error
+                            ? e.message
+                            : "Python failed to run"
+                        : NOT_OFFLINE_YET("Python"),
+                );
             } finally {
                 setRunning(false);
             }
@@ -180,6 +195,12 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                 if (!(e instanceof ClangUnavailable)) {
                     setRunning(false);
                     toast.error(e instanceof Error ? e.message : "Run failed");
+                    return;
+                }
+                // Offline: the server fallback can't help either.
+                if (!navigator.onLine) {
+                    setRunning(false);
+                    toast.error(NOT_OFFLINE_YET("The C/C++ compiler"));
                     return;
                 }
                 setClang("unavailable");
@@ -471,6 +492,8 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                     </div>
                 </div>
             </div>
+
+            <OfflineStatus />
 
             <InputPrompt
                 reader={askInput}

@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from "vite";
 import type { OutputChunk } from "rollup";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { CLANG_BASE, PYODIDE_URL } from "./src/components/app/code-runner/cdn";
 
 // Unique per build. Baked into the bundle and written to /version.json so open
 // tabs can tell when a newer build has been deployed (see useVersionCheck).
@@ -26,7 +27,8 @@ const versionFile = (): Plugin => ({
 // Left out: pages that need the network anyway (video player, certificate)
 // and heavy on-demand libraries that only load on a button press.
 const ONLINE_ONLY_PAGES = ["ModulePlayer", "Certificate"];
-const ON_DEMAND_LIBS = ["jspdf", "html2canvas"];
+// CodeWorkspace (Monaco, ~4 MB) is cached on first use instead — see runnerManifest.
+const ON_DEMAND_LIBS = ["jspdf", "html2canvas", "CodeWorkspace"];
 
 const precacheManifest = (): Plugin => ({
     name: "precache-manifest",
@@ -65,6 +67,53 @@ const precacheManifest = (): Plugin => ({
     },
 });
 
+// Lists the code runner's files in /runner-assets.json: the editor chunk and
+// everything it loads (Monaco language chunks, CSS, the codicon font), the
+// runner's workers, and the CDN prefixes of Pyodide and Clang. The service
+// worker keeps these in their own cache as they're first fetched, so the
+// runner works offline after one online use — without adding them to the
+// install-time precache that every visitor downloads.
+const runnerManifest = (): Plugin => ({
+    name: "runner-manifest",
+    apply: "build",
+    generateBundle(_, bundle) {
+        const files = new Set<string>();
+        const visit = (fileName: string) => {
+            const chunk = bundle[fileName];
+            // Not the app entry: it's precached already, and its lazy imports are every page.
+            if (!chunk || chunk.type !== "chunk" || chunk.isEntry || files.has(fileName)) return;
+            files.add(fileName);
+            chunk.viteMetadata?.importedCss.forEach((css) => files.add(css));
+            chunk.viteMetadata?.importedAssets.forEach((a) => files.add(a));
+            chunk.imports.forEach(visit);
+            chunk.dynamicImports.forEach(visit);
+        };
+        for (const chunk of Object.values(bundle)) {
+            if (chunk.type === "chunk" && chunk.isDynamicEntry && /\/CodeWorkspace-/.test(chunk.fileName)) {
+                visit(chunk.fileName);
+            }
+        }
+        for (const item of Object.values(bundle)) {
+            // Workers (Monaco's, Clang, the program runner, Pyodide) are emitted as assets.
+            if (/\.worker-[^/]+\.js$/.test(item.fileName)) files.add(item.fileName);
+        }
+        // Fonts referenced from the runner's CSS (codicons).
+        for (const f of [...files]) {
+            const css = bundle[f];
+            if (css?.type !== "asset" || !f.endsWith(".css")) continue;
+            for (const m of String(css.source).matchAll(/url\(\/?(assets\/[^)"']+)\)/g)) files.add(m[1]);
+        }
+        this.emitFile({
+            type: "asset",
+            fileName: "runner-assets.json",
+            source: JSON.stringify({
+                files: [...files].map((f) => `/${f}`),
+                cdn: [PYODIDE_URL, CLANG_BASE],
+            }),
+        });
+    },
+});
+
 export default defineConfig({
     define: {
         __APP_VERSION__: JSON.stringify(BUILD_ID),
@@ -72,7 +121,7 @@ export default defineConfig({
     server: {
         host: "localhost",
     },
-    plugins: [react(), versionFile(), precacheManifest()],
+    plugins: [react(), versionFile(), precacheManifest(), runnerManifest()],
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
