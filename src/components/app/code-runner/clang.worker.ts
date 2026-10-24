@@ -1,10 +1,10 @@
 /// <reference lib="webworker" />
 // Compiles C/C++ to WebAssembly in the browser with Clang/LLD (YoWASP build,
-// loaded from jsDelivr: ~19 MB compressed, then browser-cached for a year).
+// loaded from jsDelivr: ~19 MB compressed; the service worker keeps it for offline use).
 // Only compiles — the program itself runs in native.worker.ts, which the page
 // can kill on a timeout without losing this warmed-up compiler.
 
-const CLANG_URL = "https://cdn.jsdelivr.net/npm/@yowasp/clang@22.0.0-git20542-10/gen/bundle.js";
+import { CLANG_URL } from "./cdn";
 
 type Tree = { [name: string]: Tree | string | Uint8Array };
 type RunClang = (

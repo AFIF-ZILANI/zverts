@@ -14,6 +14,7 @@ import {
     CreditCard,
     Settings,
     LayoutGrid,
+    Code2,
 } from "lucide-react";
 import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
@@ -104,11 +105,13 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     const navItems = [
         { to: "/dashboard", icon: LayoutDashboard, label: t("nav.dashboard") },
         { to: "/courses", icon: BookOpen, label: t("nav.courses") },
+        { to: "/code", icon: Code2, label: "Code" },
         { to: "/growth", icon: TrendingUp, label: "Growth" },
         { to: "/payments", icon: CreditCard, label: "Payments" },
         ...(isAdmin ? [{ to: "/admin", icon: Shield, label: "Admin" }] : []),
     ];
-    const tabItems = navItems.filter((n) => n.to !== "/admin");
+    // Four tabs + Menu fit the phone bar; Payments and Admin stay in the menu.
+    const tabItems = navItems.filter((n) => n.to !== "/admin" && n.to !== "/payments");
 
     return (
         <div
