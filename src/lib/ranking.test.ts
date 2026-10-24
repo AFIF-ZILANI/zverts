@@ -83,23 +83,23 @@ describe("rankRows", () => {
     });
 
     describe("sort priority", () => {
-        it("ranks higher streak above lower streak, ignoring gems and xp", () => {
+        it("ranks more gems above fewer gems, ignoring streak and xp", () => {
             const rows = [
-                row({ id: "low", current_streak: 5, total_gems: 100, total_xp: 9999 }),
-                row({ id: "high", current_streak: 10, total_gems: 1, total_xp: 0 }),
-            ];
-            expect(rankRows(rows)[0].id).toBe("high");
-        });
-
-        it("breaks streak tie with gems descending", () => {
-            const rows = [
-                row({ id: "few-gems", current_streak: 5, total_gems: 3, total_xp: 9999 }),
-                row({ id: "many-gems", current_streak: 5, total_gems: 10, total_xp: 0 }),
+                row({ id: "few-gems", total_gems: 5, current_streak: 100, total_xp: 9999 }),
+                row({ id: "many-gems", total_gems: 10, current_streak: 1, total_xp: 0 }),
             ];
             expect(rankRows(rows)[0].id).toBe("many-gems");
         });
 
-        it("breaks streak+gems tie with xp descending", () => {
+        it("breaks gems tie with streak descending", () => {
+            const rows = [
+                row({ id: "low", total_gems: 5, current_streak: 3, total_xp: 9999 }),
+                row({ id: "high", total_gems: 5, current_streak: 10, total_xp: 0 }),
+            ];
+            expect(rankRows(rows)[0].id).toBe("high");
+        });
+
+        it("breaks gems+streak tie with xp descending", () => {
             const rows = [
                 row({ id: "low-xp", current_streak: 5, total_gems: 5, total_xp: 100 }),
                 row({ id: "high-xp", current_streak: 5, total_gems: 5, total_xp: 900 }),
