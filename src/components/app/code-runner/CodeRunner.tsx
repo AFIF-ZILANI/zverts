@@ -27,7 +27,7 @@ export const CodeRunner = ({ moduleId }: { moduleId: string }) => {
     };
 
     return (
-        <div className="rounded-2xl border border-border bg-gradient-card p-5 shadow-card">
+        <div className="rounded-2xl border border-border bg-gradient-card p-3 sm:p-5 shadow-card">
             <div className="flex items-center gap-2">
                 <Code2 className="h-4 w-4 text-primary" />
                 <h3 className="font-display text-lg">Code Runner</h3>
@@ -48,7 +48,7 @@ export const CodeRunner = ({ moduleId }: { moduleId: string }) => {
                 </p>
             )}
             {open && (
-                <div className="mt-4">
+                <div className="mt-3 sm:mt-4">
                     <Suspense
                         fallback={
                             <div className="h-[420px] flex items-center justify-center rounded-xl border border-border">
