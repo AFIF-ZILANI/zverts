@@ -99,7 +99,7 @@ const Settings = () => {
             if (prof)
                 setP({
                     ...prof,
-                    daily_goal_minutes: prefs?.daily_goal_minutes ?? 30,
+                    daily_goal_minutes: prefs?.daily_goal_minutes ?? 20,
                     study_reminders_enabled: prefs?.study_reminders_enabled ?? true,
                     notify_email: prefs?.notify_email ?? true,
                     notify_inactivity: prefs?.notify_inactivity ?? true,
@@ -388,6 +388,10 @@ const Settings = () => {
                             </div>
                             <div>
                                 <Label>Daily learning goal (minutes)</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    Watch this many minutes a day to finish your daily mission
+                                    and keep your streak going.
+                                </p>
                                 <Input
                                     type="number"
                                     min={5}
@@ -398,7 +402,7 @@ const Settings = () => {
                                         update({
                                             daily_goal_minutes: Math.max(
                                                 5,
-                                                Math.min(480, parseInt(e.target.value) || 30),
+                                                Math.min(480, parseInt(e.target.value) || 20),
                                             ),
                                         })
                                     }

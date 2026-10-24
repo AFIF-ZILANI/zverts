@@ -11,7 +11,7 @@ ZverTs converts YouTube playlists into structured courses with enforced progress
 - Issues verifiable certificates on course completion
 - Gamifies learning with XP, streaks, badges, and leaderboards
 - Provides an AI tutor for per-lesson summaries and Q&A
-- Daily goal: 20 genuinely watched minutes keeps your streak alive
+- Daily goal: genuinely watched minutes (20 by default, set in Settings) keep your streak alive
 - Available in English and Bengali
 
 ## Who it is for
