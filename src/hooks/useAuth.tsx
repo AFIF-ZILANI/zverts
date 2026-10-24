@@ -56,6 +56,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const signOut = async () => {
         await supabase.auth.signOut();
+        // The service worker's offline copy of this user's data (see public/sw.js).
+        if ("caches" in window) await caches.delete("zverts-data-v1").catch(() => false);
     };
 
     return <Ctx.Provider value={{ user, session, loading, signOut }}>{children}</Ctx.Provider>;

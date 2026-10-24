@@ -12,12 +12,61 @@
 //     and the Pyodide / Clang runtimes from the CDN go to RUNNER_CACHE when first
 //     fetched (cache-first). That cache survives deploys (only files no longer
 //     listed are dropped), so the runner keeps working offline once used.
-//   - Everything else (Supabase, YouTube, /version.json, analytics) is never touched.
+//   - Supabase reads (GET + a few read RPCs): network first, last copy per user
+//     as the offline fallback (DATA_CACHE, cleared on sign-out).
+//   - Everything else (Supabase writes, YouTube, /version.json, analytics) is never touched.
 
 const SHELL_CACHE = "zverts-shell-v1";
 const ASSET_CACHE = "zverts-assets-v1";
 const RUNNER_CACHE = "zverts-runner-v1"; // keep in sync with src/components/app/code-runner/cdn.ts
 const RUNNER_MANIFEST = "/runner-assets.json";
+
+// Supabase reads, kept per user so pages can show the last data seen while offline.
+// GETs plus these read RPCs (POST); writes are never stored. Cleared on sign-out.
+const DATA_CACHE = "zverts-data-v1"; // keep in sync with src/hooks/useAuth.tsx
+const OFFLINE_RPCS = ["get_growth_stats", "get_today_mission", "list_public_profiles", "unread_notification_count"];
+
+const jwtSub = (req) => {
+    const part = (req.headers.get("authorization") || "").split(" ")[1]?.split(".")[1];
+    try {
+        const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+        return JSON.parse(atob(b64 + "===".slice((b64.length + 3) % 4))).sub || "anon";
+    } catch {
+        return "anon";
+    }
+};
+
+// One entry per user, URL, body and response shape (single row vs list, range).
+const dataKey = async (req) => {
+    const u = new URL(req.url);
+    u.searchParams.set("__u", jwtSub(req));
+    u.searchParams.set("__a", (req.headers.get("accept") || "").includes("vnd.pgrst.object") ? "o" : "a");
+    if (req.headers.get("range")) u.searchParams.set("__r", req.headers.get("range"));
+    if (req.method === "POST") u.searchParams.set("__b", await req.clone().text());
+    return new Request(u.href);
+};
+
+const networkThenData = async (event, req) => {
+    const key = await dataKey(req);
+    try {
+        const res = await fetch(req);
+        if (res.ok) {
+            // Copy now: the page starts reading the body as soon as we return it.
+            const copy = res.clone();
+            event.waitUntil(
+                caches
+                    .open(DATA_CACHE)
+                    .then((c) => c.put(key, copy))
+                    .catch(() => {}),
+            );
+        }
+        return res;
+    } catch (err) {
+        const hit = await caches.match(key, { cacheName: DATA_CACHE });
+        if (hit) return hit;
+        throw err;
+    }
+};
 
 // { files: ["/assets/…"], cdn: ["https://cdn.jsdelivr.net/…/"] } — fetched on
 // install and kept in RUNNER_CACHE, since the worker can be restarted anytime.
@@ -95,7 +144,8 @@ self.addEventListener("activate", (event) => {
                             k.startsWith("zverts-") &&
                             k !== SHELL_CACHE &&
                             k !== ASSET_CACHE &&
-                            k !== RUNNER_CACHE,
+                            k !== RUNNER_CACHE &&
+                            k !== DATA_CACHE,
                     )
                     .map((k) => caches.delete(k)),
             );
@@ -127,8 +177,15 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
     const req = event.request;
-    if (req.method !== "GET") return;
     const url = new URL(req.url);
+    if (url.hostname.endsWith(".supabase.co") && url.pathname.startsWith("/rest/v1/")) {
+        const rpc = url.pathname.startsWith("/rest/v1/rpc/") ? url.pathname.split("/").pop() : null;
+        if ((req.method === "GET" && !rpc) || (req.method === "POST" && OFFLINE_RPCS.includes(rpc))) {
+            event.respondWith(networkThenData(event, req));
+        }
+        return;
+    }
+    if (req.method !== "GET") return;
     if (url.origin !== self.location.origin) {
         // Pyodide / Clang from the CDN: versioned URLs, so cache-first is safe.
         if (url.hostname === "cdn.jsdelivr.net") {
