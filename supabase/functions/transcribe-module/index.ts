@@ -2,6 +2,7 @@
 // a Gemini-audio worker that downloads the YouTube audio, transcribes it,
 // chunks + embeds, then sets status='ready'.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { anonKey } from "../_shared/keys.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -21,7 +22,7 @@ Deno.serve(async (req) => {
         if (!auth) return json({ error: "Unauthorized" }, 401);
 
         const url = Deno.env.get("SUPABASE_URL")!;
-        const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+        const anon = anonKey();
         const userClient = createClient(url, anon, {
             global: { headers: { Authorization: auth } },
         });

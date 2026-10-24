@@ -4,6 +4,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { serviceRoleKey } from "../_shared/keys.ts";
 
 type Tpl = { title: string; body: string };
 const pick = <T>(a: T[]) => a[Math.floor(Math.random() * a.length)];
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(
         Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        serviceRoleKey(),
     );
 
     let scanned = 0,

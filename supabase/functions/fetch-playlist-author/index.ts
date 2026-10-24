@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { anonKey, serviceRoleKey } from "../_shared/keys.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -18,7 +19,7 @@ Deno.serve(async (req) => {
         if (!authHeader) return json({ error: "Unauthorized" }, 401);
         const userClient = createClient(
             Deno.env.get("SUPABASE_URL")!,
-            Deno.env.get("SUPABASE_ANON_KEY")!,
+            anonKey(),
             { global: { headers: { Authorization: authHeader } } },
         );
         const {
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
         // Only the metadata cache write needs service-role (RLS would block update on public/system courses)
         const admin = createClient(
             Deno.env.get("SUPABASE_URL")!,
-            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+            serviceRoleKey(),
         );
         await admin
             .from("courses")

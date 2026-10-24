@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serviceRoleKey } from "../_shared/keys.ts";
 
 const CHALLENGE_TTL_MS = 60_000;
 
@@ -13,7 +14,7 @@ Deno.serve(async (req: Request) => {
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    serviceRoleKey(),
     { global: { headers: { Authorization: authHeader } } }
   );
 
