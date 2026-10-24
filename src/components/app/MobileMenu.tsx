@@ -312,7 +312,12 @@ const ProfileCard = ({
             <div className="flex items-end justify-between gap-3">
                 <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full ring-4 ring-background bg-gradient-lime flex items-center justify-center font-display text-3xl text-primary-foreground">
                     {avatarUrl ? (
-                        <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                        <img
+                            src={avatarUrl}
+                            alt=""
+                            referrerPolicy="no-referrer"
+                            className="h-full w-full object-cover"
+                        />
                     ) : (
                         displayName.charAt(0).toUpperCase()
                     )}

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { announceProfileUpdate } from "@/hooks/useMyProfile";
 import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,6 +100,7 @@ const Profile = () => {
             .eq("id", user.id);
         setBusy(false);
         setSaved({ name, certName });
+        announceProfileUpdate({ name });
         toast.success(t("profile.saved"));
     };
 
@@ -118,6 +120,7 @@ const Profile = () => {
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);
         await supabase.from("profiles").update({ avatar_url: data.publicUrl }).eq("id", user.id);
         setAvatar(data.publicUrl);
+        announceProfileUpdate({ avatar_url: data.publicUrl });
         setUploading(false);
         toast.success("Photo updated");
     };
