@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { Navigate, Link, useSearchParams } from "react-router-dom";
+import { Navigate, Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
     Select,
     SelectContent,
@@ -41,10 +40,17 @@ import {
     RotateCcw,
     Pencil,
     MoonStar,
+    ChevronLeft,
+    ChevronRight,
+    FileText,
+    ExternalLink,
 } from "lucide-react";
 import { SmartNotificationSettings } from "@/components/app/SmartNotificationSettings";
 import { PushToggle } from "@/components/app/PushToggle";
 import { IslamicModeSettings } from "@/components/app/IslamicModeSettings";
+import { SettingsGroup, SettingsNavRow, SettingsRow } from "@/components/app/settings/SettingsUI";
+import { useIslamicSettings } from "@/lib/islamic/dailyAyah";
+import { cn } from "@/lib/utils";
 
 type Profile = {
     name: string | null;
@@ -66,10 +72,79 @@ type Profile = {
     longest_streak: number;
 };
 
+// The settings list: phones show it on its own and open a section full-screen;
+// wider screens keep it beside the open section.
+const SECTIONS = [
+    {
+        id: "account",
+        group: "Account",
+        title: "Account",
+        subtitle: "Name, photo and email",
+        icon: UserIcon,
+        tint: "bg-sky-500",
+    },
+    {
+        id: "security",
+        group: "Account",
+        title: "Security",
+        subtitle: "Sign-in and sessions",
+        icon: Lock,
+        tint: "bg-slate-500",
+    },
+    {
+        id: "learning",
+        group: "Preferences",
+        title: "Learning",
+        subtitle: "Language, daily goal, reminders",
+        icon: BookOpen,
+        tint: "bg-emerald-500",
+    },
+    {
+        id: "islamic",
+        group: "Preferences",
+        title: "Islamic Mode",
+        subtitle: "Daily Ayah on your dashboard",
+        icon: MoonStar,
+        tint: "bg-teal-600",
+    },
+    {
+        id: "notifications",
+        group: "Preferences",
+        title: "Notifications",
+        subtitle: "Push, email and in-app alerts",
+        icon: Bell,
+        tint: "bg-rose-500",
+    },
+    {
+        id: "progress",
+        group: "You",
+        title: "Progress",
+        subtitle: "XP, gems and streaks",
+        icon: Trophy,
+        tint: "bg-amber-500",
+    },
+    {
+        id: "privacy",
+        group: "You",
+        title: "Privacy & legal",
+        subtitle: "Public profile and policies",
+        icon: Globe,
+        tint: "bg-indigo-500",
+    },
+] as const;
+type SectionId = (typeof SECTIONS)[number]["id"];
+const GROUPS = ["Account", "Preferences", "You"] as const;
+// Old /settings?tab=… links.
+const LEGACY_TABS: Record<string, SectionId> = { profile: "account", prefs: "learning" };
+
 const Settings = () => {
     const { user, loading, signOut } = useAuth();
-    // ?tab=islamic (etc.) opens that tab directly.
     const [searchParams] = useSearchParams();
+    const { section } = useParams();
+    const navigate = useNavigate();
+    const [islamic] = useIslamicSettings();
+    // Typed daily goal, saved on "Save" (null = showing the saved value).
+    const [goalDraft, setGoalDraft] = useState<string | null>(null);
     const { t, i18n } = useTranslation();
     const [p, setP] = useState<Profile | null>(null);
     const [busy, setBusy] = useState(false);
@@ -143,34 +218,48 @@ const Settings = () => {
 
     const update = (patch: Partial<Profile>) => setP({ ...p, ...patch });
 
-    const saveProfile = async () => {
+    // Saves the profile and preferences; switches and selects call it right
+    // away, text fields from their Save button.
+    const persist = async (next: Profile) => {
+        const prev = p;
+        setP(next);
         setBusy(true);
         const [{ error: e1 }, { error: e2 }] = await Promise.all([
             supabase
                 .from("profiles")
                 .update({
-                    name: p.name,
-                    certificate_name: p.certificate_name,
-                    preferred_language: p.preferred_language,
+                    name: next.name,
+                    certificate_name: next.certificate_name,
+                    preferred_language: next.preferred_language,
                 })
                 .eq("id", user.id),
             supabase
                 .from("user_preferences")
                 .update({
-                    daily_goal_minutes: p.daily_goal_minutes,
-                    study_reminders_enabled: p.study_reminders_enabled,
-                    notify_email: p.notify_email,
-                    notify_inactivity: p.notify_inactivity,
-                    notify_completion: p.notify_completion,
-                    profile_public: p.profile_public,
+                    daily_goal_minutes: next.daily_goal_minutes,
+                    study_reminders_enabled: next.study_reminders_enabled,
+                    notify_email: next.notify_email,
+                    notify_inactivity: next.notify_inactivity,
+                    notify_completion: next.notify_completion,
+                    profile_public: next.profile_public,
                 })
                 .eq("user_id", user.id),
         ]);
         setBusy(false);
         const error = e1 ?? e2;
-        if (error) toast.error(error.message);
-        else toast.success(t("profile.saved"));
-        if (p.preferred_language !== i18n.language) i18n.changeLanguage(p.preferred_language);
+        if (error) {
+            setP(prev);
+            toast.error(error.message);
+            return;
+        }
+        toast.success(t("profile.saved"), { duration: 1500 });
+        if (next.preferred_language !== i18n.language) i18n.changeLanguage(next.preferred_language);
+    };
+    const saveProfile = () => persist(p);
+    const saveGoal = () => {
+        const n = Math.max(5, Math.min(480, parseInt(goalDraft ?? "", 10) || p.daily_goal_minutes));
+        setGoalDraft(null);
+        persist({ ...p, daily_goal_minutes: n });
     };
 
     const uploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,6 +281,11 @@ const Settings = () => {
         const { error } = await supabase.auth.updateUser({ email: emailInput });
         if (error) toast.error(error.message);
         else toast.success("Verification email sent to your new address.");
+    };
+
+    const signOutHere = async () => {
+        await signOut();
+        navigate("/");
     };
 
     const signOutAll = async () => {
@@ -237,323 +331,418 @@ const Settings = () => {
 
     const level = Math.floor(p.total_xp / 500) + 1;
 
-    return (
-        <AppShell>
-            <section className="container py-10 md:py-14 max-w-4xl">
-                <div className="mb-8">
-                    <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight">
-                        Account settings
-                    </h1>
-                    <p className="text-muted-foreground mt-2">
-                        Manage your profile, security, learning preferences, and privacy.
-                    </p>
-                </div>
+    const legacyTab = searchParams.get("tab");
+    if (legacyTab && !section) {
+        return <Navigate to={`/settings/${LEGACY_TABS[legacyTab] ?? legacyTab}`} replace />;
+    }
+    const open = SECTIONS.find((s) => s.id === section);
+    if (section && !open) return <Navigate to="/settings" replace />;
+    // Wide screens always show a section next to the list.
+    const shown = open ?? SECTIONS[0];
 
-                <Tabs defaultValue={searchParams.get("tab") ?? "profile"} className="space-y-6">
-                    <TabsList className="flex flex-wrap h-auto gap-1 bg-card/60 border border-border p-1">
-                        <TabsTrigger value="profile">
-                            <UserIcon className="h-3.5 w-3.5 mr-1.5" />
-                            Profile
-                        </TabsTrigger>
-                        <TabsTrigger value="security">
-                            <Lock className="h-3.5 w-3.5 mr-1.5" />
-                            Security
-                        </TabsTrigger>
-                        <TabsTrigger value="prefs">
-                            <BookOpen className="h-3.5 w-3.5 mr-1.5" />
-                            Learning
-                        </TabsTrigger>
-                        <TabsTrigger value="islamic">
-                            <MoonStar className="h-3.5 w-3.5 mr-1.5" />
-                            Islamic
-                        </TabsTrigger>
-                        <TabsTrigger value="notifications">
-                            <Bell className="h-3.5 w-3.5 mr-1.5" />
-                            Notifications
-                        </TabsTrigger>
-                        <TabsTrigger value="progress">
-                            <Trophy className="h-3.5 w-3.5 mr-1.5" />
-                            Progress
-                        </TabsTrigger>
-                        <TabsTrigger value="privacy">
-                            <Globe className="h-3.5 w-3.5 mr-1.5" />
-                            Privacy
-                        </TabsTrigger>
-                    </TabsList>
+    const valueOf: Partial<Record<SectionId, string>> = {
+        learning: `${p.daily_goal_minutes} min`,
+        islamic: islamic.enabled ? "On" : "Off",
+        notifications: p.notify_email ? "On" : "Off",
+        privacy: p.profile_public ? "Public" : "Private",
+    };
 
-                    {/* PROFILE */}
-                    <TabsContent value="profile">
-                        <div className="rounded-2xl border border-border bg-gradient-card p-8 shadow-card space-y-6">
-                            <div className="flex items-center gap-5">
-                                <div className="h-20 w-20 rounded-full bg-muted overflow-hidden border border-border">
-                                    {p.avatar_url && (
-                                        <img
-                                            src={p.avatar_url}
-                                            alt=""
-                                            className="w-full h-full object-cover"
-                                        />
-                                    )}
-                                </div>
-                                <label className="cursor-pointer">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={uploadPhoto}
-                                    />
-                                    <span className="inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent h-9 px-4 text-sm font-medium">
-                                        {t("profile.upload")}
-                                    </span>
-                                </label>
-                            </div>
-                            <div>
-                                <Label>{t("profile.name")}</Label>
+    const initials = (p.name || user.email || "?").trim().charAt(0).toUpperCase();
+    const avatar = (size: string) => (
+        <div
+            className={cn(
+                "shrink-0 rounded-full bg-gradient-lime overflow-hidden flex items-center justify-center font-display text-primary-foreground",
+                size,
+            )}
+        >
+            {p.avatar_url ? (
+                <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+                initials
+            )}
+        </div>
+    );
+
+    const saveButton = (onClick: () => void, disabled = false) => (
+        <Button
+            size="sm"
+            onClick={onClick}
+            disabled={busy || disabled}
+            className="bg-gradient-lime text-primary-foreground hover:opacity-90"
+        >
+            {t("common.save")}
+        </Button>
+    );
+
+    const list = (
+        <div className="space-y-6">
+            <Link
+                to="/settings/account"
+                className="flex items-center gap-4 rounded-2xl border border-border bg-card shadow-card p-4 hover:bg-muted/40 transition-colors"
+            >
+                {avatar("h-14 w-14 text-xl")}
+                <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold text-base">
+                        {p.name || "Your name"}
+                    </span>
+                    <span className="block truncate text-sm text-muted-foreground">
+                        {user.email}
+                    </span>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/70" />
+            </Link>
+
+            {GROUPS.map((g) => (
+                <SettingsGroup key={g} title={g}>
+                    {SECTIONS.filter((s) => s.group === g).map((s) => (
+                        <SettingsNavRow
+                            key={s.id}
+                            to={`/settings/${s.id}`}
+                            icon={s.icon}
+                            tint={s.tint}
+                            title={s.title}
+                            subtitle={s.subtitle}
+                            value={valueOf[s.id]}
+                            active={shown.id === s.id}
+                        />
+                    ))}
+                </SettingsGroup>
+            ))}
+
+            <SettingsGroup>
+                <SettingsNavRow
+                    icon={LogOut}
+                    tint="bg-destructive"
+                    title="Sign out"
+                    destructive
+                    onClick={signOutHere}
+                />
+            </SettingsGroup>
+        </div>
+    );
+
+    const content: Record<SectionId, JSX.Element> = {
+        account: (
+            <>
+                <SettingsGroup>
+                    <div className="flex flex-col items-center gap-3 px-4 py-6 text-center">
+                        {avatar("h-24 w-24 text-4xl")}
+                        <label className="cursor-pointer">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={uploadPhoto}
+                            />
+                            <span className="inline-flex items-center justify-center rounded-full border border-border bg-background/60 hover:bg-muted h-9 px-4 text-sm font-medium">
+                                {t("profile.upload")}
+                            </span>
+                        </label>
+                    </div>
+                </SettingsGroup>
+
+                <SettingsGroup
+                    title="Profile"
+                    footer="Your certificate name is printed on course certificates."
+                >
+                    <SettingsRow
+                        title={t("profile.name")}
+                        stack
+                        control={
+                            <Input
+                                value={p.name ?? ""}
+                                onChange={(e) => update({ name: e.target.value })}
+                            />
+                        }
+                    />
+                    <SettingsRow
+                        title={t("profile.certificateName")}
+                        stack
+                        control={
+                            <Input
+                                value={p.certificate_name ?? ""}
+                                onChange={(e) => update({ certificate_name: e.target.value })}
+                            />
+                        }
+                    />
+                    <div className="flex justify-end px-4 py-3">{saveButton(saveProfile)}</div>
+                </SettingsGroup>
+
+                <SettingsGroup
+                    title="Email"
+                    footer="A verification link will be sent to the new address."
+                >
+                    <SettingsRow
+                        title={t("profile.email")}
+                        stack
+                        control={
+                            <div className="flex gap-2">
                                 <Input
-                                    className="mt-1.5"
-                                    value={p.name ?? ""}
-                                    onChange={(e) => update({ name: e.target.value })}
+                                    value={emailInput}
+                                    onChange={(e) => setEmailInput(e.target.value)}
+                                    type="email"
+                                    autoComplete="email"
                                 />
-                            </div>
-                            <div>
-                                <Label>{t("profile.certificateName")}</Label>
-                                <Input
-                                    className="mt-1.5"
-                                    value={p.certificate_name ?? ""}
-                                    onChange={(e) => update({ certificate_name: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <Label>{t("profile.email")}</Label>
-                                <div className="flex gap-2 mt-1.5">
-                                    <Input
-                                        value={emailInput}
-                                        onChange={(e) => setEmailInput(e.target.value)}
-                                        type="email"
-                                    />
-                                    <Button
-                                        variant="outline"
-                                        onClick={changeEmail}
-                                        disabled={emailInput === user.email}
-                                    >
-                                        Update email
-                                    </Button>
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-1.5">
-                                    A verification link will be sent to the new address.
-                                </p>
-                            </div>
-                            <Button
-                                onClick={saveProfile}
-                                disabled={busy}
-                                className="bg-gradient-lime text-primary-foreground hover:opacity-90 shadow-glow"
-                            >
-                                {t("common.save")}
-                            </Button>
-                        </div>
-                    </TabsContent>
-
-                    {/* SECURITY */}
-                    <TabsContent value="security">
-                        <div className="rounded-2xl border border-border bg-gradient-card p-8 shadow-card space-y-6">
-                            <div>
-                                <div className="font-medium">Signed in with Google</div>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    Your account is managed by Google. To change your password or
-                                    recovery options, visit your Google account settings.
-                                </p>
-                            </div>
-                            <div className="border-t border-border pt-6 flex items-center justify-between gap-4 flex-wrap">
-                                <div>
-                                    <div className="font-medium">Sign out everywhere</div>
-                                    <p className="text-sm text-muted-foreground">
-                                        Ends every active session on every device.
-                                    </p>
-                                </div>
-                                <Button variant="outline" onClick={signOutAll}>
-                                    <LogOut className="h-4 w-4 mr-2" />
-                                    Sign out all
+                                <Button
+                                    variant="outline"
+                                    onClick={changeEmail}
+                                    disabled={!emailInput || emailInput === user.email}
+                                >
+                                    Update
                                 </Button>
                             </div>
-                        </div>
-                    </TabsContent>
+                        }
+                    />
+                </SettingsGroup>
+            </>
+        ),
 
-                    {/* LEARNING PREFS */}
-                    <TabsContent value="prefs">
-                        <div className="rounded-2xl border border-border bg-gradient-card p-8 shadow-card space-y-6">
-                            <div>
-                                <Label>{t("profile.language")}</Label>
-                                <Select
-                                    value={p.preferred_language}
-                                    onValueChange={(v) => update({ preferred_language: v })}
-                                >
-                                    <SelectTrigger className="mt-1.5 w-60">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="en">English</SelectItem>
-                                        <SelectItem value="bn">বাংলা (Bangla)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label>Daily learning goal (minutes)</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Watch this many minutes a day to finish your daily mission
-                                    and keep your streak going.
-                                </p>
+        security: (
+            <>
+                <SettingsGroup title="Sign-in">
+                    <SettingsRow
+                        title="Signed in with Google"
+                        description="Your password and recovery options are managed in your Google account."
+                        control={
+                            <a
+                                href="https://myaccount.google.com/security"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                            >
+                                Manage <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                        }
+                    />
+                </SettingsGroup>
+                <SettingsGroup title="Sessions">
+                    <SettingsRow
+                        title="Sign out on this device"
+                        control={
+                            <Button variant="outline" size="sm" onClick={signOutHere}>
+                                Sign out
+                            </Button>
+                        }
+                    />
+                    <SettingsRow
+                        title="Sign out everywhere"
+                        description="Ends every active session on every device."
+                        control={
+                            <Button variant="outline" size="sm" onClick={signOutAll}>
+                                Sign out all
+                            </Button>
+                        }
+                    />
+                </SettingsGroup>
+            </>
+        ),
+
+        learning: (
+            <>
+                <SettingsGroup title="Language">
+                    <SettingsRow
+                        title={t("profile.language")}
+                        description="Used across the app."
+                        control={
+                            <Select
+                                value={p.preferred_language}
+                                onValueChange={(v) => persist({ ...p, preferred_language: v })}
+                            >
+                                <SelectTrigger className="w-[150px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="en">English</SelectItem>
+                                    <SelectItem value="bn">বাংলা (Bangla)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        }
+                    />
+                </SettingsGroup>
+
+                <SettingsGroup
+                    title="Daily goal"
+                    footer="Watch this many minutes a day to finish your daily mission and keep your streak going (5–480)."
+                >
+                    <SettingsRow
+                        title="Minutes per day"
+                        control={
+                            <div className="flex items-center gap-2">
                                 <Input
                                     type="number"
+                                    inputMode="numeric"
                                     min={5}
                                     max={480}
-                                    className="mt-1.5 w-40"
-                                    value={p.daily_goal_minutes}
-                                    onChange={(e) =>
-                                        update({
-                                            daily_goal_minutes: Math.max(
-                                                5,
-                                                Math.min(480, parseInt(e.target.value) || 20),
-                                            ),
-                                        })
-                                    }
+                                    className="w-20 text-center"
+                                    value={goalDraft ?? String(p.daily_goal_minutes)}
+                                    onChange={(e) => setGoalDraft(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && saveGoal()}
                                 />
+                                {goalDraft !== null &&
+                                    goalDraft !== String(p.daily_goal_minutes) &&
+                                    saveButton(saveGoal)}
                             </div>
-                            <div className="flex items-center justify-between border-t border-border pt-6">
-                                <div>
-                                    <div className="font-medium">Study reminders</div>
-                                    <p className="text-sm text-muted-foreground">
-                                        Daily nudge to keep your streak alive.
-                                    </p>
-                                </div>
+                        }
+                    />
+                </SettingsGroup>
+
+                <SettingsGroup title="Reminders">
+                    <SettingsRow
+                        title="Study reminders"
+                        description="A daily nudge to keep your streak alive."
+                        control={
+                            <Switch
+                                checked={p.study_reminders_enabled}
+                                onCheckedChange={(v) =>
+                                    persist({ ...p, study_reminders_enabled: v })
+                                }
+                            />
+                        }
+                    />
+                </SettingsGroup>
+            </>
+        ),
+
+        islamic: <IslamicModeSettings />,
+
+        notifications: (
+            <>
+                <SettingsGroup title="This device">
+                    <PushToggle userId={user.id} />
+                </SettingsGroup>
+                <SettingsGroup title="Email">
+                    {[
+                        {
+                            k: "notify_email" as const,
+                            title: "Email notifications",
+                            body: "Master switch for all email from ZverTs.",
+                        },
+                        {
+                            k: "notify_inactivity" as const,
+                            title: "Inactivity alerts",
+                            body: "A nudge if you haven't studied in a few days.",
+                        },
+                        {
+                            k: "notify_completion" as const,
+                            title: "Completion emails",
+                            body: "A recap when you finish a module or course.",
+                        },
+                    ].map((item) => (
+                        <SettingsRow
+                            key={item.k}
+                            title={item.title}
+                            description={item.body}
+                            control={
                                 <Switch
-                                    checked={p.study_reminders_enabled}
-                                    onCheckedChange={(v) => update({ study_reminders_enabled: v })}
+                                    checked={p[item.k]}
+                                    onCheckedChange={(v) => persist({ ...p, [item.k]: v })}
                                 />
-                            </div>
-                            <Button
-                                onClick={saveProfile}
-                                disabled={busy}
-                                className="bg-gradient-lime text-primary-foreground hover:opacity-90 shadow-glow"
-                            >
-                                {t("common.save")}
-                            </Button>
-                        </div>
-                    </TabsContent>
+                            }
+                        />
+                    ))}
+                </SettingsGroup>
+                <SmartNotificationSettings />
+            </>
+        ),
 
-                    {/* ISLAMIC MODE */}
-                    <TabsContent value="islamic">
-                        <IslamicModeSettings />
-                    </TabsContent>
-
-                    {/* NOTIFICATIONS */}
-                    <TabsContent value="notifications">
-                        <div className="rounded-2xl border border-border bg-gradient-card p-8 shadow-card space-y-5">
-                            <PushToggle userId={user.id} />
-                            {[
-                                {
-                                    k: "notify_email" as const,
-                                    title: "Email notifications",
-                                    body: "Master switch for all email from ZverTs.",
-                                },
-                                {
-                                    k: "notify_inactivity" as const,
-                                    title: "Inactivity alerts",
-                                    body: "Get a nudge if you haven't studied in a few days.",
-                                },
-                                {
-                                    k: "notify_completion" as const,
-                                    title: "Completion emails",
-                                    body: "Receive a recap when you finish a module or course.",
-                                },
-                            ].map((item) => (
-                                <div key={item.k} className="flex items-center justify-between">
-                                    <div>
-                                        <div className="font-medium">{item.title}</div>
-                                        <p className="text-sm text-muted-foreground">{item.body}</p>
-                                    </div>
-                                    <Switch
-                                        checked={p[item.k]}
-                                        onCheckedChange={(v) => update({ [item.k]: v } as Record<string, unknown>)}
-                                    />
-                                </div>
-                            ))}
-                            <Button
-                                onClick={saveProfile}
-                                disabled={busy}
-                                className="bg-gradient-lime text-primary-foreground hover:opacity-90 shadow-glow"
-                            >
-                                {t("common.save")}
-                            </Button>
+        progress: (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                    { label: "Total XP", value: p.total_xp.toLocaleString() },
+                    { label: "Level", value: level },
+                    { label: "Gems", value: p.total_gems.toLocaleString() },
+                    { label: "Modules completed", value: completedCount },
+                    { label: "Current streak", value: `${p.current_streak} days` },
+                    { label: "Longest streak", value: `${p.longest_streak} days` },
+                ].map((s) => (
+                    <div
+                        key={s.label}
+                        className="rounded-2xl border border-border bg-card p-4 shadow-card"
+                    >
+                        <div className="text-xs font-medium text-muted-foreground">{s.label}</div>
+                        <div className="font-display text-2xl md:text-3xl text-primary mt-1">
+                            {s.value}
                         </div>
-                        <SmartNotificationSettings />
-                    </TabsContent>
+                    </div>
+                ))}
+            </div>
+        ),
 
-                    {/* PROGRESS */}
-                    <TabsContent value="progress">
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {[
-                                { label: "Total gems", value: p.total_gems },
-                                { label: "Total XP", value: p.total_xp },
-                                { label: "Level", value: level },
-                                { label: "Modules completed", value: completedCount },
-                                { label: "Current streak", value: `${p.current_streak} days` },
-                                { label: "Longest streak", value: `${p.longest_streak} days` },
-                            ].map((s) => (
-                                <div
-                                    key={s.label}
-                                    className="rounded-xl border border-border bg-gradient-card p-5 shadow-card"
-                                >
-                                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                                        {s.label}
-                                    </div>
-                                    <div className="font-display text-3xl text-primary mt-2">
-                                        {s.value}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </TabsContent>
+        privacy: (
+            <>
+                <SettingsGroup
+                    title="Visibility"
+                    footer="Each course's public/private switch lives in My courses."
+                >
+                    <SettingsRow
+                        title="Public profile"
+                        description="Show your name and avatar on the leaderboard and shared courses."
+                        control={
+                            <Switch
+                                checked={p.profile_public}
+                                onCheckedChange={(v) => persist({ ...p, profile_public: v })}
+                            />
+                        }
+                    />
+                </SettingsGroup>
+                <SettingsGroup title="Legal">
+                    {[
+                        { to: "/privacy-policy", title: "Privacy Policy" },
+                        { to: "/terms-of-service", title: "Terms of Service" },
+                        { to: "/refund-policy", title: "Refund Policy" },
+                    ].map((l) => (
+                        <SettingsNavRow
+                            key={l.to}
+                            to={l.to}
+                            icon={FileText}
+                            tint="bg-zinc-500"
+                            title={l.title}
+                        />
+                    ))}
+                </SettingsGroup>
+            </>
+        ),
+    };
 
-                    {/* PRIVACY */}
-                    <TabsContent value="privacy">
-                        <div className="rounded-2xl border border-border bg-gradient-card p-8 shadow-card space-y-5">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="font-medium">Public profile</div>
-                                    <p className="text-sm text-muted-foreground">
-                                        Show your name and avatar on the leaderboard and shared
-                                        courses.
-                                    </p>
-                                </div>
-                                <Switch
-                                    checked={p.profile_public}
-                                    onCheckedChange={(v) => update({ profile_public: v })}
-                                />
-                            </div>
-                            <p className="text-xs text-muted-foreground border-t border-border pt-5">
-                                Per-course public/private visibility lives under{" "}
-                                <span className="font-medium text-foreground">My courses</span>.
-                            </p>
-                            <div className="border-t border-border pt-5 flex flex-wrap items-center gap-3 text-xs">
-                                <span className="text-muted-foreground font-mono uppercase tracking-widest">
-                                    Legal
-                                </span>
-                                <Link
-                                    to="/refund-policy"
-                                    className="text-primary hover:underline font-medium"
-                                >
-                                    Refund Policy →
-                                </Link>
-                            </div>
-                            <Button
-                                onClick={saveProfile}
-                                disabled={busy}
-                                className="bg-gradient-lime text-primary-foreground hover:opacity-90 shadow-glow"
-                            >
-                                {t("common.save")}
-                            </Button>
+    return (
+        <AppShell>
+            <section className="container max-w-5xl py-6 md:py-10">
+                <div className="md:grid md:grid-cols-[300px_minmax(0,1fr)] lg:grid-cols-[340px_minmax(0,1fr)] md:gap-8 md:items-start">
+                    {/* List: the whole screen on phones until a section is opened. */}
+                    <aside
+                        className={cn(
+                            open ? "hidden md:block" : "block",
+                            "md:sticky md:top-[calc(var(--app-header-h)+1.5rem)]",
+                        )}
+                    >
+                        <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight mb-5 px-1">
+                            Settings
+                        </h1>
+                        {list}
+                    </aside>
+
+                    {/* Section */}
+                    <div className={cn(open ? "block" : "hidden md:block", "min-w-0")}>
+                        <Link
+                            to="/settings"
+                            className="md:hidden -ml-2 mb-2 inline-flex h-10 items-center gap-0.5 px-2 text-sm font-medium text-primary"
+                        >
+                            <ChevronLeft className="h-5 w-5" /> Settings
+                        </Link>
+                        <div className="mb-5 md:mt-1 px-1">
+                            <h2 className="font-display text-2xl md:text-3xl font-semibold tracking-tight">
+                                {shown.title}
+                            </h2>
+                            <p className="text-sm text-muted-foreground mt-1">{shown.subtitle}</p>
                         </div>
-                    </TabsContent>
-                </Tabs>
+                        <div
+                            key={shown.id}
+                            className="space-y-6 animate-in fade-in-0 slide-in-from-right-4 md:slide-in-from-right-0 duration-200"
+                        >
+                            {content[shown.id]}
+                        </div>
+                    </div>
+                </div>
             </section>
         </AppShell>
     );

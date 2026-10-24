@@ -72,7 +72,7 @@ export const SmartNotificationSettings = () => {
     );
 
     return (
-        <div className="rounded-2xl border border-border bg-gradient-card p-6 shadow-card space-y-5 mt-4">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-card space-y-5">
             <div>
                 <div className="font-semibold">Smart in-app notifications</div>
                 <p className="text-xs text-muted-foreground">

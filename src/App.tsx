@@ -121,6 +121,7 @@ const App = () => (
                                     <Route path="/learn/:id" element={<ModulePlayer />} />
                                     <Route path="/profile" element={<Profile />} />
                                     <Route path="/settings" element={<Settings />} />
+                                    <Route path="/settings/:section" element={<Settings />} />
 
                                     <Route path="/growth" element={<Growth />} />
                                     <Route path="/leaderboard" element={<Leaderboard />} />

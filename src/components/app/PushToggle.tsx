@@ -37,7 +37,7 @@ export const PushToggle = ({ userId }: { userId: string }) => {
     };
 
     return (
-        <div className="flex items-center justify-between gap-4 border-b border-border pb-5">
+        <div className="flex items-center justify-between gap-4 px-4 py-3.5">
             <div>
                 <div className="font-medium">Push notifications on this device</div>
                 <p className="text-sm text-muted-foreground">
