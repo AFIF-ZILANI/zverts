@@ -17,10 +17,22 @@ export const AnalyticsPanel = ({ userId }: { userId: string }) => {
             const p = prog ?? [];
             const avgWatch = p.length
                 ? Math.round(
-                      p.reduce((s: number, r: { watch_time_seconds: number }) => s + r.watch_time_seconds, 0) / p.length / 60,
+                      p.reduce(
+                          (s: number, r: { watch_time_seconds: number }) =>
+                              s + r.watch_time_seconds,
+                          0,
+                      ) /
+                          p.length /
+                          60,
                   )
                 : 0;
-            const weakest = (p as { completed: boolean; percent_watched: number; modules?: { title: string } | null }[])
+            const weakest = (
+                p as {
+                    completed: boolean;
+                    percent_watched: number;
+                    modules?: { title: string } | null;
+                }[]
+            )
                 .filter((r) => !r.completed && r.percent_watched > 0 && r.percent_watched < 60)
                 .sort((a, b) => a.percent_watched - b.percent_watched)
                 .slice(0, 3)
@@ -35,44 +47,44 @@ export const AnalyticsPanel = ({ userId }: { userId: string }) => {
     if (!stats) return null;
 
     return (
-        <div className="rounded-2xl border border-border bg-gradient-card p-6 md:p-8 shadow-card">
-            <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                / analytics
-            </div>
-            <h2 className="font-display text-2xl mt-1 mb-5">Learning insights</h2>
-            <div className="grid gap-4">
-                <div className="rounded-xl border border-border/60 p-4 bg-background/30">
-                    <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground uppercase">
-                        <Clock className="h-3.5 w-3.5" /> Avg watch / module
-                    </div>
-                    <div className="font-display text-3xl mt-2">
+        <div className="rounded-3xl border border-border bg-card p-5 shadow-card">
+            <h2 className="text-base font-semibold">Learning insights</h2>
+            <div className="mt-4 flex items-center gap-3 rounded-2xl bg-muted/50 p-3.5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 text-sky-500">
+                    <Clock className="h-5 w-5" />
+                </span>
+                <div>
+                    <div className="text-xs text-muted-foreground">Avg watch per module</div>
+                    <div className="text-xl font-semibold tabular-nums">
                         {stats.avgWatch}
-                        <span className="text-base text-muted-foreground"> min</span>
+                        <span className="text-sm font-normal text-muted-foreground"> min</span>
                     </div>
                 </div>
             </div>
-            <div className="mt-5">
-                <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground uppercase mb-2">
-                    <TrendingDown className="h-3.5 w-3.5" /> Weakest modules
+            <div className="mt-4">
+                <div className="mb-2.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <TrendingDown className="h-3.5 w-3.5" /> Needs another look
                 </div>
                 {stats.weakest.length === 0 ? (
-                    <p className="text-sm text-muted-foreground font-mono">
-                        <Activity className="h-3.5 w-3.5 inline mr-1" /> No struggling modules —
-                        keep going!
+                    <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Activity className="h-4 w-4 text-primary" /> No struggling modules — keep
+                        going!
                     </p>
                 ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {stats.weakest.map((w, i) => (
-                            <div key={i} className="flex items-center gap-3">
-                                <div className="text-sm flex-1 truncate">{w.title}</div>
-                                <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div key={i}>
+                                <div className="flex items-center justify-between gap-3 text-sm">
+                                    <span className="truncate">{w.title}</span>
+                                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                                        {w.pct}%
+                                    </span>
+                                </div>
+                                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                                     <div
-                                        className="h-full bg-destructive/70"
+                                        className="h-full rounded-full bg-amber-500"
                                         style={{ width: `${w.pct}%` }}
                                     />
-                                </div>
-                                <div className="text-xs font-mono text-muted-foreground w-10 text-right">
-                                    {w.pct}%
                                 </div>
                             </div>
                         ))}

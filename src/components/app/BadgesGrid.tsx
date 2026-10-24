@@ -79,26 +79,21 @@ export const BadgesGrid = ({ userId }: { userId: string }) => {
     const total = Object.keys(BADGES).length;
 
     return (
-        <div className="rounded-2xl border border-border bg-gradient-card p-6 md:p-8 shadow-card">
-            <div className="flex items-center justify-between mb-5">
-                <div>
-                    <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                        / achievements
-                    </div>
-                    <h2 className="font-display text-2xl mt-1">Badges</h2>
-                </div>
-                <div className="text-sm font-mono text-muted-foreground">
-                    {loading ? "…" : `${unlocked.size} / ${total}`}
-                </div>
+        <div className="rounded-3xl border border-border bg-card p-5 shadow-card">
+            <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold">Badges</h2>
+                <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                    {loading ? "…" : `${unlocked.size} of ${total}`}
+                </span>
             </div>
 
             {rpcError && (
-                <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs font-mono text-destructive">
+                <div className="mt-3 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                     Achievement check failed: {rpcError}
                 </div>
             )}
 
-            <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
+            <div className="mt-4 grid grid-cols-4 gap-x-2 gap-y-4">
                 {Object.entries(BADGES).map(([code, b]) => {
                     const Got = unlocked.has(code);
                     const Icon = b.icon;
@@ -107,16 +102,27 @@ export const BadgesGrid = ({ userId }: { userId: string }) => {
                             key={code}
                             title={`${b.name} — ${b.desc}`}
                             className={cn(
-                                "aspect-square rounded-2xl flex flex-col items-center justify-center p-2 relative transition-all",
+                                "flex flex-col items-center gap-1.5 text-center",
                                 loading && "opacity-40",
-                                Got
-                                    ? `bg-gradient-to-br ${b.color} text-white shadow-elevated hover:scale-105`
-                                    : "bg-muted/50 text-muted-foreground/40 border border-border",
                             )}
                         >
-                            <Icon className={cn("h-5 w-5", Got && "drop-shadow-md")} />
-                            <span className="text-[9px] font-mono mt-1 text-center leading-tight">
-                                {Got ? b.name : "Locked"}
+                            <span
+                                className={cn(
+                                    "flex h-12 w-12 items-center justify-center rounded-2xl transition-transform",
+                                    Got
+                                        ? `bg-gradient-to-br ${b.color} text-white shadow-md hover:scale-105`
+                                        : "border border-dashed border-border bg-muted/40 text-muted-foreground/50",
+                                )}
+                            >
+                                <Icon className="h-5 w-5" />
+                            </span>
+                            <span
+                                className={cn(
+                                    "line-clamp-2 text-[10px] leading-tight",
+                                    Got ? "font-medium" : "text-muted-foreground",
+                                )}
+                            >
+                                {b.name}
                             </span>
                         </div>
                     );
