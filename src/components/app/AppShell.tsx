@@ -24,6 +24,7 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useAdminPaymentAlerts } from "@/hooks/useAdminPaymentAlerts";
 import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
+import { OfflineBanner } from "./OfflineBanner";
 
 const SiteFooter = lazy(() => import("./SiteFooter").then((m) => ({ default: m.SiteFooter })));
 const NotificationCenter = lazy(() =>
@@ -260,6 +261,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                         )}
                     </div>
                 </div>
+                <OfflineBanner />
             </header>
 
             {/* ── Mobile drawer ──────────────────────────────────────────────── */}

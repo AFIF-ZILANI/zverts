@@ -42,6 +42,7 @@ import {
     Pencil,
 } from "lucide-react";
 import { SmartNotificationSettings } from "@/components/app/SmartNotificationSettings";
+import { PushToggle } from "@/components/app/PushToggle";
 
 type Profile = {
     name: string | null;
@@ -433,6 +434,7 @@ const Settings = () => {
                     {/* NOTIFICATIONS */}
                     <TabsContent value="notifications">
                         <div className="rounded-2xl border border-border bg-gradient-card p-8 shadow-card space-y-5">
+                            <PushToggle userId={user.id} />
                             {[
                                 {
                                     k: "notify_email" as const,
