@@ -1,0 +1,14 @@
+/* iOS Safari zooms the page when focusing a field under 16px. Monaco types
+   through a hidden textarea sized like the editor font, so keep it at 16px —
+   it's invisible, the code still renders at the editor's own size. */
+@supports (-webkit-touch-callout: none) {
+    .code-runner .monaco-editor textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Monaco's floating "show keyboard" button is for iPads without a hardware
+   keyboard; tapping the editor already opens the keyboard on phones. */
+.code-runner .monaco-editor .iPadShowKeyboard {
+    display: none;
+}
