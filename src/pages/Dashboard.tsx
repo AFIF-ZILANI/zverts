@@ -66,12 +66,18 @@ const fmtTime = (s: number) => {
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// Days follow Bangladesh time (UTC+6, no DST) to match watch_daily and the daily
+// mission (public.app_today() in the database).
+const DHAKA_OFFSET_MS = 6 * 3_600_000;
+const dhakaDay = (ms: number) => new Date(ms + DHAKA_OFFSET_MS);
+const dhakaDateKey = (ms: number) => dhakaDay(ms).toISOString().slice(0, 10);
+
 const Dashboard = () => {
     const { user, loading: authLoading } = useAuth();
     const [courses, setCourses] = useState<CourseRow[]>([]);
     const [modules, setModules] = useState<ModuleRow[]>([]);
     const [progress, setProgress] = useState<ProgressRow[]>([]);
-    // Genuine seconds watched per UTC day (last 7 days), from record_watch_progress.
+    // Genuine seconds watched per Bangladesh day (last 7 days), from record_watch_progress.
     const [dailyWatch, setDailyWatch] = useState<Map<string, number>>(new Map());
     const [userStats, setUserStats] = useState<UserStats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -103,7 +109,7 @@ const Dashboard = () => {
                 });
 
             const courseIds = (ownCourses ?? []).map((c) => c.id);
-            const weekStart = new Date(Date.now() - 6 * 86_400_000).toISOString().slice(0, 10);
+            const weekStart = dhakaDateKey(Date.now() - 6 * 86_400_000);
             const [
                 { data: mods, error: mErr },
                 { data: prog, error: pErr },
@@ -220,11 +226,10 @@ const Dashboard = () => {
         user.email?.split("@")[0] ??
         "there";
 
-    // Days are UTC to match watch_daily and the daily mission.
     const weekly = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(Date.now() - (6 - i) * 86_400_000);
-        const minutes = Math.floor((dailyWatch.get(d.toISOString().slice(0, 10)) ?? 0) / 60);
-        return { day: DAYS[d.getUTCDay()], minutes };
+        const ms = Date.now() - (6 - i) * 86_400_000;
+        const minutes = Math.floor((dailyWatch.get(dhakaDateKey(ms)) ?? 0) / 60);
+        return { day: DAYS[dhakaDay(ms).getUTCDay()], minutes };
     });
 
     const level = userStats ? Math.floor(userStats.xp / 500) + 1 : 1;

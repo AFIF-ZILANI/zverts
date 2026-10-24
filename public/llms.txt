@@ -1,8 +1,8 @@
 # ZverTs
 
-> A free, AI-powered disciplined learning platform. Sequential video modules with strict watch-time enforcement, quizzes, XP streaks, badges, and verifiable completion certificates.
+> A free, AI-powered disciplined learning platform. Sequential video modules with strict watch-time enforcement, daily watch goals, XP streaks, badges, and verifiable completion certificates.
 
-ZverTs converts YouTube playlists into structured courses with enforced progression — learners cannot skip ahead. Progress is tracked by actual watch time, not just clicks. Certificates are issued only after completing all modules and passing assessments.
+ZverTs converts YouTube playlists into structured courses with enforced progression — learners cannot skip ahead. Progress is tracked by actual watch time, not just clicks. Certificates are issued only after completing all modules.
 
 ## What ZverTs does
 
@@ -11,7 +11,7 @@ ZverTs converts YouTube playlists into structured courses with enforced progress
 - Issues verifiable certificates on course completion
 - Gamifies learning with XP, streaks, badges, and leaderboards
 - Provides an AI tutor for per-lesson summaries and Q&A
-- Supports quizzes gated behind module completion
+- Daily goal: 20 genuinely watched minutes keeps your streak alive
 - Available in English and Bengali
 
 ## Who it is for
