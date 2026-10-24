@@ -40,7 +40,7 @@ const PAGES: Page[] = [
                     "Subscription support",
                     "Payment assistance",
                     "Video playback issues",
-                    "AI feature support",
+                    "Code runner help",
                     "Course unlocking help",
                     "Notification issues",
                 ],
@@ -53,14 +53,14 @@ const PAGES: Page[] = [
         title: "About Us",
         icon: InfoIcon,
         tagline:
-            "ZverTs is an AI-powered smart learning platform designed to make education easier, more engaging, and personalized for modern learners.",
+            "ZverTs is a smart learning platform designed to make education easier, more engaging, and structured for modern learners.",
         sections: [
             {
                 heading: "We combine",
                 bullets: [
-                    "AI learning assistance",
+                    "Built-in code runner for C, C++ and Python",
                     "Gamification",
-                    "Personalized study recommendations",
+                    "Structured, sequential courses",
                     "Genuine watch-time tracking",
                     "Progress tracking",
                     "Bangla-first student-friendly experience",
@@ -72,7 +72,7 @@ const PAGES: Page[] = [
             },
             {
                 heading: "Our Vision",
-                body: "To become a next-generation AI learning ecosystem where students can learn, grow, and level up their skills efficiently.",
+                body: "To become a next-generation learning ecosystem where students can learn, grow, and level up their skills efficiently.",
             },
         ],
     },
@@ -84,7 +84,7 @@ const PAGES: Page[] = [
         sections: [
             {
                 heading: "1. What is ZverTs?",
-                body: "ZverTs is an AI-powered learning app that helps users learn through videos, AI summaries, progress tracking, and gamified learning.",
+                body: "ZverTs is a learning app that turns YouTube playlists into structured courses, with progress tracking, a built-in code runner, and gamified learning.",
             },
             {
                 heading: "2. Is ZverTs free?",
@@ -95,8 +95,8 @@ const PAGES: Page[] = [
                 body: "Yes. Videos are designed to play inside the app for a seamless learning experience.",
             },
             {
-                heading: "4. Does ZverTs use AI?",
-                body: "Yes. AI helps with summaries, explanations, recommendations, and weak-topic analysis.",
+                heading: "4. Can I practise coding in the app?",
+                body: "Yes. Every lesson has a code runner for C, C++ and Python — write code, give it input, and see the output right next to the video.",
             },
             {
                 heading: "5. Can I track progress?",
@@ -122,7 +122,7 @@ const PAGES: Page[] = [
                     "Subscription issues",
                     "Course access",
                     "Video problems",
-                    "AI assistant issues",
+                    "Code runner issues",
                     "Notifications",
                     "Progress tracking",
                     "Password reset",
@@ -215,7 +215,7 @@ const PAGES: Page[] = [
                 heading: "Topics include",
                 bullets: [
                     "Study tips",
-                    "AI learning guides",
+                    "Coding practice guides",
                     "Productivity hacks",
                     "Skill development",
                     "Tech & coding tutorials",
@@ -232,14 +232,13 @@ const PAGES: Page[] = [
         title: "Careers",
         icon: Briefcase,
         tagline:
-            "Join the team building the future of learning. At ZverTs, we're creating an AI-first education platform that helps students learn smarter.",
+            "Join the team building the future of learning. At ZverTs, we're creating a focused education platform that helps students learn smarter.",
         sections: [
             {
                 heading: "We look for",
                 bullets: [
                     "Engineers",
                     "Designers",
-                    "AI developers",
                     "Product thinkers",
                     "Growth marketers",
                     "Community builders",

@@ -11,7 +11,6 @@ type Prefs = {
     user_id: string;
     mute_all: boolean;
     study_reminders: boolean;
-    ai_suggestions: boolean;
     system_alerts: boolean;
     gamification: boolean;
     comeback: boolean;
@@ -23,7 +22,6 @@ type Prefs = {
 const DEFAULTS: Omit<Prefs, "user_id"> = {
     mute_all: false,
     study_reminders: true,
-    ai_suggestions: true,
     system_alerts: true,
     gamification: true,
     comeback: true,
@@ -89,11 +87,6 @@ export const SmartNotificationSettings = () => {
                     "study_reminders",
                 )}
                 {row("Gamification", "XP, level up, streak milestones, badges.", "gamification")}
-                {row(
-                    "AI suggestions",
-                    "Summaries and weak-topic alerts.",
-                    "ai_suggestions",
-                )}
                 {row(
                     "System alerts",
                     "Playlist conversion, payments, subscription.",

@@ -5,7 +5,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useEntitlements } from "@/hooks/useEntitlements";
-import { Coins, Sparkles, ShoppingCart, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Coins, ShoppingCart, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 type Payment = {
     id: string;
@@ -81,7 +81,7 @@ const PaymentHistory = () => {
                 </div>
 
                 {/* Entitlement cards */}
-                <div className="grid sm:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-2 gap-4">
                     {/* Free conversions */}
                     <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
                         <div className="flex items-center justify-between">
@@ -116,30 +116,6 @@ const PaymentHistory = () => {
                             {ent.convert_credits === 0
                                 ? "Buy a pack to get credits"
                                 : `${ent.convert_credits} conversion${ent.convert_credits !== 1 ? "s" : ""} available`}
-                        </p>
-                    </div>
-
-                    {/* AI Tutor */}
-                    <div
-                        className={`rounded-2xl border p-5 space-y-3 ${ent.ai_enabled ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}
-                    >
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
-                                AI Tutor
-                            </span>
-                            <Sparkles
-                                className={`h-4 w-4 ${ent.ai_enabled ? "text-primary" : "text-muted-foreground"}`}
-                            />
-                        </div>
-                        <div
-                            className={`font-display text-2xl ${ent.ai_enabled ? "text-primary" : "text-muted-foreground"}`}
-                        >
-                            {ent.ai_enabled ? "Unlocked" : "Locked"}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            {ent.ai_enabled
-                                ? "Lifetime access active"
-                                : "Unlocked with first purchase"}
                         </p>
                     </div>
                 </div>

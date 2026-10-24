@@ -26,7 +26,7 @@ const Index = () => {
         <AppShell>
             <SEO
                 title="ZverTs — Disciplined Learning, Verified Progress"
-                description="A free, sequential learning platform with strict watch-time tracking, attendance, AI summaries, and certificates. Master web development one module at a time."
+                description="A free, sequential learning platform with strict watch-time tracking, attendance, a built-in code runner, and certificates. Master web development one module at a time."
                 path="/"
                 jsonLd={[
                     {

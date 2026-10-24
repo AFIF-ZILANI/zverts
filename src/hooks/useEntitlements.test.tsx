@@ -65,7 +65,6 @@ describe("useEntitlements", () => {
 
         expect(result.current.isAdmin).toBe(false);
         expect(result.current.isSuperAdmin).toBe(false);
-        expect(result.current.ai_enabled).toBe(false);
         expect(result.current.is_paid_user).toBe(false);
         expect(result.current.playlist_conversions_left).toBe(0);
     });
@@ -85,7 +84,6 @@ describe("useEntitlements", () => {
             {
                 playlist_conversions_left: 3,
                 convert_credits: 2,
-                ai_enabled: true,
                 is_paid_user: true,
                 total_paid: 500,
             },
@@ -95,7 +93,6 @@ describe("useEntitlements", () => {
         const { result } = renderHook(() => useEntitlements());
         await waitFor(() => expect(result.current.loading).toBe(false));
 
-        expect(result.current.ai_enabled).toBe(true);
         expect(result.current.is_paid_user).toBe(true);
         expect(result.current.total_paid).toBe(500);
         expect(result.current.playlist_conversions_left).toBe(3);
@@ -105,7 +102,7 @@ describe("useEntitlements", () => {
     it("free_left mirrors playlist_conversions_left", async () => {
         authWith(MOCK_USER);
         fromWith(
-            { playlist_conversions_left: 7, convert_credits: 0, ai_enabled: false, is_paid_user: false, total_paid: 0 },
+            { playlist_conversions_left: 7, convert_credits: 0, is_paid_user: false, total_paid: 0 },
             { locked: false, role: null },
         );
         const { result } = renderHook(() => useEntitlements());

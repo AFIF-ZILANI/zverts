@@ -1,4 +1,4 @@
-import { lazy, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
@@ -23,10 +23,6 @@ import {
     ListVideo,
     Clock,
 } from "lucide-react";
-
-const AITutorPanel = lazy(() =>
-    import("@/components/app/AITutorPanel").then((m) => ({ default: m.AITutorPanel })),
-);
 
 interface Mod {
     id: string;
@@ -465,28 +461,11 @@ const ModulePlayer = () => {
                                 </div>
                             </div>
 
-                            {/* Notes + AI hint */}
-                            <div className="grid lg:grid-cols-2 gap-4">
-                                <NotesPanel
-                                    moduleId={mod.id}
-                                    getCurrentTime={() =>
-                                        playerRef.current?.getCurrentTime() ?? 0
-                                    }
-                                    onSeek={(s) => playerRef.current?.seekTo(s)}
-                                />
-                                <div className="rounded-2xl border border-border bg-card p-5 flex flex-col items-center justify-center text-center min-h-[140px]">
-                                    <p className="font-display text-base mb-1">
-                                        Need help understanding?
-                                    </p>
-                                    <p className="text-sm text-muted-foreground max-w-xs">
-                                        Open Vert to explain concepts or summarize this lesson in
-                                        English or Bangla.
-                                    </p>
-                                    <p className="text-xs font-mono text-muted-foreground mt-3">
-                                        Tap "Chat with Vert" → bottom-right
-                                    </p>
-                                </div>
-                            </div>
+                            <NotesPanel
+                                moduleId={mod.id}
+                                getCurrentTime={() => playerRef.current?.getCurrentTime() ?? 0}
+                                onSeek={(s) => playerRef.current?.seekTo(s)}
+                            />
 
                             <CodeRunner moduleId={mod.id} />
 
@@ -542,7 +521,6 @@ const ModulePlayer = () => {
                     </div>
                 )}
             </div>
-            <AITutorPanel moduleId={mod?.id ?? ""} />
         </AppShell>
     );
 };

@@ -1,6 +1,6 @@
 // Bangla student-vibe notification content engine.
 // Rotates per-category templates and personalizes with user context.
-// Used by client-side dispatcher (XP, AI, comeback hooks) and edge function.
+// Used by client-side dispatcher (XP, comeback hooks) and edge function.
 
 export type Ctx = {
     name?: string | null;
@@ -73,23 +73,6 @@ const T = {
     ] as Tpl[],
     level_up: [
         (c) => ({ title: `Level Up! 🚀 Level ${c.level ?? 2}`, body: "আপনি আরেক ধাপ এগাইলেন" }),
-    ] as Tpl[],
-    weak_topic: [
-        (c) => ({
-            title: `${c.weakTopic ?? "এই topic"} e একটু ঝামেলা?`,
-            body: "AI ready আছে 😎 ২ মিনিট practice দেন",
-        }),
-        () => ({ title: "এই topic বারবার miss হচ্ছে 👀", body: "একটু revise করি?" }),
-    ] as Tpl[],
-    ai_recommendation: [
-        (c) => ({
-            title: "AI detect করছে 📚",
-            body: `${c.subject ?? "আপনার favorite subject"} এ next lesson ready`,
-        }),
-        () => ({ title: "AI quick summary বানাইছে 😎", body: "দেখতে চান?" }),
-    ] as Tpl[],
-    ai_summary: [
-        () => ({ title: "Summary ready ⚡", body: "৩০ সেকেন্ডে পুরা lesson ধরেন" }),
     ] as Tpl[],
     unfinished_lesson: [
         (c) => ({
