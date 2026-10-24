@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { positionKey, resumePoint } from "@/lib/videoResume";
 import { cn } from "@/lib/utils";
 import {
     ArrowLeft,
@@ -49,6 +50,13 @@ interface SiblingProgress {
 // Lessons count as complete (and unlock the next one) at this share of the video
 // actually watched — must match record_watch_progress.
 const COMPLETE_PERCENT = 90;
+
+const callRecordWatch = (args: {
+    _module_id: string;
+    _watched_seconds: number;
+    _segments: [number, number][];
+    _video_duration: number;
+}) => supabase.rpc("record_watch_progress", args);
 
 const fmt = (s: number) => {
     const h = Math.floor(s / 3600),
@@ -147,7 +155,7 @@ const SidebarRow = ({
 // ── Main page ─────────────────────────────────────────────────────────────────
 const ModulePlayer = () => {
     const { id } = useParams();
-    const { user, loading: authLoading } = useAuth();
+    const { user, session, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
     const [mod, setMod] = useState<Mod | null>(null);
@@ -158,6 +166,8 @@ const ModulePlayer = () => {
     const [nextId, setNextId] = useState<string | null>(null);
     const [rewardFlash, setRewardFlash] = useState(false);
     const [loading, setLoading] = useState(true);
+    // null until known: the player takes its start position only when it's created.
+    const [resumeAt, setResumeAt] = useState<number | null>(null);
 
     const [siblings, setSiblings] = useState<SiblingMod[]>([]);
     const [siblingProg, setSiblingProg] = useState<Map<string, SiblingProgress>>(new Map());
@@ -178,6 +188,7 @@ const ModulePlayer = () => {
         setSiblings([]);
         setSiblingProg(new Map());
         setLoading(true);
+        setResumeAt(null);
         (async () => {
             const { data: m } = await supabase
                 .from("modules")
@@ -208,7 +219,7 @@ const ModulePlayer = () => {
                     supabase.rpc("is_module_unlocked", { _user_id: user.id, _module_id: m.id }),
                     supabase
                         .from("module_progress")
-                        .select("percent_watched,completed,watch_time_seconds")
+                        .select("percent_watched,completed,watch_time_seconds,watched_ranges")
                         .eq("user_id", user.id)
                         .eq("module_id", m.id)
                         .maybeSingle(),
@@ -226,6 +237,7 @@ const ModulePlayer = () => {
                 setCompleted(p.completed);
                 setWatchSeconds(p.watch_time_seconds);
             }
+            setResumeAt(resumePoint(m.id, p?.watched_ranges, m.duration_seconds ?? 0));
 
             const sibList = sibs ?? [];
             setSiblings(sibList);
@@ -253,20 +265,42 @@ const ModulePlayer = () => {
     // ── Progress ──────────────────────────────────────────────────────────────
     // The player reports only genuinely watched time; the server re-checks it
     // against the clock, so seeking ahead never counts as watching.
-    const recordWatch = async (report: WatchReport) => {
+    const recordWatch = async (report: WatchReport, urgent = false) => {
         if (!mod) return;
-        const { data, error } = await supabase.rpc("record_watch_progress", {
+        const args = {
             _module_id: mod.id,
             _watched_seconds: report.watchedSeconds,
             _segments: report.segments,
             _video_duration: report.duration,
-        });
-        if (error) {
-            toast.error(error.message);
-            return;
+        };
+        let row: Awaited<ReturnType<typeof callRecordWatch>>["data"];
+        if (urgent && session) {
+            // The page is being hidden or unloaded: a keepalive request is still
+            // delivered if the browser freezes or closes it right after (a normal one
+            // is often dropped — the watch time lost on minimise or reload).
+            const res = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/record_watch_progress`,
+                {
+                    method: "POST",
+                    keepalive: true,
+                    headers: {
+                        "Content-Type": "application/json",
+                        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                        Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify(args),
+                },
+            ).catch(() => null);
+            row = res?.ok ? await res.json().catch(() => null) : null;
+        } else {
+            const { data, error } = await callRecordWatch(args);
+            if (error) {
+                toast.error(error.message);
+                return;
+            }
+            row = data;
         }
-        if (!data) return;
-        const row = data;
+        if (!row) return;
         setPercent(Number(row.percent_watched));
         setWatchSeconds(row.watch_time_seconds);
         setSiblingProg((prev) => {
@@ -366,11 +400,17 @@ const ModulePlayer = () => {
 
                         {/* ── Player (col 1, row 2) ── */}
                         <div className="relative mt-4 lg:mt-0 -mx-6 lg:mx-0 overflow-hidden border-y lg:border lg:rounded-2xl border-border shadow-card lg:col-start-1 lg:row-start-2">
-                            <YouTubePlayer
-                                ref={playerRef}
-                                videoId={mod.youtube_video_id}
-                                onWatch={recordWatch}
-                            />
+                            {resumeAt === null ? (
+                                <div className="aspect-video bg-black" />
+                            ) : (
+                                <YouTubePlayer
+                                    ref={playerRef}
+                                    videoId={mod.youtube_video_id}
+                                    onWatch={recordWatch}
+                                    startAt={resumeAt}
+                                    positionKey={positionKey(mod.id)}
+                                />
+                            )}
                         </div>
 
                         {/* ── Sidebar / playlist (col 2, row 2) ── */}
