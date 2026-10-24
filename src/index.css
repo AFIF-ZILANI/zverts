@@ -173,11 +173,35 @@
 }
 
 /* ── Mobile / PWA safety ──────────────────────────────────────────────────── */
+/* --app-header-h:     sticky header height incl. the notch/status bar.
+   --app-bottom-inset: space taken at the bottom of the screen — the home
+                       indicator, plus the tab bar on phones when signed in
+                       (AppShell sets body[data-bottom-nav]). */
+:root {
+    --app-header-h: calc(3.5rem + env(safe-area-inset-top));
+    --app-bottom-inset: env(safe-area-inset-bottom);
+}
+@media (max-width: 767px) {
+    body[data-bottom-nav] {
+        --app-bottom-inset: calc(4rem + env(safe-area-inset-bottom));
+    }
+    body[data-bottom-nav] [data-sonner-toaster][data-y-position="bottom"] {
+        bottom: calc(var(--app-bottom-inset) + 0.75rem) !important;
+    }
+}
+
+@layer utilities {
+    .safe-area-pb {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
 @layer base {
     html {
         overflow-x: hidden;
         overflow-y: auto;
         -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
     }
     body {
         min-height: 100vh;

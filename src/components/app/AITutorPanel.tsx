@@ -238,7 +238,7 @@ export const AITutorPanel = ({ moduleId }: { moduleId: string }) => {
             <button
                 onClick={() => setOpen(true)}
                 className={cn(
-                    "fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full px-5 py-3 font-medium shadow-glow transition-transform",
+                    "fixed bottom-[calc(1.5rem+var(--app-bottom-inset))] right-6 z-40 flex items-center gap-2 rounded-full px-5 py-3 font-medium shadow-glow transition-transform",
                     ai_enabled
                         ? "bg-gradient-lime text-primary-foreground hover:scale-105"
                         : "bg-card border border-border text-foreground hover:border-primary/60 hover:scale-105",

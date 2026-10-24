@@ -43,7 +43,7 @@ export const InstallPrompt = () => {
     };
 
     return (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-2xl p-3 flex items-center gap-3 animate-fade-in">
+        <div className="fixed bottom-[calc(1rem+var(--app-bottom-inset))] left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-2xl p-3 flex items-center gap-3 animate-fade-in">
             <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold">Install ZverTs</div>
                 <div className="text-xs text-muted-foreground truncate">
