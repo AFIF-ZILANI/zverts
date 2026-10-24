@@ -7,8 +7,10 @@ import "monaco-editor/languages/definitions/cpp/register.js";
 import "monaco-editor/languages/definitions/python/register.js";
 import EditorWorker from "monaco-editor/editor/editor.worker.js?worker";
 import { loader } from "@monaco-editor/react";
+import { registerCompletions } from "./completions";
 
 self.MonacoEnvironment = { getWorker: () => new EditorWorker() };
 loader.config({ monaco });
+registerCompletions(monaco);
 
 export { monaco };

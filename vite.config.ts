@@ -86,6 +86,10 @@ export default defineConfig({
             "@tanstack/query-core",
         ],
     },
+    // Module workers: the code runner's workers import() Pyodide/Clang from a CDN.
+    worker: {
+        format: "es",
+    },
     build: {
         target: "es2020",
         cssCodeSplit: true,

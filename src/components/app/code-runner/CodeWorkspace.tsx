@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { monaco } from "./monaco";
 import { preloadPython, runPython } from "./pythonRunner";
+import { ClangUnavailable, preloadClang, runNative, setClangProgress } from "./clangRunner";
 import { ACCEPTED, LANGUAGES, TEMPLATES, type RunLanguage, type RunResult } from "./languages";
 
 // Per-viewer drafts: code is kept per module + language in localStorage.
@@ -49,6 +50,8 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
     const [running, setRunning] = useState(false);
     const [result, setResult] = useState<RunResult | null>(null);
     const [pyReady, setPyReady] = useState(false);
+    const [clang, setClang] = useState<"loading" | "ready" | "unavailable">("loading");
+    const [clangPercent, setClangPercent] = useState(0);
     const runRef = useRef<() => void>(() => {});
 
     const meta = LANGUAGES.find((l) => l.id === lang)!;
@@ -81,6 +84,21 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         };
     }, [lang]);
 
+    // C/C++ compile in the browser too (Clang → WebAssembly); download it once
+    // C or C++ is picked. If it can't load here, runs fall back to the server.
+    useEffect(() => {
+        if (lang === "python" || clang === "unavailable") return;
+        let cancelled = false;
+        setClangProgress((p) => !cancelled && setClangPercent(p));
+        preloadClang()
+            .then(() => !cancelled && setClang("ready"))
+            .catch(() => !cancelled && setClang("unavailable"));
+        return () => {
+            cancelled = true;
+            setClangProgress(null);
+        };
+    }, [lang, clang]);
+
     const run = async () => {
         if (running) return;
         setRunning(true);
@@ -97,6 +115,26 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
             }
             return;
         }
+        if (clang !== "unavailable") {
+            try {
+                setResult(await runNative(lang, code, stdin));
+                setClang("ready");
+                setRunning(false);
+                return;
+            } catch (e) {
+                if (!(e instanceof ClangUnavailable)) {
+                    setRunning(false);
+                    toast.error(e instanceof Error ? e.message : "Run failed");
+                    return;
+                }
+                setClang("unavailable");
+            }
+        }
+        await runOnServer();
+    };
+    runRef.current = run;
+
+    const runOnServer = async () => {
         const { data, error } = await supabase.functions.invoke("run-code", {
             body: { language: lang, source: code, stdin },
         });
@@ -117,7 +155,6 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         }
         setResult(data as RunResult);
     };
-    runRef.current = run;
 
     const onMount: OnMount = (editor) => {
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => runRef.current());
@@ -194,6 +231,18 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                         padding: { top: 12 },
                         renderLineHighlight: "all",
                         smoothScrolling: true,
+                        // Suggest/hint popups float above the card instead of being clipped by it.
+                        fixedOverflowWidgets: true,
+                        // Suggestions as you type, like VS Code. Our provider
+                        // already includes the file's own identifiers.
+                        quickSuggestions: { other: true, comments: false, strings: false },
+                        quickSuggestionsDelay: 0,
+                        suggestOnTriggerCharacters: true,
+                        wordBasedSuggestions: "off",
+                        snippetSuggestions: "inline",
+                        tabCompletion: "on",
+                        parameterHints: { enabled: true },
+                        suggest: { showStatusBar: false, preview: true },
                     }}
                 />
             </div>
@@ -229,9 +278,13 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                     <pre className="flex-1 min-h-[140px] max-h-[280px] overflow-auto p-3 font-mono text-sm whitespace-pre-wrap break-words">
                         {running ? (
                             <span className="text-muted-foreground">
-                                {lang === "python" && !pyReady
-                                    ? "Loading Python (first time only)…"
-                                    : "Running…"}
+                                {lang === "python"
+                                    ? pyReady
+                                        ? "Running…"
+                                        : "Loading Python (first time only)…"
+                                    : clang === "loading"
+                                      ? `Downloading C/C++ compiler (~20 MB, first time only)…${clangPercent > 0 ? ` ${clangPercent}%` : ""}`
+                                      : "Compiling & running…"}
                             </span>
                         ) : result ? (
                             <>
