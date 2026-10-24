@@ -33,7 +33,12 @@ export type WatchReport = {
 
 interface Props {
     videoId: string;
-    onWatch: (report: WatchReport) => void;
+    /** `urgent`: the page is being hidden or unloaded — send it in a way that survives that. */
+    onWatch: (report: WatchReport, urgent: boolean) => void;
+    /** Second to start playing from (resume). */
+    startAt?: number;
+    /** localStorage key to keep the playback position under, for resuming on this device. */
+    positionKey?: string;
 }
 
 export type YouTubePlayerHandle = {
@@ -58,11 +63,23 @@ const loadYT = () => {
     return ytApiPromise;
 };
 
-export const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, onWatch }, ref) => {
+export const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, onWatch, startAt = 0, positionKey }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const playerRef = useRef<YTPlayer | null>(null);
     const onWatchRef = useRef(onWatch);
     onWatchRef.current = onWatch;
+    const startAtRef = useRef(startAt);
+    startAtRef.current = startAt;
+
+    const savePosition = useCallback(() => {
+        const pos = playerRef.current?.getCurrentTime?.();
+        if (!positionKey || !pos) return;
+        try {
+            localStorage.setItem(positionKey, String(Math.floor(pos)));
+        } catch {
+            /* storage unavailable: resume falls back to the server's watched ranges */
+        }
+    }, [positionKey]);
 
     // Last sample taken while genuinely playing; null after a pause/seek/hidden tab.
     const lastSampleRef = useRef<{ wall: number; pos: number } | null>(null);
@@ -87,7 +104,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, 
         [],
     );
 
-    const flush = useCallback(() => {
+    const flush = useCallback((urgent = false) => {
         const pending = pendingRef.current;
         if (pending.watched <= 0 && pending.segments.length === 0) return;
         const duration = playerRef.current?.getDuration?.() ?? 0;
@@ -96,7 +113,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, 
             watchedSeconds: Math.round(pending.watched * 10) / 10,
             segments: pending.segments,
             duration: Math.round(duration),
-        });
+        }, urgent);
     }, []);
 
     // Sample the player. Time counts only when the video advanced the way normal
@@ -110,6 +127,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, 
         const playing = player.getPlayerState() === 1 && document.visibilityState === "visible";
         const prev = lastSampleRef.current;
         lastSampleRef.current = playing ? { wall: now, pos } : null;
+        if (playing) savePosition();
         // Still credit the stretch since the last sample when playback just paused/ended.
         if (!prev) return;
 
@@ -127,7 +145,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, 
         else pending.segments.push([prev.pos, pos]);
 
         if (pending.watched >= REPORT_EVERY_SECONDS) flush();
-    }, [flush]);
+    }, [flush, savePosition]);
 
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
         if (!playerRef.current) return;
@@ -169,15 +187,26 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, 
         return () => document.removeEventListener("keydown", handleKeyDown);
     }, [handleKeyDown]);
 
-    // Hidden tab: stop counting and send what was watched so far.
+    // Hidden tab (phone minimised, app switched) or the page going away (reload,
+    // close): stop counting, remember the position, and send what was watched as
+    // an urgent report — the browser may freeze or discard the page right after.
     useEffect(() => {
-        const onVisibility = () => {
+        const leave = () => {
             sample();
-            if (document.visibilityState === "hidden") flush();
+            savePosition();
+            flush(true);
+        };
+        const onVisibility = () => {
+            if (document.visibilityState === "hidden") leave();
+            else sample();
         };
         document.addEventListener("visibilitychange", onVisibility);
-        return () => document.removeEventListener("visibilitychange", onVisibility);
-    }, [sample, flush]);
+        window.addEventListener("pagehide", leave);
+        return () => {
+            document.removeEventListener("visibilitychange", onVisibility);
+            window.removeEventListener("pagehide", leave);
+        };
+    }, [sample, flush, savePosition]);
 
     useEffect(() => {
         let cancelled = false;
@@ -198,6 +227,8 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, 
                     fs: 1,
                     origin: window.location.origin,
                     enablejsapi: 1,
+                    // Resume where this lesson was left off.
+                    start: Math.max(0, Math.floor(startAtRef.current)),
                 },
                 events: {
                     onStateChange: (e: { data: number }) => {
@@ -212,6 +243,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, 
             cancelled = true;
             window.clearInterval(interval);
             sample();
+            savePosition();
             flush();
             try {
                 playerRef.current?.destroy?.();
@@ -220,7 +252,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, Props>(({ videoId, 
             }
             playerRef.current = null;
         };
-    }, [videoId, sample, flush]);
+    }, [videoId, sample, flush, savePosition]);
 
     return (
         <div className="aspect-video rounded-xl overflow-hidden border border-border bg-black shadow-elevated">
