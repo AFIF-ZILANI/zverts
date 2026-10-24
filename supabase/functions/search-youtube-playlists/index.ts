@@ -1,4 +1,5 @@
 import { classifyEducational } from "../_shared/content-guard.ts";
+import { anonKey } from "../_shared/keys.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -16,7 +17,7 @@ Deno.serve(async (req) => {
         const authHeader = req.headers.get("Authorization");
         if (!authHeader) return json({ error: "Unauthorized" }, 401);
         const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.45.0");
-        const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        const sb = createClient(Deno.env.get("SUPABASE_URL")!, anonKey(), {
             global: { headers: { Authorization: authHeader } },
         });
         const {

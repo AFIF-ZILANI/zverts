@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { anonKey, serviceRoleKey } from "../_shared/keys.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -56,7 +57,7 @@ Deno.serve(async (req) => {
         if (!user) return json({ error: "Unauthorized" }, 401);
 
         const url = Deno.env.get("SUPABASE_URL")!;
-        const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+        const anon = anonKey();
         const userClient = createClient(url, anon, {
             global: { headers: { Authorization: auth } },
         });
@@ -114,7 +115,7 @@ Deno.serve(async (req) => {
         const imageParts: Array<{ type: "image_url"; image_url: { url: string } }> = [];
         let pdfContext = "";
         if (attachments.length > 0) {
-            const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+            const admin = createClient(url, serviceRoleKey());
             for (const att of attachments as Array<{ path: string; mime: string; name?: string }>) {
                 if (!att?.path || typeof att.path !== "string") continue;
                 // Enforce path namespace: must start with "<user_id>/"
