@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RequireRole } from "@/components/RequireRole";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { EmptyState, ErrorNote, Initial, Panel } from "@/components/admin/parts";
+import { EmptyState, ErrorNote, Initial, Panel, Segmented } from "@/components/admin/parts";
+import { LearnersByCourse } from "@/components/admin/LearnersByCourse";
 import { timeAgo } from "@/components/admin/timeAgo";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -36,7 +37,10 @@ const fmtDate = (iso: string | null) =>
           })
         : "—";
 
+type View = "course" | "contacts";
+
 const SupportContactsInner = () => {
+    const [view, setView] = useState<View>("course");
     const [rows, setRows] = useState<Row[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
@@ -123,170 +127,205 @@ const SupportContactsInner = () => {
 
     return (
         <AdminShell
-            title="Support contacts"
+            title="Support"
             description={
-                rows
-                    ? `${filtered.length} of ${rows.length} learners shared a number for support.`
-                    : "Phone numbers learners shared for support."
+                view === "course"
+                    ? "Learners by course, how long they've been away, and a number to call."
+                    : rows
+                      ? `${filtered.length} of ${rows.length} learners shared a number for support.`
+                      : "Phone numbers learners shared for support."
             }
             actions={
-                <Button
-                    onClick={exportCSV}
-                    variant="outline"
-                    className="gap-2 rounded-full"
-                    disabled={!filtered.length}
-                >
-                    <Download className="h-4 w-4" /> Export CSV
-                </Button>
+                view === "contacts" && (
+                    <Button
+                        onClick={exportCSV}
+                        variant="outline"
+                        className="gap-2 rounded-full"
+                        disabled={!filtered.length}
+                    >
+                        <Download className="h-4 w-4" /> Export CSV
+                    </Button>
+                )
             }
         >
-            <form
-                className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center"
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    void load(search);
-                }}
-            >
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        placeholder="Search name, email, phone…"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="rounded-full pl-9"
-                    />
-                </div>
-                <div className="grid grid-cols-2 gap-2 sm:contents">
-                    <Input
-                        type="date"
-                        aria-label="From"
-                        value={from}
-                        onChange={(e) => setFrom(e.target.value)}
-                        className="rounded-full sm:w-40"
-                    />
-                    <Input
-                        type="date"
-                        aria-label="To"
-                        value={to}
-                        onChange={(e) => setTo(e.target.value)}
-                        className="rounded-full sm:w-40"
-                    />
-                </div>
-                <Button type="submit" className="rounded-full">
-                    Search
-                </Button>
-            </form>
+            <Segmented<View>
+                value={view}
+                onChange={setView}
+                className="w-full sm:w-auto"
+                options={[
+                    { value: "course", label: "By course" },
+                    { value: "contacts", label: "All contacts" },
+                ]}
+            />
+            {view === "course" ? (
+                <LearnersByCourse />
+            ) : (
+                <>
+                    <form
+                        className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-center"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            void load(search);
+                        }}
+                    >
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Search name, email, phone…"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="rounded-full pl-9"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 sm:contents">
+                            <Input
+                                type="date"
+                                aria-label="From"
+                                value={from}
+                                onChange={(e) => setFrom(e.target.value)}
+                                className="rounded-full sm:w-40"
+                            />
+                            <Input
+                                type="date"
+                                aria-label="To"
+                                value={to}
+                                onChange={(e) => setTo(e.target.value)}
+                                className="rounded-full sm:w-40"
+                            />
+                        </div>
+                        <Button type="submit" className="rounded-full">
+                            Search
+                        </Button>
+                    </form>
 
-            {error && <ErrorNote>Couldn't load contacts: {error}</ErrorNote>}
+                    {error && <ErrorNote>Couldn't load contacts: {error}</ErrorNote>}
 
-            <Panel>
-                {!rows ? (
-                    <div className="space-y-3 p-4 sm:p-5">
-                        {[0, 1, 2, 3].map((i) => (
-                            <Skeleton key={i} className="h-14 rounded-2xl" />
-                        ))}
-                    </div>
-                ) : filtered.length === 0 ? (
-                    <EmptyState icon={Phone}>{empty}</EmptyState>
-                ) : (
-                    <>
-                        {/* Laptops and up: a table. */}
-                        <div className="hidden overflow-x-auto lg:block">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b border-border/60 text-left text-xs font-medium text-muted-foreground">
-                                        <th className="px-5 py-2.5 font-medium">Learner</th>
-                                        <th className="px-3 py-2.5 font-medium">Phone</th>
-                                        <th className="px-3 py-2.5 font-medium">Plan</th>
-                                        <th className="px-3 py-2.5 font-medium">Joined</th>
-                                        <th className="px-3 py-2.5 font-medium">Submitted</th>
-                                        <th className="px-5 py-2.5 text-right font-medium">
-                                            Contact
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border/40">
+                    <Panel>
+                        {!rows ? (
+                            <div className="space-y-3 p-4 sm:p-5">
+                                {[0, 1, 2, 3].map((i) => (
+                                    <Skeleton key={i} className="h-14 rounded-2xl" />
+                                ))}
+                            </div>
+                        ) : filtered.length === 0 ? (
+                            <EmptyState icon={Phone}>{empty}</EmptyState>
+                        ) : (
+                            <>
+                                {/* Laptops and up: a table. */}
+                                <div className="hidden overflow-x-auto lg:block">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-border/60 text-left text-xs font-medium text-muted-foreground">
+                                                <th className="px-5 py-2.5 font-medium">Learner</th>
+                                                <th className="px-3 py-2.5 font-medium">Phone</th>
+                                                <th className="px-3 py-2.5 font-medium">Plan</th>
+                                                <th className="px-3 py-2.5 font-medium">Joined</th>
+                                                <th className="px-3 py-2.5 font-medium">
+                                                    Submitted
+                                                </th>
+                                                <th className="px-5 py-2.5 text-right font-medium">
+                                                    Contact
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border/40">
+                                            {filtered.map((r) => (
+                                                <tr
+                                                    key={r.id}
+                                                    className="hover:bg-foreground/[0.02]"
+                                                >
+                                                    <td className="px-5 py-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <Initial
+                                                                id={r.user_id}
+                                                                name={r.name}
+                                                                email={r.email}
+                                                                className="h-8 w-8 text-xs"
+                                                            />
+                                                            <div className="min-w-0">
+                                                                <div className="max-w-[220px] truncate font-medium">
+                                                                    {r.name}
+                                                                </div>
+                                                                <div className="max-w-[220px] truncate text-xs text-muted-foreground">
+                                                                    {r.email || "—"}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-3 font-mono text-xs">
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            {fullPhone(r)}
+                                                            {r.whatsapp_enabled && (
+                                                                <MessageCircle
+                                                                    className="h-3.5 w-3.5 text-primary"
+                                                                    aria-label="On WhatsApp"
+                                                                />
+                                                            )}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-3">
+                                                        <Plan paid={r.is_paid_user} />
+                                                    </td>
+                                                    <td className="px-3 py-3 text-xs text-muted-foreground">
+                                                        {fmtDate(r.joined_at)}
+                                                    </td>
+                                                    <td
+                                                        className="px-3 py-3 text-xs text-muted-foreground"
+                                                        title={new Date(
+                                                            r.submitted_at,
+                                                        ).toLocaleString()}
+                                                    >
+                                                        {timeAgo(r.submitted_at)}
+                                                    </td>
+                                                    <td className="px-5 py-3">
+                                                        <ContactActions r={r} onCopy={copy} />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Phones and small tablets: cards with one-tap call and WhatsApp. */}
+                                <ul className="divide-y divide-border/40 lg:hidden">
                                     {filtered.map((r) => (
-                                        <tr key={r.id} className="hover:bg-foreground/[0.02]">
-                                            <td className="px-5 py-3">
-                                                <div className="flex items-center gap-3">
-                                                    <Initial
-                                                        id={r.user_id}
-                                                        name={r.name}
-                                                        email={r.email}
-                                                        className="h-8 w-8 text-xs"
-                                                    />
-                                                    <div className="min-w-0">
-                                                        <div className="max-w-[220px] truncate font-medium">
-                                                            {r.name}
-                                                        </div>
-                                                        <div className="max-w-[220px] truncate text-xs text-muted-foreground">
-                                                            {r.email || "—"}
-                                                        </div>
+                                        <li key={r.id} className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <Initial
+                                                    id={r.user_id}
+                                                    name={r.name}
+                                                    email={r.email}
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="truncate font-medium">
+                                                        {r.name}
+                                                    </div>
+                                                    <div className="truncate text-xs text-muted-foreground">
+                                                        {r.email || "—"}
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td className="px-3 py-3 font-mono text-xs">
-                                                <span className="inline-flex items-center gap-1.5">
-                                                    {fullPhone(r)}
-                                                    {r.whatsapp_enabled && (
-                                                        <MessageCircle
-                                                            className="h-3.5 w-3.5 text-primary"
-                                                            aria-label="On WhatsApp"
-                                                        />
-                                                    )}
-                                                </span>
-                                            </td>
-                                            <td className="px-3 py-3">
                                                 <Plan paid={r.is_paid_user} />
-                                            </td>
-                                            <td className="px-3 py-3 text-xs text-muted-foreground">
-                                                {fmtDate(r.joined_at)}
-                                            </td>
-                                            <td
-                                                className="px-3 py-3 text-xs text-muted-foreground"
-                                                title={new Date(r.submitted_at).toLocaleString()}
-                                            >
-                                                {timeAgo(r.submitted_at)}
-                                            </td>
-                                            <td className="px-5 py-3">
+                                            </div>
+                                            <div className="mt-3 flex items-center justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <div className="font-mono text-sm">
+                                                        {fullPhone(r)}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        Submitted{" "}
+                                                        {timeAgo(r.submitted_at).toLowerCase()}
+                                                    </div>
+                                                </div>
                                                 <ContactActions r={r} onCopy={copy} />
-                                            </td>
-                                        </tr>
+                                            </div>
+                                        </li>
                                     ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Phones and small tablets: cards with one-tap call and WhatsApp. */}
-                        <ul className="divide-y divide-border/40 lg:hidden">
-                            {filtered.map((r) => (
-                                <li key={r.id} className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <Initial id={r.user_id} name={r.name} email={r.email} />
-                                        <div className="min-w-0 flex-1">
-                                            <div className="truncate font-medium">{r.name}</div>
-                                            <div className="truncate text-xs text-muted-foreground">
-                                                {r.email || "—"}
-                                            </div>
-                                        </div>
-                                        <Plan paid={r.is_paid_user} />
-                                    </div>
-                                    <div className="mt-3 flex items-center justify-between gap-2">
-                                        <div className="min-w-0">
-                                            <div className="font-mono text-sm">{fullPhone(r)}</div>
-                                            <div className="text-xs text-muted-foreground">
-                                                Submitted {timeAgo(r.submitted_at).toLowerCase()}
-                                            </div>
-                                        </div>
-                                        <ContactActions r={r} onCopy={copy} />
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    </>
-                )}
-            </Panel>
+                                </ul>
+                            </>
+                        )}
+                    </Panel>
+                </>
+            )}
         </AdminShell>
     );
 };

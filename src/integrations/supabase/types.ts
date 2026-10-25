@@ -1185,6 +1185,25 @@ export type Database = {
                 Returns: undefined;
             };
             admin_impact_stats: { Args: never; Returns: Json };
+            admin_learners_by_course: {
+                Args: never;
+                Returns: {
+                    country_code: string | null;
+                    course_key: string;
+                    course_title: string;
+                    email: string | null;
+                    inactive_days: number | null;
+                    last_active: string | null;
+                    name: string | null;
+                    phone_number: string | null;
+                    reminders_sent: number;
+                    thumbnail_url: string | null;
+                    user_id: string;
+                    videos_done: number;
+                    videos_total: number;
+                    whatsapp_enabled: boolean;
+                }[];
+            };
             admin_broadcast_notification: {
                 Args: {
                     _body: string;
