@@ -11,7 +11,6 @@ import { LearningMap } from "@/components/app/LearningMap";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import {
-    Calendar,
     CheckSquare,
     ChevronRight,
     Clock,
@@ -262,11 +261,8 @@ const Dashboard = () => {
         <AppShell>
             <section className="container max-w-6xl space-y-6 py-5 md:py-10">
                 {/* ── Hero ─────────────────────────────────────────────────────── */}
-                <div className="relative overflow-hidden rounded-[28px] border border-border bg-card shadow-card">
-                    <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
-                    <div className="pointer-events-none absolute -bottom-28 -left-16 h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
-
-                    <div className="relative p-5 sm:p-7">
+                <div className="rounded-[28px] border border-border bg-card shadow-card">
+                    <div className="p-5 sm:p-7">
                         <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0">
                                 <p className="text-sm text-muted-foreground">{today}</p>
@@ -413,7 +409,8 @@ const Dashboard = () => {
                             {/* ── Progress ─────────────────────────────────────── */}
                             <section>
                                 <SectionTitle title="Your progress" />
-                                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                                {/* Streak sits in the hero and active days on the week card below. */}
+                                <div className="grid grid-cols-2 gap-3">
                                     <StatCard
                                         icon={CheckSquare}
                                         label="Completed"
@@ -427,24 +424,6 @@ const Dashboard = () => {
                                         value={fmtTime(totalWatch)}
                                         sub="across all modules"
                                         tint="bg-sky-500/15 text-sky-500"
-                                    />
-                                    <StatCard
-                                        icon={Flame}
-                                        label="Streak"
-                                        value={userStats?.streak ?? 0}
-                                        sub={
-                                            (userStats?.streak ?? 0) > 0
-                                                ? "Keep it going"
-                                                : "Open the app daily"
-                                        }
-                                        tint="bg-orange-500/15 text-orange-500"
-                                    />
-                                    <StatCard
-                                        icon={Calendar}
-                                        label="Active days"
-                                        value={activeDays}
-                                        sub="this week"
-                                        tint="bg-violet-500/15 text-violet-500"
                                     />
                                 </div>
 
@@ -497,8 +476,8 @@ const DashboardSkeleton = () => (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
             <Skeleton className="h-[100px] rounded-3xl" />
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                {[0, 1, 2, 3].map((i) => (
+            <div className="grid grid-cols-2 gap-3">
+                {[0, 1].map((i) => (
                     <Skeleton key={i} className="h-[108px] rounded-2xl" />
                 ))}
             </div>
