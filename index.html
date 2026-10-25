@@ -5,15 +5,19 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <meta name="google-site-verification" content="zC6vX5nkIXwSxbnMEQaOql0Ttn3tcoRztHxqBfPN1UA" />
 
-        <title>ZverTs — Disciplined Learning, Verified Progress</title>
+        <!-- seo:start — replaced per public page at build time (vite.config.ts → seoPages) -->
+        <title>ZverTs — Turn YouTube Playlists into Structured Courses</title>
         <meta
             name="description"
-            content="A free, sequential learning platform with strict watch-time tracking, attendance, and certificates. Master web development one module at a time."
+            content="ZverTs turns any YouTube playlist into a structured course: lessons unlock in order, real watch time is tracked, and you earn streaks, XP and a certificate. Free to start." data-seo="static"
         />
-
-        <!-- Canonical & base URL -->
-        <link rel="canonical" href="https://zverts.app/" />
-
+        <link rel="canonical" href="https://www.zverts.com/" data-seo="static" />
+        <meta property="og:url" content="https://www.zverts.com/" data-seo="static" />
+        <meta property="og:title" content="ZverTs — Turn YouTube Playlists into Structured Courses" data-seo="static" />
+        <meta property="og:description" content="ZverTs turns any YouTube playlist into a structured course: lessons unlock in order, real watch time is tracked, and you earn streaks, XP and a certificate. Free to start." data-seo="static" />
+        <meta name="twitter:title" content="ZverTs — Turn YouTube Playlists into Structured Courses" data-seo="static" />
+        <meta name="twitter:description" content="ZverTs turns any YouTube playlist into a structured course: lessons unlock in order, real watch time is tracked, and you earn streaks, XP and a certificate. Free to start." data-seo="static" />
+        <!-- seo:end -->
         <!-- PWA -->
         <meta name="application-name" content="ZverTs" />
         <meta name="apple-mobile-web-app-title" content="ZverTs" />
@@ -22,37 +26,25 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="theme-color" content="#121216" />
         <link rel="manifest" href="/manifest.json?v=3" />
-
         <!-- Icons -->
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-
-        <!-- Author -->
-        <meta name="author" content="Zverts" />
-        <meta name="robots" content="index, follow" />
-        <meta name="keywords" content="learn web development, free coding courses, gamified learning, watch-time tracking, coding certificates, sequential learning, Bangladesh" />
-
-        <!-- Open Graph -->
+        <meta name="author" content="ZverTs" />
+        <meta name="robots" content="index, follow, max-image-preview:large" />
+        <!-- Open Graph / X (page-specific tags are in the seo block above) -->
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="ZverTs" />
-        <meta property="og:title" content="ZverTs — Disciplined Learning, Verified Progress" />
-        <meta property="og:description" content="A free, sequential learning platform with strict watch-time tracking, attendance, and certificates. Master web development one module at a time." />
-        <meta property="og:url" content="https://zverts.app/" />
-        <meta property="og:image" content="https://zverts.app/og-image.webp" />
+        <meta property="og:image" content="https://www.zverts.com/og-image.webp" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content="ZverTs — Disciplined Learning, Verified Progress" />
+        <meta property="og:image:alt" content="ZverTs — Turn YouTube playlists into structured courses" />
         <meta property="og:locale" content="en_US" />
-
-        <!-- Twitter / X Card -->
+        <meta property="og:locale:alternate" content="bn_BD" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@zverts" />
-        <meta name="twitter:title" content="ZverTs — Disciplined Learning, Verified Progress" />
-        <meta name="twitter:description" content="A free, sequential learning platform with strict watch-time tracking, attendance, and certificates. Master web development one module at a time." />
-        <meta name="twitter:image" content="https://zverts.app/og-image.webp" />
-        <meta name="twitter:image:alt" content="ZverTs — Disciplined Learning, Verified Progress" />
-
+        <meta name="twitter:image" content="https://www.zverts.com/og-image.webp" />
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="ZverTs for AI assistants" />
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -71,77 +63,8 @@
             />
         </noscript>
 
-        <!-- Structured Data — WebSite (enables sitelinks searchbox) -->
-        <script type="application/ld+json">
-        {
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            "name": "ZverTs",
-            "url": "https://zverts.app",
-            "description": "A free, sequential learning platform with strict watch-time tracking, attendance, and certificates.",
-            "potentialAction": {
-                "@type": "SearchAction",
-                "target": {
-                    "@type": "EntryPoint",
-                    "urlTemplate": "https://zverts.app/search?q={search_term_string}"
-                },
-                "query-input": "required name=search_term_string"
-            }
-        }
-        </script>
 
-        <!-- Structured Data — Organization -->
-        <script type="application/ld+json">
-        {
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            "name": "ZverTs",
-            "url": "https://zverts.app",
-            "logo": "https://zverts.app/logo.png",
-            "email": "zvertsofficial@gmail.com",
-            "sameAs": [],
-            "contactPoint": {
-                "@type": "ContactPoint",
-                "email": "zvertsofficial@gmail.com",
-                "contactType": "customer support",
-                "availableLanguage": ["English", "Bengali"]
-            }
-        }
-        </script>
 
-        <!-- Structured Data — EducationalOrganization / WebApplication -->
-        <script type="application/ld+json">
-        {
-            "@context": "https://schema.org",
-            "@type": ["WebApplication", "EducationalOrganization"],
-            "name": "ZverTs",
-            "url": "https://zverts.app",
-            "applicationCategory": "EducationApplication",
-            "operatingSystem": "Any",
-            "isAccessibleForFree": true,
-            "description": "A free gamified learning platform that turns YouTube playlists into structured courses with XP, streaks, badges, and certificates.",
-            "offers": {
-                "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "BDT"
-            },
-            "featureList": [
-                "Sequential course modules",
-                "Strict watch-time tracking",
-                "Attendance system",
-                "Daily watch-time goals",
-                "XP and streak system",
-                "Completion certificates",
-                "In-browser code runner (C, C++, Python)",
-                "Leaderboards"
-            ],
-            "inLanguage": ["en", "bn"],
-            "audience": {
-                "@type": "Audience",
-                "audienceType": "Students and self-learners"
-            }
-        }
-        </script>
 
         <!-- Google Analytics -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-SC178QVMZZ"></script>

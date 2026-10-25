@@ -1,7 +1,7 @@
 {
     "name": "ZverTs — Disciplined Learning",
     "short_name": "ZverTs",
-    "description": "Disciplined learning, verified progress. Master web development one module at a time with strict watch-time tracking, streaks, and certificates.",
+    "description": "Turn any YouTube playlist into a structured course: lessons in order, real watch-time tracking, streaks and certificates.",
     "start_url": "/dashboard?source=pwa",
     "scope": "/",
     "display": "standalone",

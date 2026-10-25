@@ -5,7 +5,7 @@
 //     On install, every route page's JS/CSS from /precache.json (written at build
 //     time) is cached too, so pages open offline even if never visited.
 //     The page registers /sw.js?v=<build id>, so each deploy installs afresh.
-//   - Page navigations: offline, the cached app shell (/index.html) at once;
+//   - Page navigations: offline, the cached app shell (/app.html) at once;
 //     online, the network so a new deploy is picked up, but if it hasn't
 //     answered within NETWORK_WAIT_MS the cached shell is used instead.
 //   - Logo, icons and manifest (SHELL_URLS) are network-first with a cache fallback.
@@ -21,7 +21,7 @@
 //     MEDIA_CACHE, cache-first, capped at MEDIA_LIMIT entries.
 //   - Everything else (Supabase writes, YouTube, /version.json, analytics) is never touched.
 
-const SHELL_CACHE = "zverts-shell-v1";
+const SHELL_CACHE = "zverts-shell-v2"; // v2: the shell is /app.html, not /
 const ASSET_CACHE = "zverts-assets-v1";
 const RUNNER_CACHE = "zverts-runner-v1"; // keep in sync with src/components/app/code-runner/cdn.ts
 const RUNNER_MANIFEST = "/runner-assets.json";
@@ -160,8 +160,9 @@ const loadRunnerManifest = async () => {
     runnerManifest = { files: new Set(data?.files ?? []), cdn: data?.cdn ?? [] };
     return runnerManifest;
 };
+// /app.html is the app shell (public pages have their own pre-rendered HTML).
 const SHELL_URLS = [
-    "/",
+    "/app.html",
     "/manifest.json",
     "/android-chrome-192x192.png",
     "/hero-light.svg",
@@ -304,22 +305,16 @@ self.addEventListener("fetch", (event) => {
         event.respondWith(
             fastest(
                 event,
-                () => caches.match("/", { cacheName: SHELL_CACHE, ignoreVary: true }),
-                () =>
-                    fetch(req).then((res) => {
-                        if (res.ok) {
-                            const copy = res.clone();
-                            event.waitUntil(caches.open(SHELL_CACHE).then((c) => c.put("/", copy)));
-                        }
-                        return res;
-                    }),
+                () => caches.match("/app.html", { cacheName: SHELL_CACHE, ignoreVary: true }),
+                // The shell is refreshed when each new build's worker installs.
+                () => fetch(req),
             ),
         );
         return;
     }
 
     // Logo, icons and manifest: fresh when online, from the shell cache offline or on a slow network.
-    if (SHELL_URLS.includes(url.pathname) && url.pathname !== "/") {
+    if (SHELL_URLS.includes(url.pathname) && url.pathname !== "/app.html") {
         event.respondWith(
             fastest(
                 event,

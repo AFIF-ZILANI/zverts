@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
+import { DEFAULT_IMAGE, SITE } from "@/content/seo";
 
 interface SEOProps {
     title: string;
@@ -14,8 +16,7 @@ interface SEOProps {
     modifiedTime?: string;
 }
 
-const SITE = "https://zverts.app";
-const DEFAULT_OG_IMAGE = `${SITE}/og-image.webp`;
+const DEFAULT_OG_IMAGE = DEFAULT_IMAGE;
 const DEFAULT_OG_IMAGE_ALT = "ZverTs — Disciplined Learning, Verified Progress";
 const TWITTER_HANDLE = "@zverts";
 
@@ -36,6 +37,12 @@ export const SEO = ({
     const ogImage = image ?? DEFAULT_OG_IMAGE;
     const ogImageAlt = imageAlt ?? DEFAULT_OG_IMAGE_ALT;
     const ldArr = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+
+    // Public pages arrive with pre-rendered tags (vite.config.ts → seoPages);
+    // drop them once these take over, so there's one of each.
+    useEffect(() => {
+        document.querySelectorAll('[data-seo="static"]').forEach((el) => el.remove());
+    }, []);
 
     return (
         <Helmet>
