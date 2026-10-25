@@ -59,6 +59,10 @@
         --glass-strong: hsl(0 0% 100% / 0.82);
         --glass-border: hsl(240 10% 10% / 0.08);
         --glass-filter: blur(20px) saturate(170%);
+        /* Desktop header: the recessed track, the raised active lens and its lit edge. */
+        --glass-well: hsl(150 10% 40% / 0.07);
+        --glass-lens: hsl(0 0% 100% / 0.85);
+        --glass-highlight: hsl(0 0% 100% / 0.75);
         --ambient:
             radial-gradient(40rem 30rem at 10% -5%, hsl(142 71% 45% / 0.16), transparent 70%),
             radial-gradient(36rem 28rem at 100% 25%, hsl(190 85% 50% / 0.12), transparent 70%),
@@ -123,6 +127,9 @@
         --glass-bg: hsl(150 10% 14% / 0.5);
         --glass-strong: hsl(150 10% 10% / 0.8);
         --glass-border: hsl(0 0% 100% / 0.09);
+        --glass-well: hsl(0 0% 0% / 0.25);
+        --glass-lens: hsl(0 0% 100% / 0.09);
+        --glass-highlight: hsl(0 0% 100% / 0.1);
         --ambient:
             radial-gradient(40rem 30rem at 10% -5%, hsl(142 71% 45% / 0.14), transparent 70%),
             radial-gradient(36rem 28rem at 100% 25%, hsl(190 85% 45% / 0.1), transparent 70%),
@@ -205,6 +212,12 @@
 :root {
     --app-header-h: calc(3.5rem + env(safe-area-inset-top));
     --app-bottom-inset: env(safe-area-inset-bottom);
+}
+@media (min-width: 768px) {
+    :root {
+        /* the floating header capsule: 3.5rem tall, 0.75rem below the top */
+        --app-header-h: calc(4.25rem + env(safe-area-inset-top));
+    }
 }
 @media (max-width: 767px) {
     body[data-bottom-nav] {
@@ -307,6 +320,28 @@ body::before {
 }
 .glass-bar {
     border-color: var(--glass-border);
+}
+
+/* Desktop header (Apple-style liquid glass): the bar floats as a capsule with a
+   lit top edge; nav and actions sit in recessed wells, the active tab on a
+   raised lens. */
+@media (min-width: 768px) {
+    .glass-capsule {
+        box-shadow:
+            inset 0 1px 0 var(--glass-highlight),
+            var(--shadow-elevated);
+    }
+}
+.glass-well {
+    background-color: var(--glass-well);
+    box-shadow: inset 0 1px 2px hsl(0 0% 0% / 0.06), inset 0 0 0 1px var(--glass-border);
+}
+.glass-lens {
+    background-color: var(--glass-lens);
+    box-shadow:
+        inset 0 1px 0 var(--glass-highlight),
+        inset 0 0 0 1px var(--glass-border),
+        0 4px 12px -4px hsl(150 30% 8% / 0.22);
 }
 
 @media (prefers-reduced-transparency: reduce) {
