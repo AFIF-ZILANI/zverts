@@ -103,7 +103,7 @@ export const SiteFooter = () => {
                     <span>
                         A product of{" "}
                         <a
-                            href="https://zerod.vercel.app"
+                            href="https://www.zerod.bd/"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-medium text-foreground/80 hover:text-primary"

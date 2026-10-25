@@ -3,6 +3,7 @@ import { Navigate, Link } from "react-router-dom";
 import { AppShell } from "@/components/app/AppShell";
 import { SEO } from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
+import { friendlyError, recall, remember } from "@/lib/offline/saved";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProgressRing } from "@/components/app/ProgressRing";
@@ -285,12 +286,18 @@ const Growth = () => {
             if (g.error) throw g.error;
             setMission(m.data as Mission);
             setGrowth(g.data as GrowthData);
+            if (user) remember(user.id, "growth", { mission: m.data, growth: g.data });
         } catch (e: unknown) {
-            setError((e as Error)?.message ?? "Failed to load");
+            // Offline: show the last mission and stats seen on this device.
+            const saved = user && recall<{ mission: Mission; growth: GrowthData }>(user.id, "growth");
+            if (saved) {
+                setMission(saved.data.mission);
+                setGrowth(saved.data.growth);
+            } else setError(friendlyError(e));
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user]);
 
     const loadLeaderboard = useCallback(async () => {
         const { data } = await supabase.rpc("list_public_profiles", { _limit: 100 });
