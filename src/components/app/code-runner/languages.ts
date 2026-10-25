@@ -6,38 +6,6 @@ export const LANGUAGES: { id: RunLanguage; label: string; file: string; monaco: 
     { id: "python", label: "Python", file: "main.py", monaco: "python" },
 ];
 
-export const TEMPLATES: Record<RunLanguage, string> = {
-    c: `#include <stdio.h>
-
-int main(void) {
-    char name[100];
-    if (scanf("%99s", name) == 1)
-        printf("Hello, %s!\\n", name);
-    else
-        printf("Hello, World!\\n");
-    return 0;
-}
-`,
-    cpp: `#include <iostream>
-#include <string>
-using namespace std;
-
-int main() {
-    string name;
-    if (cin >> name)
-        cout << "Hello, " << name << "!" << endl;
-    else
-        cout << "Hello, World!" << endl;
-    return 0;
-}
-`,
-    python: `import sys
-
-name = sys.stdin.readline().strip() or "World"
-print(f"Hello, {name}!")
-`,
-};
-
 export interface RunResult {
     status: { id: number; description: string };
     stdout: string;

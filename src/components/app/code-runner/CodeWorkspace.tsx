@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { monaco } from "./monaco";
 import { preloadPython, runPython } from "./pythonRunner";
 import { ClangUnavailable, preloadClang, runNative, setClangProgress } from "./clangRunner";
-import { ACCEPTED, LANGUAGES, TEMPLATES, type RunLanguage, type RunResult } from "./languages";
+import { ACCEPTED, LANGUAGES, type RunLanguage, type RunResult } from "./languages";
 import { SymbolBar } from "./SymbolBar";
 import { InputPrompt } from "./InputPrompt";
 import { OfflineStatus } from "./OfflineStatus";
@@ -39,8 +39,7 @@ const useCoarsePointer = () => {
     return coarse;
 };
 
-// Per-viewer drafts: code is kept per module + language in localStorage.
-const codeKey = (moduleId: string, lang: RunLanguage) => `zverts.code.${moduleId}.${lang}`;
+// Only the language choice is remembered; code always starts empty.
 const langKey = (moduleId: string) => `zverts.code.${moduleId}.lang`;
 const read = (k: string) => {
     try {
@@ -53,7 +52,7 @@ const write = (k: string, v: string) => {
     try {
         localStorage.setItem(k, v);
     } catch {
-        /* storage unavailable — drafts just won't persist */
+        /* storage unavailable — the language choice just won't persist */
     }
 };
 
@@ -68,7 +67,7 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         const saved = read(langKey(moduleId));
         return isLang(saved) ? saved : "cpp";
     });
-    const [code, setCode] = useState(() => read(codeKey(moduleId, lang)) ?? TEMPLATES[lang]);
+    const [code, setCode] = useState("");
     const [stdin, setStdin] = useState("");
     const [running, setRunning] = useState(false);
     const [result, setResult] = useState<RunResult | null>(null);
@@ -96,19 +95,14 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
 
     const meta = LANGUAGES.find((l) => l.id === lang)!;
 
-    useEffect(() => {
-        write(codeKey(moduleId, lang), code);
-    }, [moduleId, lang, code]);
-
     const switchLang = (next: RunLanguage) => {
         setLang(next);
         write(langKey(moduleId), next);
-        setCode(read(codeKey(moduleId, next)) ?? TEMPLATES[next]);
         setResult(null);
     };
 
     const reset = () => {
-        setCode(TEMPLATES[lang]);
+        setCode("");
         setResult(null);
     };
 
@@ -277,11 +271,11 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                         className="h-9 w-9 p-0 sm:h-8 sm:w-auto sm:px-3 text-xs"
                         onClick={reset}
                         disabled={running}
-                        title="Reset to starter code"
-                        aria-label="Reset to starter code"
+                        title="Clear code"
+                        aria-label="Clear code"
                     >
                         <RotateCcw className="h-4 w-4 sm:h-3.5 sm:w-3.5 sm:mr-1" />
-                        <span className="hidden sm:inline">Reset</span>
+                        <span className="hidden sm:inline">Clear</span>
                     </Button>
                     <Button
                         size="sm"
@@ -330,6 +324,7 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                     theme={resolvedTheme === "light" ? "vs" : "vs-dark"}
                     loading={<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
                     options={{
+                        placeholder: `Write your ${meta.label} code here…`,
                         fontSize: isMobile ? 13 : 14,
                         fontFamily:
                             "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
