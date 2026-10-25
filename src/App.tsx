@@ -54,6 +54,7 @@ const AdminUsers = lazyWithRetry(() => import("./pages/admin/Users.tsx"));
 const AdminManagement = lazyWithRetry(() => import("./pages/admin/AdminManagement.tsx"));
 const AdminBroadcast = lazyWithRetry(() => import("./pages/admin/Broadcast.tsx"));
 const AdminSupportContacts = lazyWithRetry(() => import("./pages/admin/SupportContacts.tsx"));
+const AdminImpact = lazyWithRetry(() => import("./pages/admin/Impact.tsx"));
 
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
 const Info = lazyWithRetry(() => import("./pages/Info.tsx"));
@@ -131,6 +132,7 @@ const App = () => (
                                     <Route path="/admin/users" element={<AdminUsers />} />
                                     <Route path="/admin/management" element={<AdminManagement />} />
                                     <Route path="/admin/broadcast" element={<AdminBroadcast />} />
+                                    <Route path="/admin/impact" element={<AdminImpact />} />
                                     <Route
                                         path="/admin/support-contacts"
                                         element={<AdminSupportContacts />}

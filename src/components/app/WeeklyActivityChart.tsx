@@ -1,10 +1,21 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, Tooltip, Cell } from "recharts";
 
 // Colours go through classes: SVG fill attributes can't read CSS variables.
-export const WeeklyActivityChart = ({ data }: { data: { day: string; minutes: number }[] }) => {
+export const WeeklyActivityChart = ({
+    data,
+    unit = "min",
+    label = "Watched",
+    height = 150,
+}: {
+    data: { day: string; minutes: number }[];
+    /** Tooltip wording for the value, e.g. "12 min · Watched". */
+    unit?: string;
+    label?: string;
+    height?: number;
+}) => {
     const today = data.length - 1;
     return (
-        <ResponsiveContainer width="100%" height={150}>
+        <ResponsiveContainer width="100%" height={height}>
             <BarChart data={data} margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
                 <XAxis
                     dataKey="day"
@@ -21,7 +32,7 @@ export const WeeklyActivityChart = ({ data }: { data: { day: string; minutes: nu
                         fontSize: 12,
                     }}
                     labelStyle={{ color: "hsl(var(--foreground))" }}
-                    formatter={(v: number) => [`${v} min`, "Watched"]}
+                    formatter={(v: number) => [`${v} ${unit}`, label]}
                 />
                 <Bar dataKey="minutes" radius={[8, 8, 8, 8]} maxBarSize={36} minPointSize={4}>
                     {data.map((_, i) => (
