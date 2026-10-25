@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { rankRows, medalColor, type RankRow } from "@/lib/ranking";
+import { friendlyError, recall, remember } from "@/lib/offline/saved";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
     Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
@@ -230,8 +231,11 @@ const Leaderboard = () => {
     const loadUniversal = useCallback(async () => {
         setError(null);
         const { data, error: e } = await supabase.rpc("list_public_profiles", { _limit: 100 });
-        if (e) setError(e.message);
-        setRows((data ?? []) as RankRow[]);
+        // Rankings are public, so one saved copy serves everyone on this device.
+        if (!e) remember("public", "leaderboard", data ?? []);
+        const saved = e ? recall<RankRow[]>("public", "leaderboard") : null;
+        if (e && !saved) setError(friendlyError(e));
+        setRows(((e ? saved?.data : data) ?? []) as RankRow[]);
         setLoading(false);
     }, []);
 
@@ -257,7 +261,9 @@ const Leaderboard = () => {
         (supabase.rpc as any)("get_leaderboard_playlists").then(
             ({ data, error: e }: { data: PlaylistMeta[] | null; error: unknown }) => {
                 setPlaylistsLoading(false);
-                const list = (data ?? []) as PlaylistMeta[];
+                if (!e) remember("public", "leaderboard-playlists", data ?? []);
+                const list = ((e ? recall<PlaylistMeta[]>("public", "leaderboard-playlists")?.data : data) ??
+                    []) as PlaylistMeta[];
                 setPlaylists(list);
                 // auto-select the first playlist if there's only one
                 if (!e && list.length === 1 && !autoSelectedRef.current) {
@@ -277,7 +283,9 @@ const Leaderboard = () => {
             { _source_playlist_id: id, _limit: 100 },
         );
         setPlaylistLoading(false);
-        if (!e) setPlaylistRows(rankPlaylistRows((data ?? []) as PlaylistRow[]));
+        if (!e) remember("public", `leaderboard-playlist:${id}`, data ?? []);
+        const rows = e ? recall<PlaylistRow[]>("public", `leaderboard-playlist:${id}`)?.data : data;
+        if (!e || rows) setPlaylistRows(rankPlaylistRows((rows ?? []) as PlaylistRow[]));
     }, []);
 
     useEffect(() => {
@@ -348,7 +356,7 @@ const Leaderboard = () => {
                             <ListSkeleton />
                         ) : error ? (
                             <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-6 text-sm text-destructive">
-                                Couldn't load rankings: {error}
+                                {error}
                             </div>
                         ) : ranked.length === 0 ? (
                             <div className="rounded-2xl border border-border bg-gradient-card shadow-card p-12 text-center text-muted-foreground text-sm">
