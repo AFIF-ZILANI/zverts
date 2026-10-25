@@ -29,7 +29,7 @@ export function useAdminPaymentAlerts(isAdmin: boolean) {
             if (!lastSeenRef.current) return;
             const { data } = await supabase
                 .from("payments")
-                .select("id,user_id,amount,method,trx_id,package_type,status,created_at")
+                .select("id,user_id,amount,method,trx_id,credits,status,created_at")
                 .eq("status", "pending")
                 .gt("created_at", lastSeenRef.current)
                 .order("created_at", { ascending: true })
@@ -49,7 +49,7 @@ export function useAdminPaymentAlerts(isAdmin: boolean) {
                 } catch { /* profile fetch is best-effort */ }
                 if (cancelled) return;
                 toast(`💸 ${label}`, {
-                    description: `trx: ${row.trx_id} · ${row.package_type}`,
+                    description: `trx: ${row.trx_id} · ${row.credits} credits`,
                     duration: 12000,
                     action: { label: "Review", onClick: () => navigate("/admin/payments") },
                 });

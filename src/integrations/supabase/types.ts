@@ -728,7 +728,6 @@ export type Database = {
                     credits: number;
                     id: string;
                     method: Database["public"]["Enums"]["payment_method"];
-                    package_type: Database["public"]["Enums"]["package_type"];
                     refund_note: string | null;
                     refund_reason: string | null;
                     refund_requested_at: string | null;
@@ -751,7 +750,6 @@ export type Database = {
                     credits: number;
                     id?: string;
                     method: Database["public"]["Enums"]["payment_method"];
-                    package_type: Database["public"]["Enums"]["package_type"];
                     refund_note?: string | null;
                     refund_reason?: string | null;
                     refund_requested_at?: string | null;
@@ -774,7 +772,6 @@ export type Database = {
                     credits?: number;
                     id?: string;
                     method?: Database["public"]["Enums"]["payment_method"];
-                    package_type?: Database["public"]["Enums"]["package_type"];
                     refund_note?: string | null;
                     refund_reason?: string | null;
                     refund_requested_at?: string | null;
@@ -1371,7 +1368,6 @@ export type Database = {
             submit_payment: {
                 Args: {
                     _method: Database["public"]["Enums"]["payment_method"];
-                    _package: Database["public"]["Enums"]["package_type"];
                     _sender_number: string;
                     _trx_id: string;
                 };
@@ -1457,7 +1453,6 @@ export type Database = {
                 | "unfinished_lesson"
                 | "quiz_reminder";
             notification_priority: "critical" | "high" | "normal" | "low";
-            package_type: "single" | "mini" | "pro";
             payment_method: "bkash" | "nagad" | "rocket";
             payment_status:
                 | "pending"
@@ -1624,7 +1619,6 @@ export const Constants = {
                 "quiz_reminder",
             ],
             notification_priority: ["critical", "high", "normal", "low"],
-            package_type: ["single", "mini", "pro"],
             payment_method: ["bkash", "nagad", "rocket"],
             payment_status: [
                 "pending",

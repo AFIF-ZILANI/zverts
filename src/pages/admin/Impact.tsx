@@ -1,12 +1,10 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
 import { RequireRole } from "@/components/RequireRole";
-import { AppShell } from "@/components/app/AppShell";
+import { AdminShell } from "@/components/admin/AdminShell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import {
-    ArrowLeft,
     Award,
     BookOpen,
     CheckCircle2,
@@ -111,230 +109,242 @@ const ImpactInner = () => {
         day: dayLabel(d.date),
         minutes: Math.round(d.seconds / 60),
     }));
-    const signupWeeks = s?.weekly_signups.map((w) => ({ day: weekLabel(w.week), minutes: w.count }));
+    const signupWeeks = s?.weekly_signups.map((w) => ({
+        day: weekLabel(w.week),
+        minutes: w.count,
+    }));
     const minutes30d = watchedDays?.reduce((sum, d) => sum + d.minutes, 0) ?? 0;
 
     return (
-        <AppShell>
-            <section className="container max-w-6xl space-y-6 py-8 md:py-10">
-                {/* ── Header ───────────────────────────────────────────────── */}
-                <div>
-                    <Link
-                        to="/admin"
-                        className="inline-flex items-center gap-1 font-mono text-sm text-muted-foreground hover:text-foreground"
+        <AdminShell
+            title="ZverTs Impact"
+            description="Everything learners have built and watched on ZverTs so far."
+            actions={
+                <>
+                    {loadedAt && (
+                        <span className="text-xs text-muted-foreground">
+                            Updated{" "}
+                            {loadedAt.toLocaleTimeString([], {
+                                hour: "numeric",
+                                minute: "2-digit",
+                            })}
+                        </span>
+                    )}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void load()}
+                        disabled={refreshing}
+                        className="gap-1.5 rounded-full"
                     >
-                        <ArrowLeft className="h-3 w-3" /> Back to Admin
-                    </Link>
-                    <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-                        <div>
-                            <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                                / admin · impact
-                            </div>
-                            <h1 className="mt-1.5 font-display text-3xl font-semibold tracking-tight md:text-4xl">
-                                ZverTs Impact
-                            </h1>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Everything learners have built and watched on ZverTs so far.
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            {loadedAt && (
-                                <span className="font-mono text-xs text-muted-foreground">
-                                    Updated{" "}
-                                    {loadedAt.toLocaleTimeString([], {
-                                        hour: "numeric",
-                                        minute: "2-digit",
-                                    })}
-                                </span>
-                            )}
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => void load()}
-                                disabled={refreshing}
-                                className="gap-1.5 rounded-full"
-                            >
-                                <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
-                                Refresh
-                            </Button>
-                        </div>
-                    </div>
+                        <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
+                        Refresh
+                    </Button>
+                </>
+            }
+        >
+            {error && (
+                <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-5 text-sm text-destructive">
+                    Couldn't load the impact numbers: {error}
                 </div>
+            )}
 
-                {error && (
-                    <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-5 text-sm text-destructive">
-                        Couldn't load the impact numbers: {error}
+            {!s ? (
+                !error && <ImpactSkeleton />
+            ) : (
+                <>
+                    {/* ── Headline ─────────────────────────────────────── */}
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <Headline
+                            icon={Clock}
+                            tint="bg-sky-500/15 text-sky-500"
+                            label="Hours watched"
+                            value={hours(s.watch_seconds)}
+                            sub={`${hours(s.watch_seconds_7d)} in the last 7 days`}
+                        />
+                        <Headline
+                            icon={BookOpen}
+                            tint="bg-primary/15 text-primary"
+                            label="Courses created"
+                            value={num(s.courses)}
+                            sub={`by ${num(s.course_creators)} learners`}
+                        />
+                        <Headline
+                            icon={Users}
+                            tint="bg-violet-500/15 text-violet-500"
+                            label="Learners"
+                            value={num(s.learners)}
+                            sub={`+${num(s.learners_new_30d)} in the last 30 days`}
+                        />
+                        <Headline
+                            icon={CheckCircle2}
+                            tint="bg-emerald-500/15 text-emerald-500"
+                            label="Videos completed"
+                            value={num(s.modules_completed)}
+                            sub={`${num(s.certificates)} course certificate${s.certificates === 1 ? "" : "s"}`}
+                        />
                     </div>
-                )}
 
-                {!s ? (
-                    !error && <ImpactSkeleton />
-                ) : (
-                    <>
-                        {/* ── Headline ─────────────────────────────────────── */}
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            <Headline
+                    {/* ── Watch time trend ─────────────────────────────── */}
+                    <div className="rounded-3xl border border-border bg-card p-5 shadow-card">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <div className="text-sm font-medium text-muted-foreground">
+                                    Watch time · last 30 days
+                                </div>
+                                <div className="mt-0.5 font-display text-[28px] font-semibold leading-tight tabular-nums">
+                                    {num(minutes30d)}
+                                    <span className="ml-1 font-sans text-sm font-normal text-muted-foreground">
+                                        min watched
+                                    </span>
+                                </div>
+                            </div>
+                            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium tabular-nums text-primary">
+                                {num(s.watchers)} learners have watched
+                            </span>
+                        </div>
+                        <div className="mt-3">
+                            <Suspense fallback={<div className="h-[180px]" />}>
+                                <WeeklyActivityChart data={watchedDays ?? []} height={180} />
+                            </Suspense>
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                            Days follow Bangladesh time. Daily totals start from when genuine watch
+                            tracking went live; the all-time hours above include earlier viewing.
+                        </p>
+                    </div>
+
+                    {/* ── Breakdown ────────────────────────────────────── */}
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                        <Group title="Content library">
+                            <Row icon={Library} label="Courses" value={num(s.courses)} />
+                            <Row icon={BookOpen} label="Videos imported" value={num(s.videos)} />
+                            <Row
                                 icon={Clock}
-                                tint="bg-sky-500/15 text-sky-500"
-                                label="Hours watched"
-                                value={hours(s.watch_seconds)}
-                                sub={`${hours(s.watch_seconds_7d)} in the last 7 days`}
+                                label="Content available"
+                                value={hours(s.content_seconds)}
                             />
-                            <Headline
-                                icon={BookOpen}
-                                tint="bg-primary/15 text-primary"
-                                label="Courses created"
-                                value={num(s.courses)}
-                                sub={`by ${num(s.course_creators)} learners`}
-                            />
-                            <Headline
+                            <Row
                                 icon={Users}
-                                tint="bg-violet-500/15 text-violet-500"
-                                label="Learners"
-                                value={num(s.learners)}
-                                sub={`+${num(s.learners_new_30d)} in the last 30 days`}
+                                label="Course creators"
+                                value={num(s.course_creators)}
                             />
-                            <Headline
+                        </Group>
+                        <Group title="Learning">
+                            <Row
                                 icon={CheckCircle2}
-                                tint="bg-emerald-500/15 text-emerald-500"
                                 label="Videos completed"
                                 value={num(s.modules_completed)}
-                                sub={`${num(s.certificates)} course certificate${s.certificates === 1 ? "" : "s"}`}
                             />
+                            <Row
+                                icon={GraduationCap}
+                                label="Certificates issued"
+                                value={num(s.certificates)}
+                            />
+                            <Row icon={Award} label="Badges unlocked" value={num(s.badges)} />
+                            <Row
+                                icon={Target}
+                                label="Daily missions completed"
+                                value={num(s.missions_completed)}
+                            />
+                            <Row icon={NotebookPen} label="Notes written" value={num(s.notes)} />
+                        </Group>
+                        <Group title="Engagement">
+                            <Row icon={Users} label="Active this week" value={num(s.active_7d)} />
+                            <Row icon={Users} label="Active this month" value={num(s.active_30d)} />
+                            <Row icon={Flame} label="On a live streak" value={num(s.on_streak)} />
+                            <Row
+                                icon={Flame}
+                                label="Longest streak"
+                                value={`${num(s.longest_streak)} day${s.longest_streak === 1 ? "" : "s"}`}
+                            />
+                            <Row icon={Zap} label="XP earned" value={num(s.xp)} />
+                            <Row icon={Gem} label="Gems earned" value={num(s.gems)} />
+                        </Group>
+                    </div>
+
+                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+                        {/* ── Top courses ─────────────────────────────── */}
+                        <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-card">
+                            <div className="border-b border-border/60 px-5 py-4">
+                                <h2 className="text-base font-semibold">Most-watched courses</h2>
+                                <p className="text-xs text-muted-foreground">By total watch time</p>
+                            </div>
+                            {s.top_courses.length === 0 ? (
+                                <div className="p-8 text-center text-sm text-muted-foreground">
+                                    No course has been watched yet.
+                                </div>
+                            ) : (
+                                <ol className="divide-y divide-border/40">
+                                    {s.top_courses.map((c, i) => (
+                                        <li
+                                            key={c.id}
+                                            className="flex items-center gap-3 px-5 py-3"
+                                        >
+                                            <span className="w-4 shrink-0 text-right font-mono text-xs text-muted-foreground">
+                                                {i + 1}
+                                            </span>
+                                            <div className="aspect-video w-16 shrink-0 overflow-hidden rounded-md bg-muted">
+                                                {c.thumbnail_url && (
+                                                    <img
+                                                        src={c.thumbnail_url}
+                                                        alt=""
+                                                        loading="lazy"
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                )}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate text-sm font-medium">
+                                                    {c.title}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {num(c.learners)} learner
+                                                    {c.learners === 1 ? "" : "s"} ·{" "}
+                                                    {num(c.completions)} video
+                                                    {c.completions === 1 ? "" : "s"} completed
+                                                    {c.copies > 1 &&
+                                                        ` · imported by ${num(c.copies)}`}
+                                                </div>
+                                            </div>
+                                            <span className="shrink-0 text-sm font-semibold tabular-nums">
+                                                {hours(c.watch_seconds)}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
                         </div>
 
-                        {/* ── Watch time trend ─────────────────────────────── */}
+                        {/* ── Sign-ups ────────────────────────────────── */}
                         <div className="rounded-3xl border border-border bg-card p-5 shadow-card">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                                <div>
-                                    <div className="text-sm font-medium text-muted-foreground">
-                                        Watch time · last 30 days
-                                    </div>
-                                    <div className="mt-0.5 font-display text-[28px] font-semibold leading-tight tabular-nums">
-                                        {num(minutes30d)}
-                                        <span className="ml-1 font-sans text-sm font-normal text-muted-foreground">
-                                            min watched
-                                        </span>
-                                    </div>
-                                </div>
-                                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium tabular-nums text-primary">
-                                    {num(s.watchers)} learners have watched
+                            <div className="text-sm font-medium text-muted-foreground">
+                                New learners · last 12 weeks
+                            </div>
+                            <div className="mt-0.5 font-display text-[28px] font-semibold leading-tight tabular-nums">
+                                {num(signupWeeks?.reduce((sum, w) => sum + w.minutes, 0) ?? 0)}
+                                <span className="ml-1 font-sans text-sm font-normal text-muted-foreground">
+                                    joined
                                 </span>
                             </div>
                             <div className="mt-3">
                                 <Suspense fallback={<div className="h-[180px]" />}>
-                                    <WeeklyActivityChart data={watchedDays ?? []} height={180} />
+                                    <WeeklyActivityChart
+                                        data={signupWeeks ?? []}
+                                        unit="learners"
+                                        label="Joined"
+                                        height={180}
+                                    />
                                 </Suspense>
                             </div>
                             <p className="mt-2 text-xs text-muted-foreground">
-                                Days follow Bangladesh time. Daily totals start from when genuine
-                                watch tracking went live; the all-time hours above include earlier
-                                viewing.
+                                Weeks start on Monday.
                             </p>
                         </div>
-
-                        {/* ── Breakdown ────────────────────────────────────── */}
-                        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                            <Group title="Content library">
-                                <Row icon={Library} label="Courses" value={num(s.courses)} />
-                                <Row icon={BookOpen} label="Videos imported" value={num(s.videos)} />
-                                <Row icon={Clock} label="Content available" value={hours(s.content_seconds)} />
-                                <Row icon={Users} label="Course creators" value={num(s.course_creators)} />
-                            </Group>
-                            <Group title="Learning">
-                                <Row icon={CheckCircle2} label="Videos completed" value={num(s.modules_completed)} />
-                                <Row icon={GraduationCap} label="Certificates issued" value={num(s.certificates)} />
-                                <Row icon={Award} label="Badges unlocked" value={num(s.badges)} />
-                                <Row icon={Target} label="Daily missions completed" value={num(s.missions_completed)} />
-                                <Row icon={NotebookPen} label="Notes written" value={num(s.notes)} />
-                            </Group>
-                            <Group title="Engagement">
-                                <Row icon={Users} label="Active this week" value={num(s.active_7d)} />
-                                <Row icon={Users} label="Active this month" value={num(s.active_30d)} />
-                                <Row icon={Flame} label="On a live streak" value={num(s.on_streak)} />
-                                <Row
-                                    icon={Flame}
-                                    label="Longest streak"
-                                    value={`${num(s.longest_streak)} day${s.longest_streak === 1 ? "" : "s"}`}
-                                />
-                                <Row icon={Zap} label="XP earned" value={num(s.xp)} />
-                                <Row icon={Gem} label="Gems earned" value={num(s.gems)} />
-                            </Group>
-                        </div>
-
-                        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
-                            {/* ── Top courses ─────────────────────────────── */}
-                            <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-card">
-                                <div className="border-b border-border/60 px-5 py-4">
-                                    <h2 className="text-base font-semibold">Most-watched courses</h2>
-                                    <p className="text-xs text-muted-foreground">By total watch time</p>
-                                </div>
-                                {s.top_courses.length === 0 ? (
-                                    <div className="p-8 text-center text-sm text-muted-foreground">
-                                        No course has been watched yet.
-                                    </div>
-                                ) : (
-                                    <ol className="divide-y divide-border/40">
-                                        {s.top_courses.map((c, i) => (
-                                            <li key={c.id} className="flex items-center gap-3 px-5 py-3">
-                                                <span className="w-4 shrink-0 text-right font-mono text-xs text-muted-foreground">
-                                                    {i + 1}
-                                                </span>
-                                                <div className="aspect-video w-16 shrink-0 overflow-hidden rounded-md bg-muted">
-                                                    {c.thumbnail_url && (
-                                                        <img
-                                                            src={c.thumbnail_url}
-                                                            alt=""
-                                                            loading="lazy"
-                                                            className="h-full w-full object-cover"
-                                                        />
-                                                    )}
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="truncate text-sm font-medium">{c.title}</div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {num(c.learners)} learner{c.learners === 1 ? "" : "s"} ·{" "}
-                                                        {num(c.completions)} video{c.completions === 1 ? "" : "s"} completed
-                                                        {c.copies > 1 && ` · imported by ${num(c.copies)}`}
-                                                    </div>
-                                                </div>
-                                                <span className="shrink-0 text-sm font-semibold tabular-nums">
-                                                    {hours(c.watch_seconds)}
-                                                </span>
-                                            </li>
-                                        ))}
-                                    </ol>
-                                )}
-                            </div>
-
-                            {/* ── Sign-ups ────────────────────────────────── */}
-                            <div className="rounded-3xl border border-border bg-card p-5 shadow-card">
-                                <div className="text-sm font-medium text-muted-foreground">
-                                    New learners · last 12 weeks
-                                </div>
-                                <div className="mt-0.5 font-display text-[28px] font-semibold leading-tight tabular-nums">
-                                    {num(signupWeeks?.reduce((sum, w) => sum + w.minutes, 0) ?? 0)}
-                                    <span className="ml-1 font-sans text-sm font-normal text-muted-foreground">
-                                        joined
-                                    </span>
-                                </div>
-                                <div className="mt-3">
-                                    <Suspense fallback={<div className="h-[180px]" />}>
-                                        <WeeklyActivityChart
-                                            data={signupWeeks ?? []}
-                                            unit="learners"
-                                            label="Joined"
-                                            height={180}
-                                        />
-                                    </Suspense>
-                                </div>
-                                <p className="mt-2 text-xs text-muted-foreground">Weeks start on Monday.</p>
-                            </div>
-                        </div>
-                    </>
-                )}
-            </section>
-        </AppShell>
+                    </div>
+                </>
+            )}
+        </AdminShell>
     );
 };
 
