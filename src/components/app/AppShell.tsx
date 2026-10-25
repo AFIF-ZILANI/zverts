@@ -21,7 +21,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useAdminPaymentAlerts } from "@/hooks/useAdminPaymentAlerts";
-import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 import { OfflineBanner } from "./OfflineBanner";
 import {
     CodeIcon,
@@ -124,7 +123,6 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     }, [location.pathname]);
 
     useAdminPaymentAlerts(isAdmin);
-    useBrowserNotifications();
 
     // Signed-in users get a bottom tab bar on phones. The attribute lets global
     // CSS reserve space for it (--app-bottom-inset) so toasts and floating
@@ -227,7 +225,8 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
                                                         <span
                                                             className={cn(
                                                                 "whitespace-nowrap",
-                                                                !isActive && "sr-only lg:not-sr-only",
+                                                                !isActive &&
+                                                                    "sr-only lg:not-sr-only",
                                                             )}
                                                         >
                                                             {n.label}
