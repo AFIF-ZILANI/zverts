@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { BellOff, BellRing, Flame, Moon, Send, Sparkles, Trophy, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { notificationPrefsQuery } from "@/lib/offline/queries";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,14 +51,7 @@ export const NotificationSettings = ({ userId }: { userId: string }) => {
     const [p, setP] = useState<Prefs | null>(null);
 
     useEffect(() => {
-        supabase
-            .from("notification_preferences")
-            .select(
-                "mute_all,study_reminders,system_alerts,gamification,comeback,max_per_day,quiet_hours_start,quiet_hours_end",
-            )
-            .eq("user_id", userId)
-            .maybeSingle()
-            .then(({ data }) => setP({ ...DEFAULTS, ...(data ?? {}) }));
+        notificationPrefsQuery(userId).then(({ data }) => setP({ ...DEFAULTS, ...(data ?? {}) }));
     }, [userId]);
 
     const save = async (patch: Partial<Prefs>) => {

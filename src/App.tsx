@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./hooks/useAuth";
 import { NotificationsProvider } from "./hooks/useNotifications";
+import { OfflineWarmup } from "./lib/offline/warmup";
 import { ThemeProvider } from "./components/app/ThemeProvider";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { VersionWatcher } from "./hooks/useVersionCheck";
@@ -111,6 +112,7 @@ const App = () => (
                     <VersionWatcher />
                     <AuthProvider>
                         <NotificationsProvider>
+                            <OfflineWarmup />
                             <ErrorBoundary>
                                 <Suspense fallback={<RouteFallback />}>
                                     <Routes>

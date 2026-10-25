@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyCourses } from "@/lib/offline/queries";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -208,52 +209,7 @@ const Courses = () => {
 
     const load = async () => {
         if (!user) return;
-        const { data: courses } = await supabase
-            .from("courses")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false });
-
-        if (!courses?.length) {
-            setMine([]);
-            setLoading(false);
-            return;
-        }
-
-        const ids = courses.map((c) => c.id);
-        const { data: modsData } = await supabase
-            .from("modules")
-            .select("id,course_id")
-            .in("course_id", ids);
-        const mods = modsData ?? [];
-        const modIds = mods.map((m) => m.id);
-        const { data: prog } = modIds.length
-            ? await supabase
-                  .from("module_progress")
-                  .select("module_id,completed")
-                  .eq("user_id", user.id)
-                  .in("module_id", modIds)
-            : { data: [] as { module_id: string; completed: boolean }[] };
-
-        const modsByCourse = new Map<string, string[]>();
-        (mods ?? []).forEach((m) => {
-            const arr = modsByCourse.get(m.course_id) ?? [];
-            arr.push(m.id);
-            modsByCourse.set(m.course_id, arr);
-        });
-        const completedSet = new Set(
-            (prog ?? []).filter((p) => p.completed).map((p) => p.module_id),
-        );
-
-        setMine(
-            courses.map((c) => ({
-                ...c,
-                module_count: modsByCourse.get(c.id)?.length ?? 0,
-                completed_count: (modsByCourse.get(c.id) ?? []).filter((mid) =>
-                    completedSet.has(mid),
-                ).length,
-            })),
-        );
+        setMine(await fetchMyCourses(user.id));
         setLoading(false);
     };
 

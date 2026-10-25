@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
 import { SEO } from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchCourseDetail } from "@/lib/offline/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -253,28 +254,11 @@ const CourseDetail = () => {
 
     const load = async () => {
         if (!id) return;
-        const [{ data: c }, { data: m }] = await Promise.all([
-            supabase.from("courses").select("*").eq("id", id).maybeSingle(),
-            supabase
-                .from("modules")
-                .select("id,position,title,duration_seconds,youtube_video_id,thumbnail_url")
-                .eq("course_id", id)
-                .order("position"),
-        ]);
+        const { course: c, modules: m, progress: p } = await fetchCourseDetail(id, user?.id);
         setCourse(c as Course | null);
         setTitleVal(c?.title ?? "");
-        setModules(m ?? []);
-        if (user && m?.length) {
-            const { data: p } = await supabase
-                .from("module_progress")
-                .select("module_id,percent_watched,completed")
-                .eq("user_id", user.id)
-                .in(
-                    "module_id",
-                    m.map((x) => x.id),
-                );
-            setProgress(p ?? []);
-        }
+        setModules(m);
+        if (user && m.length) setProgress(p);
         setLoading(false);
         if (c && !c.author_name) {
             supabase.functions
