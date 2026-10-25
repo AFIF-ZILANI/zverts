@@ -10,6 +10,7 @@ import { SectionTitle } from "@/components/app/SectionTitle";
 import { LearningMap } from "@/components/app/LearningMap";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { friendlyError, recall, remember } from "@/lib/offline/saved";
 import {
     CheckSquare,
     ChevronRight,
@@ -151,8 +152,35 @@ const Dashboard = () => {
             setModules(mods ?? []);
             setProgress(prog ?? []);
             setDailyWatch(new Map((daily ?? []).map((d) => [d.date, d.seconds])));
+            remember(uid, "dashboard", {
+                courses: ownCourses ?? [],
+                modules: mods ?? [],
+                progress: prog ?? [],
+                daily: daily ?? [],
+                stats: upData,
+            });
         } catch (e: unknown) {
-            setError((e as Error)?.message ?? "Failed to load dashboard");
+            // Offline: show the last dashboard seen on this device.
+            const saved = recall<{
+                courses: CourseRow[];
+                modules: ModuleRow[];
+                progress: ProgressRow[];
+                daily: { date: string; seconds: number }[];
+                stats: { total_xp: number | null; total_gems: number | null; current_streak: number | null } | null;
+            }>(uid, "dashboard");
+            if (saved) {
+                const d = saved.data;
+                setCourses(d.courses);
+                setModules(d.modules);
+                setProgress(d.progress);
+                setDailyWatch(new Map(d.daily.map((x) => [x.date, x.seconds])));
+                if (d.stats)
+                    setUserStats({
+                        xp: d.stats.total_xp ?? 0,
+                        gems: d.stats.total_gems ?? 0,
+                        streak: d.stats.current_streak ?? 0,
+                    });
+            } else setError(friendlyError(e));
         } finally {
             if (!opts.silent) setLoading(false);
         }

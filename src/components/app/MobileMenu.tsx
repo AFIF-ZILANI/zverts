@@ -30,6 +30,7 @@ import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/she
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { SettingsGroup, SettingsNavRow, SettingsRow } from "@/components/app/settings/SettingsUI";
+import { InstallMenuRow } from "@/components/app/InstallPrompt";
 import { cn } from "@/lib/utils";
 
 type Stats = { total_xp: number; current_streak: number; total_gems: number };
@@ -241,6 +242,8 @@ export const MobileMenu = ({
                             onNavigate={close}
                         />
                     </SettingsGroup>
+
+                    <InstallMenuRow onDone={close} />
 
                     <SettingsGroup>
                         <SettingsRow

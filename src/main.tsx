@@ -4,6 +4,8 @@ import App from "./App.tsx";
 import "./index.css";
 import "./lib/i18n";
 import { registerServiceWorker } from "./lib/push";
+// Catches the browser's install offer before React mounts.
+import "./lib/install";
 
 // PWA / standalone scroll safety net.
 // Radix dialogs, sheets, drawers and the mobile menu all temporarily set
