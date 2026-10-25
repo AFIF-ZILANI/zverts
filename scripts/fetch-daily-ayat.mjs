@@ -11,11 +11,13 @@
 import { writeFile } from "node:fs/promises";
 
 // Encouragement, patience, hope, effort, du'a and seeking knowledge — shown
-// three times as often. Each was checked to read well on its own (verses whose
+// four times as often. Each was checked to read well on its own (verses whose
 // encouraging part sits at the end of an unrelated ruling were left out).
 const MOTIVATIONAL = `2:45 2:152 2:153 2:155 2:186 2:201 2:286 3:8 3:134 3:139 3:200 7:56 8:46
 9:51 11:115 12:87 13:11 13:28 14:7 16:97 16:128 20:25 20:114 21:87 29:69 39:9 39:10 39:53 40:60
-41:30 47:7 53:39 58:11 65:3 93:3 93:5 94:5 94:6 94:7 94:8 96:1`;
+41:30 47:7 53:39 58:11 65:3 93:3 93:5 94:5 94:6 94:7 94:8 96:1
+2:214 2:218 3:26 3:142 3:160 4:110 7:23 10:62 14:40 16:127 17:80 18:10 20:46 21:83 27:62
+28:24 29:2 35:2 42:43 64:11`;
 // Allah's oneness and signs, reflection, character.
 const GENERAL = `1:2 2:255 3:190 4:36 6:59 17:23 21:30 25:74 30:21 31:18 36:40 49:13 50:16
 51:56 55:13 57:4 59:22 67:2 88:17 88:19 112:1 112:4`;

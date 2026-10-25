@@ -32,8 +32,8 @@ export const nextChange = (now = Date.now()) =>
 
 export const isNightSlot = (now = Date.now()) => slotIndex(now) % 2 !== 0;
 
-// Motivational ayat appear three times as often as the rest.
-const MOTIVATIONAL_WEIGHT = 3;
+// Motivational ayat appear four times as often as the rest.
+const MOTIVATIONAL_WEIGHT = 4;
 
 // Small seeded PRNG so the rotation is the same on every device.
 const mulberry32 = (seed: number) => () => {
