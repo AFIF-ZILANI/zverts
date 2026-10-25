@@ -6,11 +6,6 @@ verify_jwt = false
 [functions.telegram-webhook]
 verify_jwt = false
 
-# Cron-only; guarded by the x-cron-secret header (CRON_SECRET), so the gateway
-# doesn't need to check an API key/JWT — keeps the cron working without legacy keys.
-[functions.notifications-scan]
-verify_jwt = false
-
 # Called by the notify_push() trigger; authenticated with the x-push-secret header.
 [functions.push-send]
 verify_jwt = false

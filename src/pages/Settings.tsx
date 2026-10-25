@@ -46,8 +46,7 @@ import {
     FileText,
     ExternalLink,
 } from "lucide-react";
-import { SmartNotificationSettings } from "@/components/app/SmartNotificationSettings";
-import { PushToggle } from "@/components/app/PushToggle";
+import { NotificationSettings } from "@/components/app/NotificationSettings";
 import { IslamicModeSettings } from "@/components/app/IslamicModeSettings";
 import { SettingsGroup, SettingsNavRow, SettingsRow } from "@/components/app/settings/SettingsUI";
 import { useIslamicSettings } from "@/lib/islamic/dailyAyah";
@@ -112,7 +111,7 @@ const SECTIONS = [
         id: "notifications",
         group: "Preferences",
         title: "Notifications",
-        subtitle: "Push, email and in-app alerts",
+        subtitle: "Push, reminders and quiet hours",
         icon: Bell,
         tint: "bg-rose-500",
     },
@@ -348,7 +347,6 @@ const Settings = () => {
     const valueOf: Partial<Record<SectionId, string>> = {
         learning: `${p.daily_goal_minutes} min`,
         islamic: islamic.enabled ? "On" : "Off",
-        notifications: p.notify_email ? "On" : "Off",
         privacy: p.profile_public ? "Public" : "Private",
     };
 
@@ -610,45 +608,7 @@ const Settings = () => {
 
         islamic: <IslamicModeSettings />,
 
-        notifications: (
-            <>
-                <SettingsGroup title="This device">
-                    <PushToggle userId={user.id} />
-                </SettingsGroup>
-                <SettingsGroup title="Email">
-                    {[
-                        {
-                            k: "notify_email" as const,
-                            title: "Email notifications",
-                            body: "Master switch for all email from ZverTs.",
-                        },
-                        {
-                            k: "notify_inactivity" as const,
-                            title: "Inactivity alerts",
-                            body: "A nudge if you haven't studied in a few days.",
-                        },
-                        {
-                            k: "notify_completion" as const,
-                            title: "Completion emails",
-                            body: "A recap when you finish a module or course.",
-                        },
-                    ].map((item) => (
-                        <SettingsRow
-                            key={item.k}
-                            title={item.title}
-                            description={item.body}
-                            control={
-                                <Switch
-                                    checked={p[item.k]}
-                                    onCheckedChange={(v) => persist({ ...p, [item.k]: v })}
-                                />
-                            }
-                        />
-                    ))}
-                </SettingsGroup>
-                <SmartNotificationSettings />
-            </>
-        ),
+        notifications: <NotificationSettings userId={user.id} />,
 
         progress: (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">

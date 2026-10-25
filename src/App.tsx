@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./hooks/useAuth";
+import { NotificationsProvider } from "./hooks/useNotifications";
 import { ThemeProvider } from "./components/app/ThemeProvider";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { VersionWatcher } from "./hooks/useVersionCheck";
@@ -109,49 +110,60 @@ const App = () => (
                 <BrowserRouter>
                     <VersionWatcher />
                     <AuthProvider>
-                        <ErrorBoundary>
-                            <Suspense fallback={<RouteFallback />}>
-                                <Routes>
-                                    <Route path="/" element={<Index />} />
-                                    <Route path="/auth" element={<Auth />} />
-                                    <Route path="/dashboard" element={<Dashboard />} />
-                                    <Route path="/courses" element={<Courses />} />
-                                    <Route path="/courses/:id" element={<CourseDetail />} />
-                                    {/* /explore removed per product decision */}
-                                    <Route path="/learn" element={<Learn />} />
-                                    <Route path="/learn/:id" element={<ModulePlayer />} />
-                                    <Route path="/profile" element={<Profile />} />
-                                    <Route path="/settings" element={<Settings />} />
-                                    <Route path="/settings/:section" element={<Settings />} />
+                        <NotificationsProvider>
+                            <ErrorBoundary>
+                                <Suspense fallback={<RouteFallback />}>
+                                    <Routes>
+                                        <Route path="/" element={<Index />} />
+                                        <Route path="/auth" element={<Auth />} />
+                                        <Route path="/dashboard" element={<Dashboard />} />
+                                        <Route path="/courses" element={<Courses />} />
+                                        <Route path="/courses/:id" element={<CourseDetail />} />
+                                        {/* /explore removed per product decision */}
+                                        <Route path="/learn" element={<Learn />} />
+                                        <Route path="/learn/:id" element={<ModulePlayer />} />
+                                        <Route path="/profile" element={<Profile />} />
+                                        <Route path="/settings" element={<Settings />} />
+                                        <Route path="/settings/:section" element={<Settings />} />
 
-                                    <Route path="/growth" element={<Growth />} />
-                                    <Route path="/leaderboard" element={<Leaderboard />} />
-                                    <Route path="/code" element={<CodePlayground />} />
-                                    <Route path="/admin" element={<Admin />} />
-                                    <Route path="/admin/payments" element={<AdminPayments />} />
-                                    <Route path="/admin/users" element={<AdminUsers />} />
-                                    <Route path="/admin/management" element={<AdminManagement />} />
-                                    <Route path="/admin/broadcast" element={<AdminBroadcast />} />
-                                    <Route path="/admin/impact" element={<AdminImpact />} />
-                                    <Route
-                                        path="/admin/support-contacts"
-                                        element={<AdminSupportContacts />}
-                                    />
-                                    <Route path="/buy" element={<BuyPackage />} />
-                                    <Route path="/payment" element={<Payment />} />
-                                    <Route path="/payments" element={<PaymentHistory />} />
-                                    <Route
-                                        path="/certificate/:courseId"
-                                        element={<Certificate />}
-                                    />
-                                    <Route path="/info/:slug" element={<Info />} />
-                                    <Route path="/refund-policy" element={<RefundPolicy />} />
-                                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                                    <Route path="/terms-of-service" element={<TermsOfService />} />
-                                    <Route path="*" element={<NotFound />} />
-                                </Routes>
-                            </Suspense>
-                        </ErrorBoundary>
+                                        <Route path="/growth" element={<Growth />} />
+                                        <Route path="/leaderboard" element={<Leaderboard />} />
+                                        <Route path="/code" element={<CodePlayground />} />
+                                        <Route path="/admin" element={<Admin />} />
+                                        <Route path="/admin/payments" element={<AdminPayments />} />
+                                        <Route path="/admin/users" element={<AdminUsers />} />
+                                        <Route
+                                            path="/admin/management"
+                                            element={<AdminManagement />}
+                                        />
+                                        <Route
+                                            path="/admin/broadcast"
+                                            element={<AdminBroadcast />}
+                                        />
+                                        <Route path="/admin/impact" element={<AdminImpact />} />
+                                        <Route
+                                            path="/admin/support-contacts"
+                                            element={<AdminSupportContacts />}
+                                        />
+                                        <Route path="/buy" element={<BuyPackage />} />
+                                        <Route path="/payment" element={<Payment />} />
+                                        <Route path="/payments" element={<PaymentHistory />} />
+                                        <Route
+                                            path="/certificate/:courseId"
+                                            element={<Certificate />}
+                                        />
+                                        <Route path="/info/:slug" element={<Info />} />
+                                        <Route path="/refund-policy" element={<RefundPolicy />} />
+                                        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                                        <Route
+                                            path="/terms-of-service"
+                                            element={<TermsOfService />}
+                                        />
+                                        <Route path="*" element={<NotFound />} />
+                                    </Routes>
+                                </Suspense>
+                            </ErrorBoundary>
+                        </NotificationsProvider>
                     </AuthProvider>
                 </BrowserRouter>
             </TooltipProvider>

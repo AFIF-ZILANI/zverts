@@ -24,7 +24,12 @@ const RUNNER_MANIFEST = "/runner-assets.json";
 // Supabase reads, kept per user so pages can show the last data seen while offline.
 // GETs plus these read RPCs (POST); writes are never stored. Cleared on sign-out.
 const DATA_CACHE = "zverts-data-v1"; // keep in sync with src/hooks/useAuth.tsx
-const OFFLINE_RPCS = ["get_growth_stats", "get_today_mission", "list_public_profiles", "unread_notification_count"];
+const OFFLINE_RPCS = [
+    "get_growth_stats",
+    "get_today_mission",
+    "list_public_profiles",
+    "unread_notification_count",
+];
 
 const jwtSub = (req) => {
     const part = (req.headers.get("authorization") || "").split(" ")[1]?.split(".")[1];
@@ -40,7 +45,10 @@ const jwtSub = (req) => {
 const dataKey = async (req) => {
     const u = new URL(req.url);
     u.searchParams.set("__u", jwtSub(req));
-    u.searchParams.set("__a", (req.headers.get("accept") || "").includes("vnd.pgrst.object") ? "o" : "a");
+    u.searchParams.set(
+        "__a",
+        (req.headers.get("accept") || "").includes("vnd.pgrst.object") ? "o" : "a",
+    );
     if (req.headers.get("range")) u.searchParams.set("__r", req.headers.get("range"));
     if (req.method === "POST") u.searchParams.set("__b", await req.clone().text());
     return new Request(u.href);
@@ -74,12 +82,25 @@ let runnerManifest = null;
 const loadRunnerManifest = async () => {
     if (runnerManifest) return runnerManifest;
     const cache = await caches.open(RUNNER_CACHE);
-    const res = (await cache.match(RUNNER_MANIFEST)) || (await fetch(RUNNER_MANIFEST).catch(() => null));
-    const data = res && res.ok ? await res.clone().json().catch(() => null) : null;
+    const res =
+        (await cache.match(RUNNER_MANIFEST)) || (await fetch(RUNNER_MANIFEST).catch(() => null));
+    const data =
+        res && res.ok
+            ? await res
+                  .clone()
+                  .json()
+                  .catch(() => null)
+            : null;
     runnerManifest = { files: new Set(data?.files ?? []), cdn: data?.cdn ?? [] };
     return runnerManifest;
 };
-const SHELL_URLS = ["/", "/manifest.json", "/android-chrome-192x192.png", "/hero-light.svg", "/hero-dark.svg"];
+const SHELL_URLS = [
+    "/",
+    "/manifest.json",
+    "/android-chrome-192x192.png",
+    "/hero-light.svg",
+    "/hero-dark.svg",
+];
 
 const precacheList = () =>
     fetch("/precache.json", { cache: "no-store" })
@@ -108,7 +129,9 @@ self.addEventListener("install", (event) => {
                 // Someone who has used the runner (editor files in the cache) gets
                 // this build's editor files now, so it still opens offline after a
                 // deploy. Others download nothing until they open it.
-                const used = (await runner.keys()).some((r) => new URL(r.url).pathname.startsWith("/assets/"));
+                const used = (await runner.keys()).some((r) =>
+                    new URL(r.url).pathname.startsWith("/assets/"),
+                );
                 if (used) {
                     // Shared chunks are in this build's precache. Anything else must
                     // land in RUNNER_CACHE: a copy in ASSET_CACHE (fetched while the
@@ -150,10 +173,13 @@ self.addEventListener("activate", (event) => {
                     .map((k) => caches.delete(k)),
             );
             // Drop files from older builds (anything not in this build's list).
-            const keep = new Set((await precacheList()).map((u) => new URL(u, self.location.origin).href));
+            const keep = new Set(
+                (await precacheList()).map((u) => new URL(u, self.location.origin).href),
+            );
             if (keep.size) {
                 const assets = await caches.open(ASSET_CACHE);
-                for (const req of await assets.keys()) if (!keep.has(req.url)) await assets.delete(req);
+                for (const req of await assets.keys())
+                    if (!keep.has(req.url)) await assets.delete(req);
             }
             // Runner cache: keep this build's editor files and the current CDN
             // runtime versions; a new Pyodide/Clang version replaces the old one.
@@ -180,7 +206,10 @@ self.addEventListener("fetch", (event) => {
     const url = new URL(req.url);
     if (url.hostname.endsWith(".supabase.co") && url.pathname.startsWith("/rest/v1/")) {
         const rpc = url.pathname.startsWith("/rest/v1/rpc/") ? url.pathname.split("/").pop() : null;
-        if ((req.method === "GET" && !rpc) || (req.method === "POST" && OFFLINE_RPCS.includes(rpc))) {
+        if (
+            (req.method === "GET" && !rpc) ||
+            (req.method === "POST" && OFFLINE_RPCS.includes(rpc))
+        ) {
             event.respondWith(networkThenData(event, req));
         }
         return;
@@ -191,7 +220,9 @@ self.addEventListener("fetch", (event) => {
         if (url.hostname === "cdn.jsdelivr.net") {
             event.respondWith(
                 loadRunnerManifest().then(({ cdn }) =>
-                    cdn.some((prefix) => req.url.startsWith(prefix)) ? runnerCacheFirst(event, req) : fetch(req),
+                    cdn.some((prefix) => req.url.startsWith(prefix))
+                        ? runnerCacheFirst(event, req)
+                        : fetch(req),
                 ),
             );
         }
@@ -216,7 +247,9 @@ self.addEventListener("fetch", (event) => {
     // Logo, icons and manifest: fresh when online, from the shell cache offline.
     if (SHELL_URLS.includes(url.pathname) && url.pathname !== "/") {
         event.respondWith(
-            fetch(req).catch(() => caches.match(url.pathname, { cacheName: SHELL_CACHE, ignoreVary: true })),
+            fetch(req).catch(() =>
+                caches.match(url.pathname, { cacheName: SHELL_CACHE, ignoreVary: true }),
+            ),
         );
         return;
     }
@@ -231,7 +264,9 @@ self.addEventListener("fetch", (event) => {
                 const res = await fetch(req);
                 if (res.ok) {
                     const { files } = await loadRunnerManifest();
-                    const cache = await caches.open(files.has(url.pathname) ? RUNNER_CACHE : ASSET_CACHE);
+                    const cache = await caches.open(
+                        files.has(url.pathname) ? RUNNER_CACHE : ASSET_CACHE,
+                    );
                     await cache.put(req, res.clone());
                 }
                 return res;
@@ -261,16 +296,23 @@ self.addEventListener("push", (event) => {
         n = { title: "ZverTs", body: event.data ? event.data.text() : "" };
     }
     event.waitUntil(
-        self.registration.showNotification(n.title || "ZverTs", {
-            body: n.body || "",
-            icon: "/android-chrome-192x192.png",
-            badge: "/favicon-32x32.png",
-            // Same tag as the in-page popup (useBrowserNotifications), so an open tab
-            // and a push for the same notification show only one.
-            tag: n.id || undefined,
-            requireInteraction: n.priority === "critical",
-            data: { url: n.deep_link || "/dashboard" },
-        }),
+        (async () => {
+            // ZverTs open and on screen: the page shows its own toast, so skip
+            // the system notification (browsers allow that for a focused page).
+            const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+            if (wins.some((w) => w.focused && w.visibilityState === "visible")) return;
+            await self.registration.showNotification(n.title || "ZverTs", {
+                body: n.body || "",
+                icon: "/android-chrome-192x192.png",
+                badge: "/favicon-32x32.png",
+                // Same tag as the page's background notification (useNotifications),
+                // so a push and an open tab never show the same one twice.
+                tag: n.id || undefined,
+                renotify: false,
+                requireInteraction: n.priority === "critical",
+                data: { url: n.deep_link || "/dashboard" },
+            });
+        })(),
     );
 });
 

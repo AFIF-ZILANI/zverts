@@ -155,7 +155,6 @@ Migrations in `supabase/migrations` define:
 | `import-youtube-playlist` | Import playlist as a course with modules |
 | `fetch-playlist-author` | Resolve channel author name + URL for a course |
 | `run-code` | Fallback C/C++ runner (Wandbox, or Judge0 if configured) |
-| `notifications-scan` | Scan and fan-out scheduled notifications |
 | `notify-admin` | Send Telegram alert to admin on new payment |
 | `telegram-webhook` | Receive and handle Telegram bot webhook events |
 | `delete-account` | Permanently delete a user account and all data |
