@@ -26,6 +26,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchSettingsData } from "@/lib/offline/queries";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import {
@@ -157,39 +158,30 @@ const Settings = () => {
         if (!user) return;
         setEmailInput(user.email ?? "");
         (async () => {
-            const [{ data: prof }, { data: prefs }, { data: prog }] = await Promise.all([
-                supabase
-                    .from("profiles")
-                    .select("name,email,avatar_url,certificate_name,preferred_language")
-                    .eq("id", user.id)
-                    .maybeSingle(),
-                supabase
-                    .from("user_preferences")
-                    .select(
-                        "daily_goal_minutes,study_reminders_enabled,notify_email,notify_inactivity,notify_completion,profile_public",
-                    )
-                    .eq("user_id", user.id)
-                    .maybeSingle(),
-                supabase
-                    .from("user_progress")
-                    .select("total_gems,total_xp,current_streak,longest_streak")
-                    .eq("user_id", user.id)
-                    .maybeSingle(),
-            ]);
-            if (prof)
-                setP({
-                    ...prof,
-                    daily_goal_minutes: prefs?.daily_goal_minutes ?? 20,
-                    study_reminders_enabled: prefs?.study_reminders_enabled ?? true,
-                    notify_email: prefs?.notify_email ?? true,
-                    notify_inactivity: prefs?.notify_inactivity ?? true,
-                    notify_completion: prefs?.notify_completion ?? true,
-                    profile_public: prefs?.profile_public ?? true,
-                    total_gems: prog?.total_gems ?? 0,
-                    total_xp: prog?.total_xp ?? 0,
-                    current_streak: prog?.current_streak ?? 0,
-                    longest_streak: prog?.longest_streak ?? 0,
-                } as Profile);
+            const [{ data: loaded }, { data: prefs }, { data: prog }] = await fetchSettingsData(
+                user.id,
+            );
+            // Offline with nothing saved yet: still open, from the sign-in details.
+            const prof = loaded ?? {
+                name: (user.user_metadata?.full_name as string | undefined) ?? null,
+                email: user.email ?? null,
+                avatar_url: (user.user_metadata?.avatar_url as string | undefined) ?? null,
+                certificate_name: null,
+                preferred_language: null,
+            };
+            setP({
+                ...prof,
+                daily_goal_minutes: prefs?.daily_goal_minutes ?? 20,
+                study_reminders_enabled: prefs?.study_reminders_enabled ?? true,
+                notify_email: prefs?.notify_email ?? true,
+                notify_inactivity: prefs?.notify_inactivity ?? true,
+                notify_completion: prefs?.notify_completion ?? true,
+                profile_public: prefs?.profile_public ?? true,
+                total_gems: prog?.total_gems ?? 0,
+                total_xp: prog?.total_xp ?? 0,
+                current_streak: prog?.current_streak ?? 0,
+                longest_streak: prog?.longest_streak ?? 0,
+            } as Profile);
             const { count } = await supabase
                 .from("module_progress")
                 .select("*", { count: "exact", head: true })

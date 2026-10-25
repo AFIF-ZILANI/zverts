@@ -5,15 +5,20 @@
 //     On install, every route page's JS/CSS from /precache.json (written at build
 //     time) is cached too, so pages open offline even if never visited.
 //     The page registers /sw.js?v=<build id>, so each deploy installs afresh.
-//   - Page navigations go to the network first so a new deploy is picked up
-//     immediately; offline they fall back to the cached app shell (/index.html).
+//   - Page navigations: offline, the cached app shell (/index.html) at once;
+//     online, the network so a new deploy is picked up, but if it hasn't
+//     answered within NETWORK_WAIT_MS the cached shell is used instead.
 //   - Logo, icons and manifest (SHELL_URLS) are network-first with a cache fallback.
 //   - Code runner: its editor files and workers (listed in /runner-assets.json)
 //     and the Pyodide / Clang runtimes from the CDN go to RUNNER_CACHE when first
 //     fetched (cache-first). That cache survives deploys (only files no longer
 //     listed are dropped), so the runner keeps working offline once used.
-//   - Supabase reads (GET + a few read RPCs): network first, last copy per user
-//     as the offline fallback (DATA_CACHE, cleared on sign-out).
+//   - Supabase reads (GET + the read RPCs below): the last copy per user is kept
+//     in DATA_CACHE (cleared on sign-out). Offline it's served at once; online
+//     the network is tried, falling back to the copy after NETWORK_WAIT_MS or on
+//     failure, while the fresh answer still updates the copy.
+//   - Images (YouTube thumbnails, Google profile photos) and Google Fonts go to
+//     MEDIA_CACHE, cache-first, capped at MEDIA_LIMIT entries.
 //   - Everything else (Supabase writes, YouTube, /version.json, analytics) is never touched.
 
 const SHELL_CACHE = "zverts-shell-v1";
@@ -25,11 +30,72 @@ const RUNNER_MANIFEST = "/runner-assets.json";
 // GETs plus these read RPCs (POST); writes are never stored. Cleared on sign-out.
 const DATA_CACHE = "zverts-data-v1"; // keep in sync with src/hooks/useAuth.tsx
 const OFFLINE_RPCS = [
+    "check_achievements",
     "get_growth_stats",
     "get_today_mission",
+    "is_module_unlocked",
     "list_public_profiles",
     "unread_notification_count",
+    // Admin reads.
+    "admin_impact_stats",
+    "admin_learners_by_course",
+    "admin_list_support_contacts",
+    "admin_list_users",
+    "list_admin_users",
 ];
+
+// How long to wait on a slow network before answering from the cache.
+const NETWORK_WAIT_MS = 2500;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const offline = () => self.navigator && self.navigator.onLine === false;
+
+/**
+ * The cached copy when offline or when the network is slow or failing,
+ * otherwise the network's answer; a successful network answer always
+ * refreshes the cache (via `store`), even after the copy was used.
+ */
+const fastest = async (event, fromCache, network) => {
+    if (offline()) {
+        const hit = await fromCache();
+        if (hit) return hit;
+    }
+    const net = network();
+    event.waitUntil(net.catch(() => {}));
+    const hit = await fromCache();
+    if (!hit) return net;
+    return Promise.race([
+        net.then((res) => (res.ok ? res : hit)).catch(() => hit),
+        sleep(NETWORK_WAIT_MS).then(() => hit),
+    ]);
+};
+
+// Thumbnails, profile photos and fonts. These hosts send CORS headers, so they
+// are fetched in CORS mode and stored as normal responses (an opaque response
+// would count as megabytes against the storage quota).
+const MEDIA_CACHE = "zverts-media-v1";
+const MEDIA_LIMIT = 400;
+const MEDIA_HOSTS = ["i.ytimg.com", "fonts.googleapis.com", "fonts.gstatic.com"];
+const isMediaHost = (host) => MEDIA_HOSTS.includes(host) || host.endsWith(".googleusercontent.com");
+
+const mediaCacheFirst = async (event, req) => {
+    const cache = await caches.open(MEDIA_CACHE);
+    const hit = await cache.match(req.url, { ignoreVary: true });
+    if (hit) return hit;
+    const res = await fetch(req.url, { mode: "cors", credentials: "omit" });
+    if (res.ok) {
+        event.waitUntil(
+            cache
+                .put(req.url, res.clone())
+                .then(async () => {
+                    const keys = await cache.keys();
+                    for (const old of keys.slice(0, Math.max(0, keys.length - MEDIA_LIMIT)))
+                        await cache.delete(old);
+                })
+                .catch(() => {}),
+        );
+    }
+    return res;
+};
 
 const jwtSub = (req) => {
     const part = (req.headers.get("authorization") || "").split(" ")[1]?.split(".")[1];
@@ -56,24 +122,24 @@ const dataKey = async (req) => {
 
 const networkThenData = async (event, req) => {
     const key = await dataKey(req);
-    try {
-        const res = await fetch(req);
-        if (res.ok) {
-            // Copy now: the page starts reading the body as soon as we return it.
-            const copy = res.clone();
-            event.waitUntil(
-                caches
-                    .open(DATA_CACHE)
-                    .then((c) => c.put(key, copy))
-                    .catch(() => {}),
-            );
-        }
-        return res;
-    } catch (err) {
-        const hit = await caches.match(key, { cacheName: DATA_CACHE });
-        if (hit) return hit;
-        throw err;
-    }
+    return fastest(
+        event,
+        () => caches.match(key, { cacheName: DATA_CACHE }),
+        () =>
+            fetch(req).then((res) => {
+                if (res.ok) {
+                    // Copy now: the page starts reading the body as soon as we return it.
+                    const copy = res.clone();
+                    event.waitUntil(
+                        caches
+                            .open(DATA_CACHE)
+                            .then((c) => c.put(key, copy))
+                            .catch(() => {}),
+                    );
+                }
+                return res;
+            }),
+    );
 };
 
 // { files: ["/assets/…"], cdn: ["https://cdn.jsdelivr.net/…/"] } — fetched on
@@ -168,7 +234,8 @@ self.addEventListener("activate", (event) => {
                             k !== SHELL_CACHE &&
                             k !== ASSET_CACHE &&
                             k !== RUNNER_CACHE &&
-                            k !== DATA_CACHE,
+                            k !== DATA_CACHE &&
+                            k !== MEDIA_CACHE,
                     )
                     .map((k) => caches.delete(k)),
             );
@@ -216,6 +283,10 @@ self.addEventListener("fetch", (event) => {
     }
     if (req.method !== "GET") return;
     if (url.origin !== self.location.origin) {
+        if (isMediaHost(url.hostname)) {
+            event.respondWith(mediaCacheFirst(event, req).catch(() => fetch(req)));
+            return;
+        }
         // Pyodide / Clang from the CDN: versioned URLs, so cache-first is safe.
         if (url.hostname === "cdn.jsdelivr.net") {
             event.respondWith(
@@ -231,24 +302,29 @@ self.addEventListener("fetch", (event) => {
 
     if (req.mode === "navigate") {
         event.respondWith(
-            fetch(req)
-                .then((res) => {
-                    if (res.ok) {
-                        const copy = res.clone();
-                        caches.open(SHELL_CACHE).then((c) => c.put("/", copy));
-                    }
-                    return res;
-                })
-                .catch(() => caches.match("/", { cacheName: SHELL_CACHE, ignoreVary: true })),
+            fastest(
+                event,
+                () => caches.match("/", { cacheName: SHELL_CACHE, ignoreVary: true }),
+                () =>
+                    fetch(req).then((res) => {
+                        if (res.ok) {
+                            const copy = res.clone();
+                            event.waitUntil(caches.open(SHELL_CACHE).then((c) => c.put("/", copy)));
+                        }
+                        return res;
+                    }),
+            ),
         );
         return;
     }
 
-    // Logo, icons and manifest: fresh when online, from the shell cache offline.
+    // Logo, icons and manifest: fresh when online, from the shell cache offline or on a slow network.
     if (SHELL_URLS.includes(url.pathname) && url.pathname !== "/") {
         event.respondWith(
-            fetch(req).catch(() =>
-                caches.match(url.pathname, { cacheName: SHELL_CACHE, ignoreVary: true }),
+            fastest(
+                event,
+                () => caches.match(url.pathname, { cacheName: SHELL_CACHE, ignoreVary: true }),
+                () => fetch(req),
             ),
         );
         return;
