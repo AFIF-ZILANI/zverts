@@ -4,5 +4,21 @@
     { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
     { "source": "/precache.json", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
   ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/youtube-playlist-to-course", "destination": "/youtube-playlist-to-course/index.html" },
+    { "source": "/code", "destination": "/code/index.html" },
+    { "source": "/info/about", "destination": "/info/about/index.html" },
+    { "source": "/info/faq", "destination": "/info/faq/index.html" },
+    { "source": "/info/help", "destination": "/info/help/index.html" },
+    { "source": "/info/contact", "destination": "/info/contact/index.html" },
+    { "source": "/info/support", "destination": "/info/support/index.html" },
+    { "source": "/info/community", "destination": "/info/community/index.html" },
+    { "source": "/info/affiliates", "destination": "/info/affiliates/index.html" },
+    { "source": "/info/careers", "destination": "/info/careers/index.html" },
+    { "source": "/info/blog", "destination": "/info/blog/index.html" },
+    { "source": "/privacy-policy", "destination": "/privacy-policy/index.html" },
+    { "source": "/terms-of-service", "destination": "/terms-of-service/index.html" },
+    { "source": "/refund-policy", "destination": "/refund-policy/index.html" },
+    { "source": "/(.*)", "destination": "/app.html" }
+  ]
 }

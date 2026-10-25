@@ -2,6 +2,8 @@ import { useParams, Navigate, Link } from "react-router-dom";
 import { AppShell } from "@/components/app/AppShell";
 import { SEO } from "@/components/SEO";
 import { OfficialEmail } from "@/components/OfficialEmail";
+import { INFO_PAGES, type InfoPage } from "@/content/infoPages";
+import { PUBLIC_PAGES } from "@/content/seo";
 import {
     LifeBuoy,
     Info as InfoIcon,
@@ -15,257 +17,26 @@ import {
     ChevronRight,
 } from "lucide-react";
 
-type Section = { heading?: string; body?: string; bullets?: string[] };
-type Page = {
-    slug: string;
-    title: string;
-    tagline?: string;
-    icon: React.ComponentType<{ className?: string }>;
-    sections: Section[];
+type Page = InfoPage;
+const PAGES = INFO_PAGES;
+const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+    support: LifeBuoy,
+    about: InfoIcon,
+    faq: HelpCircle,
+    help: BookOpen,
+    contact: Mail,
+    affiliates: Handshake,
+    community: Users,
+    blog: Newspaper,
+    careers: Briefcase,
 };
-
-const PAGES: Page[] = [
-    {
-        slug: "support",
-        title: "Support",
-        icon: LifeBuoy,
-        tagline:
-            "ZverTs Support is here to help learners have a smooth and stress-free experience. Whether you're facing technical issues, payment problems, course access errors, or app-related bugs, our support system is built to guide you quickly.",
-        sections: [
-            {
-                heading: "We provide",
-                bullets: [
-                    "Technical troubleshooting",
-                    "Account recovery",
-                    "Subscription support",
-                    "Payment assistance",
-                    "Video playback issues",
-                    "Code runner help",
-                    "Course unlocking help",
-                    "Notification issues",
-                ],
-            },
-            { body: "Need help? We've got your back." },
-        ],
-    },
-    {
-        slug: "about",
-        title: "About Us",
-        icon: InfoIcon,
-        tagline:
-            "ZverTs is a smart learning platform designed to make education easier, more engaging, and structured for modern learners.",
-        sections: [
-            {
-                heading: "We combine",
-                bullets: [
-                    "Built-in code runner for C, C++ and Python",
-                    "Gamification",
-                    "Structured, sequential courses",
-                    "Genuine watch-time tracking",
-                    "Progress tracking",
-                    "Bangla-first student-friendly experience",
-                ],
-            },
-            {
-                heading: "Our Mission",
-                body: "To make learning smarter, fun, and accessible for everyone.",
-            },
-            {
-                heading: "Our Vision",
-                body: "To become a next-generation learning ecosystem where students can learn, grow, and level up their skills efficiently.",
-            },
-        ],
-    },
-    {
-        slug: "faq",
-        title: "FAQ",
-        icon: HelpCircle,
-        tagline: "Frequently Asked Questions",
-        sections: [
-            {
-                heading: "1. What is ZverTs?",
-                body: "ZverTs is a learning app that turns YouTube playlists into structured courses, with progress tracking, a built-in code runner, and gamified learning.",
-            },
-            {
-                heading: "2. Is ZverTs free?",
-                body: "ZverTs offers both free and premium learning experiences.",
-            },
-            {
-                heading: "3. Can I watch videos inside the app?",
-                body: "Yes. Videos are designed to play inside the app for a seamless learning experience.",
-            },
-            {
-                heading: "4. Can I practise coding in the app?",
-                body: "Yes. Every lesson has a code runner for C, C++ and Python — write code, give it input, and see the output right next to the video.",
-            },
-            {
-                heading: "5. Can I track progress?",
-                body: "Yes. You can monitor XP, streaks, lesson completion, and overall course progress.",
-            },
-            {
-                heading: "6. Is ZverTs beginner-friendly?",
-                body: "Absolutely. Courses are built for beginners to advanced learners.",
-            },
-        ],
-    },
-    {
-        slug: "help",
-        title: "Help Center",
-        icon: BookOpen,
-        tagline: "The ZverTs Help Center is your self-service knowledge hub.",
-        sections: [
-            {
-                heading: "Find help for",
-                bullets: [
-                    "Getting started",
-                    "Account setup",
-                    "Subscription issues",
-                    "Course access",
-                    "Video problems",
-                    "Code runner issues",
-                    "Notifications",
-                    "Progress tracking",
-                    "Password reset",
-                    "Payment troubleshooting",
-                ],
-            },
-            { body: "Search. Learn. Solve." },
-        ],
-    },
-    {
-        slug: "contact",
-        title: "Contact",
-        icon: Mail,
-        tagline: "Need direct assistance? Reach out to ZverTs.",
-        sections: [
-            { heading: "Customer Support", body: "For technical or account-related issues." },
-            {
-                heading: "Business Inquiries",
-                body: "Partnerships, collaborations, or enterprise opportunities.",
-            },
-            { heading: "Feedback", body: "Share bugs, ideas, and suggestions." },
-            {
-                heading: "Contact Channels",
-                bullets: ["Email Support", "Live Chat", "In-App Support", "Social Media"],
-            },
-            { body: "We'd love to hear from you." },
-        ],
-    },
-    {
-        slug: "affiliates",
-        title: "Affiliates",
-        icon: Handshake,
-        tagline:
-            "Join the ZverTs Affiliate Program. Earn rewards by promoting ZverTs and helping more learners discover smarter education.",
-        sections: [
-            {
-                heading: "Affiliate benefits",
-                bullets: [
-                    "Referral commissions",
-                    "Performance bonuses",
-                    "Marketing resources",
-                    "Dedicated affiliate support",
-                    "Growth opportunities",
-                ],
-            },
-            {
-                heading: "Perfect for",
-                bullets: [
-                    "Content creators",
-                    "Educators",
-                    "Bloggers",
-                    "Student communities",
-                    "Learning influencers",
-                ],
-            },
-            { body: "Grow with ZverTs. Earn while helping others learn." },
-        ],
-    },
-    {
-        slug: "community",
-        title: "Community",
-        icon: Users,
-        tagline: "ZverTs is more than an app — it's a learning community.",
-        sections: [
-            {
-                heading: "Connect with",
-                bullets: ["Students", "Developers", "Creators", "Mentors", "Lifelong learners"],
-            },
-            {
-                heading: "Community features",
-                bullets: [
-                    "Discussion groups",
-                    "Study challenges",
-                    "Learning events",
-                    "Peer motivation",
-                    "Skill-sharing",
-                    "Collaboration",
-                ],
-            },
-            { body: "Learn together. Grow together." },
-        ],
-    },
-    {
-        slug: "blog",
-        title: "Blog",
-        icon: Newspaper,
-        tagline: "Explore insights, updates, and learning resources through the ZverTs Blog.",
-        sections: [
-            {
-                heading: "Topics include",
-                bullets: [
-                    "Study tips",
-                    "Coding practice guides",
-                    "Productivity hacks",
-                    "Skill development",
-                    "Tech & coding tutorials",
-                    "Career growth",
-                    "App updates",
-                    "Educational trends",
-                ],
-            },
-            { body: "Knowledge beyond the classroom." },
-        ],
-    },
-    {
-        slug: "careers",
-        title: "Careers",
-        icon: Briefcase,
-        tagline:
-            "Join the team building the future of learning. At ZverTs, we're creating a focused education platform that helps students learn smarter.",
-        sections: [
-            {
-                heading: "We look for",
-                bullets: [
-                    "Engineers",
-                    "Designers",
-                    "Product thinkers",
-                    "Growth marketers",
-                    "Community builders",
-                ],
-            },
-            {
-                heading: "Why join us?",
-                bullets: [
-                    "Purpose-driven work",
-                    "Innovation-focused culture",
-                    "Learning opportunities",
-                    "Growth mindset",
-                    "Flexible collaboration",
-                    "Real impact",
-                ],
-            },
-            { body: "Build the future of education with ZverTs." },
-        ],
-    },
-];
 
 const Info = () => {
     const { slug } = useParams<{ slug: string }>();
     const page = PAGES.find((p) => p.slug === slug);
     if (!page) return <Navigate to="/" replace />;
 
-    const Icon = page.icon;
+    const Icon = ICONS[page.slug] ?? InfoIcon;
     const related = PAGES.filter((p) => p.slug !== page.slug).slice(0, 6);
 
     const faqJsonLd =
@@ -283,7 +54,9 @@ const Info = () => {
               }
             : undefined;
 
-    const description = page.tagline?.slice(0, 155) || `${page.title} on ZverTs.`;
+    const meta = PUBLIC_PAGES.find((p) => p.path === `/info/${page.slug}`);
+    const description =
+        meta?.description ?? (page.tagline?.slice(0, 155) || `${page.title} on ZverTs.`);
 
     return (
         <AppShell>
@@ -378,7 +151,7 @@ const Info = () => {
                     </h3>
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {related.map((r) => {
-                            const RIcon = r.icon;
+                            const RIcon = ICONS[r.slug] ?? InfoIcon;
                             return (
                                 <Link
                                     key={r.slug}

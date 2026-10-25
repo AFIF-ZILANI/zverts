@@ -1,5 +1,8 @@
 import { AppShell } from "@/components/app/AppShell";
 import { SEO } from "@/components/SEO";
+import { PUBLIC_PAGES } from "@/content/seo";
+
+const PAGE = PUBLIC_PAGES.find((p) => p.path === "/code")!;
 import { CodeRunner } from "@/components/app/code-runner/CodeRunner";
 
 // The code runner on its own, outside any lesson. Unlike a lesson page it
@@ -7,11 +10,7 @@ import { CodeRunner } from "@/components/app/code-runner/CodeRunner";
 // keeps the editor and the C/C++/Python runtimes once they've been used).
 const CodePlayground = () => (
     <AppShell>
-        <SEO
-            title="Code Playground · ZverTs"
-            description="Write and run C, C++ and Python in your browser — with input, even offline."
-            path="/code"
-        />
+        <SEO title={PAGE.title} description={PAGE.description} path={PAGE.path} />
         <section className="container max-w-5xl py-6 md:py-10 space-y-4">
             <div>
                 <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">

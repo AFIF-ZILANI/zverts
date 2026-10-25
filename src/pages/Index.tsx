@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/app/AppShell";
 import { SEO } from "@/components/SEO";
+import { HOME_DESCRIPTION, HOME_TITLE, PUBLIC_PAGES, jsonLdFor } from "@/content/seo";
 import {
     ArrowRight,
     Youtube,
@@ -25,24 +26,10 @@ const Index = () => {
     return (
         <AppShell>
             <SEO
-                title="ZverTs — Disciplined Learning, Verified Progress"
-                description="A free, sequential learning platform with strict watch-time tracking, attendance, a built-in code runner, and certificates. Master web development one module at a time."
+                title={HOME_TITLE}
+                description={HOME_DESCRIPTION}
                 path="/"
-                jsonLd={[
-                    {
-                        "@context": "https://schema.org",
-                        "@type": "Organization",
-                        name: "ZverTs",
-                        url: "https://zverts.com",
-                        logo: "https://zverts.com/favicon.png",
-                    },
-                    {
-                        "@context": "https://schema.org",
-                        "@type": "WebSite",
-                        name: "ZverTs",
-                        url: "https://zverts.com",
-                    },
-                ]}
+                jsonLd={jsonLdFor(PUBLIC_PAGES[0])}
             />
             {/* HERO */}
             <section className="relative overflow-hidden">
@@ -78,6 +65,12 @@ const Index = () => {
                                         Create Course
                                         <ArrowRight className="ml-2 h-4 w-4" />
                                     </Button>
+                                </Link>
+                                <Link
+                                    to="/youtube-playlist-to-course"
+                                    className="rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+                                >
+                                    How it works
                                 </Link>
                             </div>
 
@@ -290,7 +283,7 @@ function DashboardMockup() {
                         <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30" />
                         <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30" />
                     </div>
-                    <div className="text-[10px] text-muted-foreground">zverts.app / dashboard</div>
+                    <div className="text-[10px] text-muted-foreground">zverts.com / dashboard</div>
                     <div className="w-8" />
                 </div>
 

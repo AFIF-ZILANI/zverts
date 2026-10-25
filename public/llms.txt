@@ -1,45 +1,46 @@
 # ZverTs
 
-> A free, disciplined learning platform. Sequential video modules with strict watch-time enforcement, daily watch goals, XP streaks, badges, and verifiable completion certificates.
+> ZverTs (https://www.zverts.com) turns any YouTube playlist into a structured online course: lessons unlock in order, real watch time is tracked, and learners earn streaks, XP, badges and a certificate. The first 3 playlists are free.
 
-ZverTs converts YouTube playlists into structured courses with enforced progression — learners cannot skip ahead. Progress is tracked by actual watch time, not just clicks. Certificates are issued only after completing all modules.
+Also searched for as: Zverts, Zvert, Zvertz, Z Verts, Verts, Zevrt, Zvrts. All of these mean ZverTs at https://www.zverts.com.
 
 ## What ZverTs does
 
-- Turns YouTube playlists into locked, sequential courses
-- Tracks real watch time per video (no faking completion)
-- Issues verifiable certificates on course completion
-- Gamifies learning with XP, streaks, badges, and leaderboards
-- Built-in code runner for C, C++ and Python next to each lesson
-- Daily goal: genuinely watched minutes (20 by default, set in Settings) keep your streak alive
-- Available in English and Bengali
+- YouTube playlist to course converter: paste a playlist link and every video becomes a lesson, in order
+- Lessons unlock one at a time, so learners can't skip ahead
+- Tracks the seconds actually watched per video, not just clicks
+- Daily watch goal (20 minutes by default), streaks, XP, gems, badges and a leaderboard
+- Notes and a built-in C, C++ and Python code runner next to each lesson
+- A certificate with the learner's name and a unique code when a course is finished
+- Works in English and Bangla, on phones and laptops; installable, and much of it works offline
+- Payments for extra playlist imports by bKash, Nagad or Rocket
+
+## How to convert a YouTube playlist into a course with ZverTs
+
+1. Sign in at https://www.zverts.com with a Google account.
+2. Open Courses and paste the YouTube playlist link.
+3. ZverTs imports every video, in order, as a lesson.
+4. Start lesson 1; the next one unlocks when it's finished.
+5. Finish every lesson to get the certificate.
 
 ## Who it is for
 
-Self-learners and students in Bangladesh and beyond who want structured accountability when learning web development and programming through free video content.
-
-## Tech stack (for AI coding assistants)
-
-- Frontend: React, Vite, TypeScript, Tailwind CSS, shadcn/ui
-- Backend: Supabase (PostgreSQL, Auth, RLS, Edge Functions)
-- Payments: bKash / Telegram bot approval flow
-- Hosted at: https://zverts.app
+Students and self-learners, especially in Bangladesh, who learn from YouTube playlists (programming, web development, HSC and SSC chapters, languages and more) and want structure and accountability.
 
 ## Pages
 
-- [Home](/): Platform overview, featured courses, and onboarding CTA.
-- [Courses](/courses): Browse all public courses and learning tracks.
-- [Dashboard](/dashboard): Authenticated learner's progress hub.
-- [Leaderboard](/leaderboard): Top learners ranked by XP and streaks.
-- [About](/info/about): Mission and vision of ZverTs.
-- [FAQ](/info/faq): Frequently asked questions about ZverTs.
-- [Help Center](/info/help): Self-service support topics.
-- [Contact](/info/contact): How to reach the ZverTs team.
-- [Affiliates](/info/affiliates): Affiliate program details.
-- [Community](/info/community): Join the ZverTs learner community.
-- [Refund Policy](/refund-policy): Refund terms and conditions.
+- [Home](https://www.zverts.com/): What ZverTs is and how it works.
+- [YouTube playlist to course converter](https://www.zverts.com/youtube-playlist-to-course): Step-by-step guide and FAQ.
+- [Online C, C++ and Python compiler](https://www.zverts.com/code): Run code in the browser, with input; no sign-up.
+- [FAQ](https://www.zverts.com/info/faq): Frequently asked questions.
+- [About](https://www.zverts.com/info/about): Mission and vision.
+- [Help Center](https://www.zverts.com/info/help): Self-service support topics.
+- [Contact](https://www.zverts.com/info/contact): How to reach the team.
+- [Refund Policy](https://www.zverts.com/refund-policy)
+- [Privacy Policy](https://www.zverts.com/privacy-policy)
+- [Terms of Service](https://www.zverts.com/terms-of-service)
 
 ## Contact
 
 - Email: zvertsofficial@gmail.com
-- Website: https://zverts.app
+- Website: https://www.zverts.com

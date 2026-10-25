@@ -6,6 +6,8 @@ import { useTheme } from "next-themes";
 
 const links = [
     { label: "Courses", to: "/courses" },
+    { label: "Playlist to course", to: "/youtube-playlist-to-course" },
+    { label: "Code playground", to: "/code" },
     { label: "Pricing", to: "/buy" },
     { label: "About", to: "/info/about" },
     { label: "Help", to: "/info/help" },

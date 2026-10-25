@@ -57,6 +57,7 @@ const AdminManagement = lazyWithRetry(() => import("./pages/admin/AdminManagemen
 const AdminBroadcast = lazyWithRetry(() => import("./pages/admin/Broadcast.tsx"));
 const AdminSupportContacts = lazyWithRetry(() => import("./pages/admin/SupportContacts.tsx"));
 const AdminImpact = lazyWithRetry(() => import("./pages/admin/Impact.tsx"));
+const PlaylistToCourse = lazyWithRetry(() => import("./pages/PlaylistToCourse.tsx"));
 
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
 const Info = lazyWithRetry(() => import("./pages/Info.tsx"));
@@ -155,6 +156,10 @@ const App = () => (
                                             element={<Certificate />}
                                         />
                                         <Route path="/info/:slug" element={<Info />} />
+                                        <Route
+                                            path="/youtube-playlist-to-course"
+                                            element={<PlaylistToCourse />}
+                                        />
                                         <Route path="/refund-policy" element={<RefundPolicy />} />
                                         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                                         <Route
