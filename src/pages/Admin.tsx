@@ -1,24 +1,29 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntitlements } from "@/hooks/useEntitlements";
+import { RequireRole } from "@/components/RequireRole";
 import { AppShell } from "@/components/app/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  CreditCard, Users as UsersIcon, ShieldCheck, Megaphone,
+  CreditCard, Users as UsersIcon, ShieldCheck, Megaphone, Sparkles,
   Phone, ArrowRight, Flame, Gem, Zap, Clock, Mail,
   CheckCircle2, XCircle, AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
+// The table shows the most recently active members; the header counts everyone.
+const USERS_SHOWN = 200;
+
 // Declared outside the component so the row type can be inferred from the select.
 const usersQuery = () =>
   supabase
     .from("profiles")
-    .select("id,name,email,last_active,user_progress(total_gems,total_xp,current_streak)")
-    .order("last_active", { ascending: false });
+    .select("id,name,email,last_active,user_progress(total_gems,total_xp,current_streak)", { count: "exact" })
+    .order("last_active", { ascending: false })
+    .limit(USERS_SHOWN);
 type AdminUser = NonNullable<Awaited<ReturnType<typeof usersQuery>>["data"]>[number];
 
 const fmtDate = (s: string) => {
@@ -42,12 +47,11 @@ const avatarColor = (id: string) => {
   return colors[h];
 };
 
-const Admin = () => {
-  const { user, loading } = useAuth();
-  const { t } = useTranslation();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [isSuper, setIsSuper] = useState(false);
+const AdminInner = () => {
+  const { user } = useAuth();
+  const { isSuperAdmin: isSuper } = useEntitlements();
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [userCount, setUserCount] = useState(0);
   const [logs, setLogs] = useState<Tables<"email_logs">[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [dataLoading, setDataLoading] = useState(true);
@@ -64,18 +68,14 @@ const Admin = () => {
     if (!user) return;
     let ch: ReturnType<typeof supabase.channel> | null = null;
     const init = async () => {
-      const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-      setIsAdmin(!!data);
-      if (!data) return;
-      const [{ data: u }, { data: l }, { data: s }] = await Promise.all([
+      const [{ data: u, count }, { data: l }] = await Promise.all([
         usersQuery(),
         supabase.from("email_logs").select("*").order("created_at", { ascending: false }).limit(50),
-        supabase.rpc("has_role", { _user_id: user.id, _role: "super_admin" }),
+        loadPending(),
       ]);
       setUsers(u ?? []);
+      setUserCount(count ?? u?.length ?? 0);
       setLogs(l ?? []);
-      setIsSuper(!!s);
-      await loadPending();
       setDataLoading(false);
       ch = supabase
         .channel(`admin:overview-payments:${user.id}`)
@@ -86,11 +86,15 @@ const Admin = () => {
     return () => { if (ch) supabase.removeChannel(ch); };
   }, [user]);
 
-  if (loading || isAdmin === null) return null;
-  if (!user) return <Navigate to="/auth" replace />;
-  if (!isAdmin) return <Navigate to="/dashboard" replace />;
-
   const navCards = [
+    {
+      to: "/admin/impact",
+      icon: Sparkles,
+      label: "ZverTs Impact",
+      desc: "Courses created, hours watched, what learners achieved",
+      badge: null,
+      iconBg: "bg-primary/10 text-primary",
+    },
     {
       to: "/admin/payments",
       icon: CreditCard,
@@ -158,7 +162,7 @@ const Admin = () => {
           {!dataLoading && (
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <div className="font-display text-2xl font-semibold">{users.length}</div>
+                <div className="font-display text-2xl font-semibold">{userCount.toLocaleString()}</div>
                 <div className="text-xs font-mono text-muted-foreground">total users</div>
               </div>
               <div className="h-8 w-px bg-border" />
@@ -211,7 +215,9 @@ const Admin = () => {
             {dataLoading ? (
               <Skeleton className="h-6 w-16 rounded-full" />
             ) : (
-              <span className="text-xs font-mono text-muted-foreground">{users.length} total</span>
+              <span className="text-xs font-mono text-muted-foreground">
+                {userCount > users.length ? `${users.length} most recent of ${userCount.toLocaleString()}` : `${userCount} total`}
+              </span>
             )}
           </div>
 
@@ -345,5 +351,11 @@ const Admin = () => {
     </AppShell>
   );
 };
+
+const Admin = () => (
+  <RequireRole role="admin">
+    <AdminInner />
+  </RequireRole>
+);
 
 export default Admin;

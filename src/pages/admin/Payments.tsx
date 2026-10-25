@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { RequireRole } from "@/components/RequireRole";
 import { AppShell } from "@/components/app/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +29,12 @@ const AdminPaymentsInner = () => {
             .order("created_at", { ascending: false })
             .limit(200);
 
-        const { data } = await q;
+        const { data, error } = await q;
+        if (error) {
+            toast.error(error.message);
+            setLoading(false);
+            return;
+        }
         let list: PaymentRow[] = data ?? [];
         if (list.length) {
             const ids = Array.from(new Set(list.map((r) => r.user_id)));
@@ -40,19 +45,22 @@ const AdminPaymentsInner = () => {
             const map = new Map((profiles ?? []).map((p) => [p.id, p]));
             list = list.map((r) => ({ ...r, profile: map.get(r.user_id) }));
         }
-        if (search.trim()) {
-            const s = search.toLowerCase();
-            list = list.filter(
-                (r) =>
-                    r.trx_id?.toLowerCase().includes(s) ||
-                    r.profile?.email?.toLowerCase().includes(s) ||
-                    r.profile?.name?.toLowerCase().includes(s) ||
-                    r.sender_number?.includes(s),
-            );
-        }
         setRows(list);
         setLoading(false);
-    }, [status, search]);
+    }, [status]);
+
+    // Search filters the loaded rows; typing doesn't refetch or resubscribe.
+    const shown = useMemo(() => {
+        const s = search.trim().toLowerCase();
+        if (!s) return rows;
+        return rows.filter(
+            (r) =>
+                r.trx_id?.toLowerCase().includes(s) ||
+                r.profile?.email?.toLowerCase().includes(s) ||
+                r.profile?.name?.toLowerCase().includes(s) ||
+                r.sender_number?.includes(s),
+        );
+    }, [rows, search]);
 
     useEffect(() => {
         load();
@@ -82,11 +90,13 @@ const AdminPaymentsInner = () => {
         }
     };
     const reject = async (id: string) => {
-        const note = prompt("Reason (optional):") ?? undefined;
+        const note = prompt("Reason (optional):");
+        // Cancel keeps the payment pending.
+        if (note === null) return;
         setActing(id);
         const { error } = await supabase.rpc("reject_payment", {
             _payment_id: id,
-            _note: note,
+            _note: note.trim() || undefined,
         });
         setActing(null);
         if (error) toast.error(error.message);
@@ -111,7 +121,7 @@ const AdminPaymentsInner = () => {
                             onClick={() => setStatus(s)}
                             className={`px-4 py-2 rounded-md text-sm font-medium border transition-colors ${status === s ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:text-foreground"}`}
                         >
-                            {s} {status === s && `(${rows.length})`}
+                            {s} {status === s && `(${shown.length})`}
                         </button>
                     ))}
                     <Input
@@ -127,13 +137,13 @@ const AdminPaymentsInner = () => {
                         <div className="p-8 text-center">
                             <Loader2 className="h-5 w-5 animate-spin inline" />
                         </div>
-                    ) : rows.length === 0 ? (
+                    ) : shown.length === 0 ? (
                         <div className="p-8 text-center text-sm text-muted-foreground font-mono">
-                            No {status} payments.
+                            {rows.length ? "No payments match your search." : `No ${status} payments.`}
                         </div>
                     ) : (
                         <div className="divide-y divide-border">
-                            {rows.map((r) => (
+                            {shown.map((r) => (
                                 <div key={r.id} className="p-4 flex flex-wrap items-start gap-4">
                                     <div className="flex-1 min-w-[240px]">
                                         <div className="font-display text-lg">

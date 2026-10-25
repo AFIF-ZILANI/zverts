@@ -1187,6 +1187,7 @@ export type Database = {
                 Args: { _delta: number; _reason: string; _target: string };
                 Returns: undefined;
             };
+            admin_impact_stats: { Args: never; Returns: Json };
             admin_broadcast_notification: {
                 Args: {
                     _body: string;
@@ -1252,7 +1253,6 @@ export type Database = {
             };
             check_achievements: { Args: never; Returns: Json };
             consume_ai_message: { Args: { _daily_limit?: number }; Returns: Json };
-            consume_conversion: { Args: never; Returns: Json };
             dismiss_notification: { Args: { _id: string }; Returns: undefined };
             dispatch_notification: {
                 Args: {

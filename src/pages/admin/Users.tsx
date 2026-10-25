@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RequireRole } from "@/components/RequireRole";
 import { AppShell } from "@/components/app/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,16 +12,25 @@ type UserRow = Database["public"]["Functions"]["admin_list_users"]["Returns"][nu
 const AdminUsersInner = () => {
     const [search, setSearch] = useState("");
     const [rows, setRows] = useState<UserRow[]>([]);
+    const [loading, setLoading] = useState(true);
+    // Only the newest search may set the rows; older responses can arrive later.
+    const latest = useRef(0);
     const load = async () => {
+        const req = ++latest.current;
         const { data, error } = await supabase.rpc("admin_list_users", {
             _limit: 200,
-            _search: search || undefined,
+            _search: search.trim() || undefined,
         });
+        if (req !== latest.current) return;
         if (error) toast.error(error.message);
         else setRows(data ?? []);
+        setLoading(false);
     };
     useEffect(() => {
-        load(); /* eslint-disable-next-line */
+        // Wait for a pause in typing before searching.
+        const t = setTimeout(load, search ? 300 : 0);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [search]);
 
     const adjust = async (id: string) => {
@@ -32,7 +41,8 @@ const AdminUsersInner = () => {
             toast.error("Invalid number");
             return;
         }
-        const reason = prompt("Reason:") ?? "";
+        const reason = prompt("Reason:");
+        if (reason === null) return;
         const { error } = await supabase.rpc("admin_adjust_credits", {
             _target: id,
             _delta: delta,
@@ -45,9 +55,9 @@ const AdminUsersInner = () => {
         }
     };
     const toggleLock = async (id: string, locked: boolean) => {
-        const reason = locked
-            ? (prompt("Reason for unlock:") ?? "")
-            : (prompt("Reason for lock:") ?? "");
+        const reason = prompt(locked ? "Reason for unlock:" : "Reason for lock:");
+        // Cancel leaves the account as it is.
+        if (reason === null) return;
         const { error } = await supabase.rpc("admin_set_locked", {
             _target: id,
             _locked: !locked,
@@ -88,6 +98,16 @@ const AdminUsersInner = () => {
                             </tr>
                         </thead>
                         <tbody>
+                            {!loading && rows.length === 0 && (
+                                <tr>
+                                    <td
+                                        colSpan={8}
+                                        className="p-8 text-center text-sm text-muted-foreground font-mono"
+                                    >
+                                        {search.trim() ? "No users match your search." : "No users yet."}
+                                    </td>
+                                </tr>
+                            )}
                             {rows.map((u) => (
                                 <tr key={u.id} className="border-b border-border/40">
                                     <td className="p-3">{u.name}</td>

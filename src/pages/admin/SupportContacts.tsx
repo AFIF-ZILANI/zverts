@@ -1,60 +1,48 @@
-import { useEffect, useMemo, useState } from "react";
-import { Navigate, Link } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { RequireRole } from "@/components/RequireRole";
 import { AppShell } from "@/components/app/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Copy, Download, Phone, Search, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
 
-interface Row {
-    id: string;
-    user_id: string;
-    name: string;
-    email: string | null;
-    country_code: string | null;
-    phone_number: string;
-    whatsapp_enabled: boolean;
-    source: string;
-    submitted_at: string;
-    joined_at: string | null;
-    last_active: string | null;
-    is_paid_user: boolean | null;
-}
+type Row = Database["public"]["Functions"]["admin_list_support_contacts"]["Returns"][number];
 
-const SupportContacts = () => {
-    const { user, loading } = useAuth();
-    const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+// Excel and Sheets run a cell that starts with = + - or @ as a formula; names
+// and emails are typed by students, so make those plain text.
+const csvText = (v: string) => (/^[=+\-@]/.test(v) ? `'${v}` : v);
+
+const SupportContactsInner = () => {
     const [rows, setRows] = useState<Row[]>([]);
+    const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [from, setFrom] = useState("");
     const [to, setTo] = useState("");
+    // The search last run with Search/Enter; the 15 s refresh repeats it.
+    const applied = useRef("");
 
-    useEffect(() => {
-        if (!user) return;
-        supabase
-            .rpc("has_role", { _user_id: user.id, _role: "admin" })
-            .then(({ data }) => setIsAdmin(!!data));
-    }, [user]);
-
-    const load = async () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await supabase.rpc("admin_list_support_contacts" as any, {
-            _search: search || null,
+    const load = async (term = applied.current) => {
+        applied.current = term;
+        const { data, error } = await supabase.rpc("admin_list_support_contacts", {
+            _search: term.trim() || undefined,
             _limit: 1000,
         });
-        if (error) return toast.error(error.message);
-        setRows((data as Row[]) ?? []);
+        if (error) {
+            setError(error.message);
+            return;
+        }
+        setError(null);
+        setRows(data ?? []);
     };
 
     useEffect(() => {
-        if (!isAdmin) return;
         load();
-        const interval = setInterval(load, 15000);
+        const interval = setInterval(() => load(), 15000);
         return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAdmin]);
+    }, []);
 
     const filtered = useMemo(() => {
         return rows.filter((r) => {
@@ -83,8 +71,8 @@ const SupportContacts = () => {
         const lines = [headers.join(",")];
         filtered.forEach((r) => {
             const cells = [
-                r.name,
-                r.email ?? "",
+                csvText(r.name),
+                csvText(r.email ?? ""),
                 `${r.country_code ?? ""}${r.phone_number}`,
                 r.whatsapp_enabled ? "yes" : "no",
                 r.joined_at ?? "",
@@ -102,10 +90,6 @@ const SupportContacts = () => {
         a.click();
         URL.revokeObjectURL(url);
     };
-
-    if (loading || isAdmin === null) return null;
-    if (!user) return <Navigate to="/auth" replace />;
-    if (!isAdmin) return <Navigate to="/dashboard" replace />;
 
     return (
         <AppShell>
@@ -138,7 +122,7 @@ const SupportContacts = () => {
                             placeholder="Search name, email, phone..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && load()}
+                            onKeyDown={(e) => e.key === "Enter" && load(search)}
                             className="pl-9"
                         />
                     </div>
@@ -154,7 +138,7 @@ const SupportContacts = () => {
                         onChange={(e) => setTo(e.target.value)}
                         className="w-full sm:w-auto"
                     />
-                    <Button onClick={load}>Search</Button>
+                    <Button onClick={() => load(search)}>Search</Button>
                 </div>
 
                 <div className="rounded-2xl border border-border bg-gradient-card shadow-card overflow-x-auto">
@@ -178,7 +162,11 @@ const SupportContacts = () => {
                                         colSpan={8}
                                         className="text-center py-10 text-muted-foreground font-mono text-sm"
                                     >
-                                        No contacts yet.
+                                        {error
+                                            ? `Couldn't load contacts: ${error}`
+                                            : rows.length
+                                              ? "No contacts match these filters."
+                                              : "No contacts yet."}
                                     </td>
                                 </tr>
                             )}
@@ -249,4 +237,9 @@ const SupportContacts = () => {
     );
 };
 
+const SupportContacts = () => (
+    <RequireRole role="admin">
+        <SupportContactsInner />
+    </RequireRole>
+);
 export default SupportContacts;

@@ -23,11 +23,10 @@ const BroadcastInner = () => {
         }
         if (!confirm(`Send "${title}" to ALL users?`)) return;
         setSending(true);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await supabase.rpc("admin_broadcast_notification" as any, {
+        const { data, error } = await supabase.rpc("admin_broadcast_notification", {
             _title: title,
             _body: body,
-            _deep_link: link.trim() || null,
+            _deep_link: link.trim() || undefined,
             _priority: priority,
         });
         setSending(false);
