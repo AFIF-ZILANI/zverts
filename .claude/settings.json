@@ -20,5 +20,23 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "ponytail@ponytail": true,
+    "context-optimizer@cco": true
+  },
+  "extraKnownMarketplaces": {
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
+    },
+    "cco": {
+      "source": {
+        "source": "github",
+        "repo": "egorfedorov/claude-context-optimizer"
+      }
+    }
   }
 }
