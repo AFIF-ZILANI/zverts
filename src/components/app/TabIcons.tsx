@@ -143,3 +143,34 @@ export const SettingsIcon: TabIcon = ({ active, className }) => (
         )}
     </Svg>
 );
+
+export const WalletIcon: TabIcon = ({ active, className }) => (
+    <Svg active={active} className={className}>
+        {active ? (
+            <>
+                <path
+                    fill="currentColor"
+                    stroke="none"
+                    d="M5.5 4A2.5 2.5 0 0 0 3 6.5v11A2.5 2.5 0 0 0 5.5 20h13a2.5 2.5 0 0 0 2.5-2.5V15h-3.5a3 3 0 0 1 0-6H21V8.5A2.5 2.5 0 0 0 18.5 6H6a1 1 0 0 1 0-2Z"
+                />
+                <path fill="currentColor" stroke="none" d="M17.5 10.5a1.5 1.5 0 0 0 0 3H21v-3Z" />
+            </>
+        ) : (
+            <>
+                <path d="M19.25 7V6a2 2 0 0 0-2-2H6a2.25 2.25 0 0 0 0 4.5h13.25a1 1 0 0 1 1 1v9.5a1 1 0 0 1-1 1H5.75a2 2 0 0 1-2-2V6.25" />
+                <path d="M20.25 11.5H17.5a1.5 1.5 0 0 0 0 3h2.75" />
+            </>
+        )}
+    </Svg>
+);
+
+export const ShieldIcon: TabIcon = ({ active, className }) => (
+    <Svg active={active} className={className}>
+        <path
+            fill={active ? "currentColor" : "none"}
+            stroke={active ? "none" : undefined}
+            d="M12 2.9 4.5 5.6a1 1 0 0 0-.65.94V11c0 4.9 3.3 8.6 7.8 10.05a1 1 0 0 0 .7 0C16.85 19.6 20.15 15.9 20.15 11V6.54a1 1 0 0 0-.65-.94L12 2.9Z"
+        />
+        <path className={active ? "stroke-background" : undefined} d="m8.75 12 2.25 2.25 4.25-4.5" />
+    </Svg>
+);

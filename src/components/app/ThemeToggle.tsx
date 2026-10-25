@@ -1,51 +1,24 @@
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Moon, Sun, Monitor } from "lucide-react";
-import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { Moon, Sun } from "lucide-react";
+import { useState } from "react";
 
-const themes = [
-    { value: "light", label: "Light", icon: Sun },
-    { value: "dark", label: "Dark", icon: Moon },
-    // { value: "system", label: "System", icon: Monitor },
-] as const;
-
+// One click switches between the two themes. (It was a dropdown menu, whose
+// modal layer blocked scrolling and clicks on the page while it was open.)
 export const ThemeToggle = () => {
-    const { theme, setTheme } = useTheme();
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
-
-    const current = themes.find((t) => t.value === theme) ?? themes[1];
+    const { resolvedTheme, setTheme } = useTheme();
+    const dark = resolvedTheme !== "light";
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Theme">
-                    <current.icon className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36">
-                {themes.map(({ value, label, icon: ItemIcon }) => (
-                    <DropdownMenuItem
-                        key={value}
-                        onClick={() => setTheme(value)}
-                        className={cn(
-                            "gap-2",
-                            mounted && theme === value && "text-primary font-medium",
-                        )}
-                    >
-                        <ItemIcon className="h-4 w-4 shrink-0" />
-                        {label}
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <Button
+            variant="ghost"
+            size="icon"
+            aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+            title={dark ? "Light mode" : "Dark mode"}
+            onClick={() => setTheme(dark ? "light" : "dark")}
+        >
+            {dark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+        </Button>
     );
 };
 

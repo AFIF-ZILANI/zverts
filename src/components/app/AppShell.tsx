@@ -30,6 +30,8 @@ import {
     HomeIcon,
     MenuIcon,
     SettingsIcon,
+    ShieldIcon,
+    WalletIcon,
     type TabIcon,
 } from "./TabIcons";
 import { MobileMenu } from "./MobileMenu";
@@ -41,6 +43,8 @@ const TAB_ICONS: Record<string, TabIcon> = {
     "/code": CodeIcon,
     "/growth": GrowthIcon,
     "/settings": SettingsIcon,
+    "/payments": WalletIcon,
+    "/admin": ShieldIcon,
 };
 
 // One phone tab: the active one sits on a tinted glass pill and its icon switches to
@@ -169,138 +173,162 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
             )}
         >
             {/* ── Header ─────────────────────────────────────────────────────── */}
-            <header className="glass-bar sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] select-none">
-                <div className="container flex h-14 items-center gap-3">
-                    {/* Logo */}
-                    <Link
-                        to={user ? "/dashboard" : "/"}
-                        className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
-                    >
-                        <img
-                            src={theme === "dark" ? "/hero-light.svg" : "/hero-dark.svg"}
-                            alt="ZverTs"
-                            className="h-8 w-auto object-contain"
-                            loading="eager"
-                            decoding="async"
-                        />
-                    </Link>
+            {/* Phones: a full-width bar. md and up: a floating glass capsule. */}
+            <header className="sticky top-0 z-40 select-none pt-[env(safe-area-inset-top)] md:px-4 md:pt-3">
+                <div className="glass-bar glass-capsule border-b md:mx-auto md:max-w-6xl md:rounded-full md:border">
+                    <div className="container flex h-14 items-center gap-3 md:max-w-none md:pl-5 md:pr-2">
+                        {/* Logo */}
+                        <Link
+                            to={user ? "/dashboard" : "/"}
+                            className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+                        >
+                            <img
+                                src={theme === "dark" ? "/hero-light.svg" : "/hero-dark.svg"}
+                                alt="ZverTs"
+                                className="h-8 w-auto object-contain"
+                                loading="eager"
+                                decoding="async"
+                            />
+                        </Link>
 
-                    {/* Desktop nav — icons only until there's room for labels */}
-                    {user ? (
-                        <nav className="hidden md:flex flex-1 min-w-0 justify-center items-center gap-0.5">
-                            {navItems.map((n) => (
-                                <NavLink
-                                    key={n.to}
-                                    to={n.to}
-                                    title={n.label}
-                                    aria-label={n.label}
-                                    className={({ isActive }) =>
-                                        cn(
-                                            "relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-                                            isActive
-                                                ? "text-primary bg-primary/8"
-                                                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
-                                            n.to === "/admin" &&
-                                                "text-amber-500 hover:text-amber-400",
-                                        )
-                                    }
-                                >
-                                    {({ isActive }) => (
-                                        <>
-                                            <n.icon className="h-4 w-4 lg:h-3.5 lg:w-3.5 shrink-0" />
-                                            <span className="hidden lg:inline">{n.label}</span>
-                                            {isActive && (
-                                                <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-primary" />
-                                            )}
-                                        </>
-                                    )}
-                                </NavLink>
-                            ))}
-                        </nav>
-                    ) : null}
-
-                    {/* Spacer (the desktop nav fills this role when signed in) */}
-                    <div className={cn("flex-1", user && "md:hidden")} />
-
-                    {/* Desktop right actions */}
-                    <div className="hidden md:flex shrink-0 items-center gap-2 lg:gap-4">
-                        {/* <LanguageToggle /> */}
-                        <ThemeToggle />
+                        {/* Desktop nav: the active tab always shows its label; the
+                            rest add theirs once there's room (lg). */}
                         {user ? (
-                            <>
+                            <nav
+                                aria-label="Primary"
+                                className="hidden md:flex flex-1 min-w-0 justify-center"
+                            >
+                                <div className="glass-well flex items-center gap-0.5 rounded-full p-1">
+                                    {navItems.map((n) => {
+                                        const Icon = TAB_ICONS[n.to] ?? HomeIcon;
+                                        return (
+                                            <NavLink
+                                                key={n.to}
+                                                to={n.to}
+                                                title={n.label}
+                                                className={({ isActive }) =>
+                                                    cn(
+                                                        "flex h-9 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition-[color,background-color,box-shadow] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:px-3.5",
+                                                        isActive
+                                                            ? "glass-lens text-primary"
+                                                            : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
+                                                        n.to === "/admin" &&
+                                                            !isActive &&
+                                                            "text-amber-500 hover:text-amber-400",
+                                                    )
+                                                }
+                                            >
+                                                {({ isActive }) => (
+                                                    <>
+                                                        <Icon
+                                                            active={isActive}
+                                                            className="h-[18px] w-[18px] shrink-0"
+                                                        />
+                                                        <span
+                                                            className={cn(
+                                                                "whitespace-nowrap",
+                                                                !isActive && "sr-only lg:not-sr-only",
+                                                            )}
+                                                        >
+                                                            {n.label}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </NavLink>
+                                        );
+                                    })}
+                                </div>
+                            </nav>
+                        ) : null}
+
+                        {/* Spacer (the desktop nav fills this role when signed in) */}
+                        <div className={cn("flex-1", user && "md:hidden")} />
+
+                        {/* Desktop right actions */}
+                        <div className="hidden md:flex shrink-0 items-center gap-2">
+                            {/* <LanguageToggle /> */}
+                            <div className="glass-well flex items-center gap-0.5 rounded-full p-1 [&_button]:h-9 [&_button]:w-9 [&_button]:rounded-full [&_button:hover]:bg-foreground/5">
+                                <ThemeToggle />
+                                {user && (
+                                    <Suspense fallback={null}>
+                                        <NotificationCenter />
+                                    </Suspense>
+                                )}
+                            </div>
+                            {user ? (
+                                <>
+                                    {/* Upgrade CTA */}
+                                    <Link
+                                        to="/buy"
+                                        aria-label="Upgrade"
+                                        className="flex h-9 w-9 items-center justify-center gap-1.5 rounded-full bg-gradient-lime text-sm font-semibold text-primary-foreground shadow-glow transition-transform hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:w-auto lg:px-4"
+                                    >
+                                        <Sparkles className="h-4 w-4" />
+                                        <span className="hidden lg:inline">Upgrade</span>
+                                    </Link>
+
+                                    {/* Avatar / profile */}
+                                    <button
+                                        onClick={() => navigate("/settings")}
+                                        aria-label="Settings"
+                                        className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden ring-2 ring-[var(--glass-border)] transition-all hover:ring-primary focus-visible:outline-none focus-visible:ring-ring"
+                                    >
+                                        {avatarUrl && !avatarFailed ? (
+                                            <img
+                                                src={avatarUrl}
+                                                alt=""
+                                                referrerPolicy="no-referrer"
+                                                onError={() => setAvatarFailed(true)}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
+                                                {displayName.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                    </button>
+
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 rounded-full text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+                                        onClick={async () => {
+                                            await signOut();
+                                            navigate("/");
+                                        }}
+                                        aria-label="Sign out"
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button
+                                    size="sm"
+                                    className="h-9 rounded-full px-4"
+                                    onClick={() => navigate("/auth")}
+                                >
+                                    {t("nav.signin")}
+                                </Button>
+                            )}
+                        </div>
+
+                        {/* Phones: notifications + menu */}
+                        <div className="flex items-center gap-1.5 md:hidden">
+                            {user && (
                                 <Suspense fallback={null}>
                                     <NotificationCenter />
                                 </Suspense>
-
-                                {/* Upgrade CTA */}
-                                <Link to="/buy">
-                                    <Button
-                                        size="sm"
-                                        aria-label="Upgrade"
-                                        className="bg-gradient-lime text-primary-foreground shadow-glow ml-1 gap-1.5"
-                                    >
-                                        <Sparkles className="h-3.5 w-3.5" />
-                                        <span className="hidden lg:inline">Upgrade</span>
-                                    </Button>
-                                </Link>
-
-                                {/* Avatar / profile */}
-                                <button
-                                    onClick={() => navigate("/settings")}
-                                    aria-label="Settings"
-                                    className="ml-1 flex items-center justify-center h-8 w-8 rounded-full overflow-hidden ring-1 ring-border hover:ring-primary transition-all"
-                                >
-                                    {avatarUrl && !avatarFailed ? (
-                                        <img
-                                            src={avatarUrl}
-                                            alt=""
-                                            referrerPolicy="no-referrer"
-                                            onError={() => setAvatarFailed(true)}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
-                                            {displayName.charAt(0).toUpperCase()}
-                                        </div>
-                                    )}
-                                </button>
-
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                    onClick={async () => {
-                                        await signOut();
-                                        navigate("/");
-                                    }}
-                                    aria-label="Sign out"
-                                >
-                                    <LogOut className="h-4 w-4" />
-                                </Button>
-                            </>
-                        ) : (
-                            <Button size="sm" onClick={() => navigate("/auth")}>
-                                {t("nav.signin")}
-                            </Button>
-                        )}
-                    </div>
-
-                    {/* Phones: notifications + menu */}
-                    <div className="flex items-center gap-1.5 md:hidden">
-                        {user && (
-                            <Suspense fallback={null}>
-                                <NotificationCenter />
-                            </Suspense>
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => setMobileOpen(true)}
-                            aria-label="Open menu"
-                            aria-expanded={mobileOpen}
-                            className="flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted active:scale-95"
-                        >
-                            <MenuIcon className="h-6 w-6" />
-                        </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setMobileOpen(true)}
+                                aria-label="Open menu"
+                                aria-expanded={mobileOpen}
+                                className="flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted active:scale-95"
+                            >
+                                <MenuIcon className="h-6 w-6" />
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <OfflineBanner />
