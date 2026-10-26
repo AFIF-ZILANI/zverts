@@ -8,7 +8,7 @@ declare global {
                 sendMessage?: (
                     extensionId: string,
                     message: unknown,
-                    responseCallback?: (response: any) => void,
+                    responseCallback?: (response: unknown) => void,
                 ) => void;
                 lastError?: { message: string } | undefined;
             };

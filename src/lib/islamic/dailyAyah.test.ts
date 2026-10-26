@@ -32,10 +32,10 @@ describe("schedule", () => {
 
 describe("rotation", () => {
     const order = rotation(ayat);
-    it("weights motivational ayat 3:1", () => {
+    it("weights motivational ayat 4:1", () => {
         const mot = ayat.filter((a) => a.kind === "motivational").length;
         const gen = ayat.length - mot;
-        expect(order.length).toBe(mot * 3 + gen);
+        expect(order.length).toBe(mot * 4 + gen);
         const shown = order.filter((a) => a.kind === "motivational").length / order.length;
         expect(shown).toBeGreaterThan(0.8);
     });

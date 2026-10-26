@@ -84,6 +84,24 @@ Deno.serve(async (req) => {
             );
         }
 
+        // Claim a conversion atomically right before creating the course, so
+        // parallel imports can't all pass the check above; refund if the import fails.
+        let conversionsLeft: number | null = null;
+        const claimConversion = async () => {
+            if (entitlement.is_paid_user) return true;
+            const { data, error } = await supabase.rpc("svc_use_conversion", { _user_id: user.id });
+            if (error) console.error("Failed to claim conversion:", error);
+            conversionsLeft = data ?? null;
+            return data !== null && !error;
+        };
+        const refundConversion = async () => {
+            if (entitlement.is_paid_user) return;
+            const { error } = await supabase.rpc("svc_use_conversion", { _user_id: user.id, _delta: 1 });
+            if (error) console.error("Failed to refund conversion:", error);
+        };
+        const noConversions = () =>
+            json({ error: "You have no conversions left. Please purchase more to continue." }, 403);
+
         const { url } = await req.json();
         if (!url) return json({ error: "URL is required" }, 400);
 
@@ -102,7 +120,7 @@ Deno.serve(async (req) => {
             console.log("Importing single video:", videoId, "for user:", user.id);
 
             const res = await fetch(
-                `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${apiKey}`,
+                `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${encodeURIComponent(videoId)}&key=${apiKey}`,
             );
             if (!res.ok) {
                 const errorBody = await res.json().catch(() => ({}));
@@ -134,6 +152,8 @@ Deno.serve(async (req) => {
                 );
             }
 
+            if (!(await claimConversion())) return noConversions();
+
             const { data: course, error: cErr } = await supabase
                 .from("courses")
                 .insert({
@@ -156,6 +176,7 @@ Deno.serve(async (req) => {
 
             if (cErr) {
                 console.error("Course insert error:", cErr);
+                await refundConversion();
                 return json({ error: `Course create failed: ${cErr.message}` }, 400);
             }
             console.log("Course created:", course.id);
@@ -175,30 +196,21 @@ Deno.serve(async (req) => {
             if (mErr) {
                 console.error("Module insert error:", mErr);
                 await supabase.from("courses").delete().eq("id", course.id);
+                await refundConversion();
                 return json({ error: `Failed to import video: ${mErr.message}` }, 400);
-            }
-
-            if (!entitlement.is_paid_user) {
-                const { error: decrErr } = await supabase
-                    .from("user_entitlements")
-                    .update({ playlist_conversions_left: entitlement.playlist_conversions_left - 1 })
-                    .eq("user_id", user.id);
-                if (decrErr) console.error("Failed to decrement conversions:", decrErr);
             }
 
             return json({
                 course_id: course.id,
                 modules: inserted?.length ?? 1,
-                conversions_left: entitlement.is_paid_user
-                    ? null
-                    : entitlement.playlist_conversions_left - 1,
+                conversions_left: conversionsLeft,
             });
         }
 
         console.log("Importing playlist:", playlistId, "for user:", user.id);
 
         const plRes = await fetch(
-            `https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=${playlistId}&key=${apiKey}`,
+            `https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=${encodeURIComponent(playlistId!)}&key=${apiKey}`,
         );
         if (!plRes.ok) {
             const errorBody = await plRes.json().catch(() => ({}));
@@ -242,7 +254,7 @@ Deno.serve(async (req) => {
 
         for (let i = 0; i < 4; i++) {
             const res = await fetch(
-                `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&maxResults=50&playlistId=${playlistId}${
+                `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&maxResults=50&playlistId=${encodeURIComponent(playlistId!)}${
                     pageToken ? `&pageToken=${pageToken}` : ""
                 }&key=${apiKey}`,
             );
@@ -290,7 +302,7 @@ Deno.serve(async (req) => {
         const durations = new Map<string, number>();
 
         for (let i = 0; i < ids.length; i += 50) {
-            const batch = ids.slice(i, i + 50).join(",");
+            const batch = ids.slice(i, i + 50).map((id) => encodeURIComponent(String(id))).join(",");
             const r = await fetch(
                 `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${batch}&key=${apiKey}`,
             );
@@ -303,6 +315,8 @@ Deno.serve(async (req) => {
                 console.error("YouTube video duration fetch failed:", r.status);
             }
         }
+
+        if (!(await claimConversion())) return noConversions();
 
         const { data: course, error: cErr } = await supabase
             .from("courses")
@@ -324,6 +338,7 @@ Deno.serve(async (req) => {
 
         if (cErr) {
             console.error("Course insert error:", cErr);
+            await refundConversion();
             return json({ error: `Course create failed: ${cErr.message}` }, 400);
         }
         console.log("Course created:", course.id);
@@ -354,37 +369,16 @@ Deno.serve(async (req) => {
         if (mErr) {
             console.error("Modules insert error:", mErr);
             await supabase.from("courses").delete().eq("id", course.id);
+            await refundConversion();
             return json({ error: `Failed to import playlist videos: ${mErr.message}` }, 400);
         }
 
         console.log("Modules inserted:", inserted?.length);
 
-        if (!entitlement.is_paid_user) {
-            const { error: decrErr } = await supabase
-                .from("user_entitlements")
-                .update({
-                    playlist_conversions_left: entitlement.playlist_conversions_left - 1,
-                })
-                .eq("user_id", user.id);
-
-            if (decrErr) {
-                console.error("Failed to decrement conversions:", decrErr);
-            } else {
-                console.log(
-                    "Conversions left for user:",
-                    user.id,
-                    "→",
-                    entitlement.playlist_conversions_left - 1,
-                );
-            }
-        }
-
         return json({
             course_id: course.id,
             modules: inserted?.length ?? rows.length,
-            conversions_left: entitlement.is_paid_user
-                ? null
-                : entitlement.playlist_conversions_left - 1,
+            conversions_left: conversionsLeft,
         });
     } catch (e) {
         console.error("import-youtube-playlist unexpected error:", e);
