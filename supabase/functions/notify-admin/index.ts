@@ -1,3 +1,19 @@
+// Called only by the notify_admin_payment() trigger (pg_net), which sends the
+// internal x-push-secret header; verify_jwt = false, so this is the only guard.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { serviceRoleKey } from "../_shared/keys.ts";
+
+const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey());
+
+let webhookSecret: string | null = null;
+const expectedSecret = async () => {
+    if (webhookSecret) return webhookSecret;
+    const { data, error } = await admin.rpc("push_webhook_secret");
+    if (error) throw error;
+    webhookSecret = data as string;
+    return webhookSecret;
+};
+
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -7,6 +23,14 @@ Deno.serve(async (req) => {
     if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
     try {
+        const provided = req.headers.get("x-push-secret");
+        if (!provided || provided !== (await expectedSecret())) {
+            return new Response(JSON.stringify({ error: "Forbidden" }), {
+                status: 403,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+
         const body = await req.json();
         const record = body.record;
 
@@ -38,7 +62,6 @@ Deno.serve(async (req) => {
 
         const message =
             `💰 <b>New Payment Request</b>${dupeWarning}\n\n` +
-            `Package: ${record.package_type}\n` +
             `Credits: ${record.credits}\n` +
             `Amount: ৳${record.amount}\n` +
             `Method: ${record.method}\n` +

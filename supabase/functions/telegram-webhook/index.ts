@@ -88,7 +88,12 @@ Deno.serve(async (req) => {
             });
         }
 
-        const originalText = callbackQuery.message?.text ?? "";
+        // message.text comes back as plain text (our <code> escaping undone), so
+        // re-escape it before sending it again with parse_mode HTML.
+        const originalText = (callbackQuery.message?.text ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
         await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
