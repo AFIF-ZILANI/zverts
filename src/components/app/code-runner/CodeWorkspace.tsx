@@ -49,7 +49,7 @@ import { readsInput } from "./readsInput";
 import { FileExplorer } from "./FileExplorer";
 import { canOpenFolder, fileIconColor, langOf, modelPath, useIdeFiles } from "./files";
 import { TestsPanel, type Verdict } from "./TestsPanel";
-import { BRIDGE_PORT, sameOutput, useCompanion, type Problem } from "./companion";
+import { sameOutput, useCompanion, type Problem } from "./companion";
 import { takeHashProblem } from "./bookmarklet";
 import "./code-runner.css";
 
@@ -78,6 +78,7 @@ type Layout = {
     fontSize: number;
     /** Poll the Competitive Companion bridge (public/cph-bridge.mjs). */
     companion: boolean;
+    font: CodeFontId;
 };
 const LAYOUT_KEY = "zverts.ide.layout";
 const DEFAULT_LAYOUT: Layout = {
@@ -88,6 +89,7 @@ const DEFAULT_LAYOUT: Layout = {
     theme: "auto",
     fontSize: 14,
     companion: false,
+    font: "jetbrains",
 };
 const FONT_SIZES = [12, 13, 14, 16, 18, 20];
 
@@ -102,9 +104,26 @@ int main() {
 }
 `;
 
-// The same font stack VS Code uses on each OS (Menlo on Mac, Consolas on Windows,
-// Droid Sans Mono on Linux); phones fall back to their own monospace.
-const CODE_FONT = 'Menlo, Monaco, Consolas, "Droid Sans Mono", "Liberation Mono", monospace';
+// VS Code's own stack on each OS; every editor font falls back to it (offline, or still loading).
+const SYSTEM_FONT = 'Menlo, Monaco, Consolas, "Droid Sans Mono", "Liberation Mono", monospace';
+// `css`: the Google Fonts family to load when picked (the page already loads JetBrains Mono 400).
+const CODE_FONTS = [
+    {
+        id: "jetbrains",
+        label: "JetBrains Mono",
+        family: '"JetBrains Mono"',
+        css: "JetBrains+Mono:wght@400;700",
+    },
+    { id: "fira", label: "Fira Code", family: '"Fira Code"', css: "Fira+Code:wght@400;700" },
+    {
+        id: "source",
+        label: "Source Code Pro",
+        family: '"Source Code Pro"',
+        css: "Source+Code+Pro:wght@400;700",
+    },
+    { id: "system", label: "System (Menlo / Consolas)", family: "", css: "" },
+] as const;
+type CodeFontId = (typeof CODE_FONTS)[number]["id"];
 
 const read = (k: string) => {
     try {
@@ -190,6 +209,29 @@ export const CodeWorkspace = ({ fill = false }: { fill?: boolean }) => {
 
     const meta = LANGUAGES.find((l) => l.id === lang)!;
 
+    const font = CODE_FONTS.find((f) => f.id === layout.font) ?? CODE_FONTS[0];
+    const codeFont = font.family ? `${font.family}, ${SYSTEM_FONT}` : SYSTEM_FONT;
+    // Load the picked font, then let Monaco re-measure it or the cursor drifts off the text.
+    useEffect(() => {
+        if (!font.css) return;
+        const id = `code-font-${font.id}`;
+        if (!document.getElementById(id)) {
+            const link = document.createElement("link");
+            link.id = id;
+            link.rel = "stylesheet";
+            link.href = `https://fonts.googleapis.com/css2?family=${font.css}&display=swap`;
+            document.head.appendChild(link);
+        }
+        let live = true;
+        document.fonts
+            .load(`14px ${font.family}`)
+            .then(() => live && monaco.editor.remeasureFonts())
+            .catch(() => {});
+        return () => {
+            live = false;
+        };
+    }, [font]);
+
     // Python runs in the browser: start downloading Pyodide as soon as it's picked.
     useEffect(() => {
         if (lang !== "python") return;
@@ -235,7 +277,7 @@ export const CodeWorkspace = ({ fill = false }: { fill?: boolean }) => {
             return;
         }
         const reader = readsInput(lang, code);
-        if (reader && !stdin.trim()) {
+        if (reader) {
             setAskInput(reader);
             return;
         }
@@ -472,7 +514,7 @@ export const CodeWorkspace = ({ fill = false }: { fill?: boolean }) => {
                 cursorSmoothCaretAnimation: "on",
                 stickyScroll: { enabled: !narrow },
                 mouseWheelZoom: !touch,
-                fontFamily: CODE_FONT,
+                fontFamily: codeFont,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
                 automaticLayout: true,
@@ -580,6 +622,7 @@ export const CodeWorkspace = ({ fill = false }: { fill?: boolean }) => {
     const inputPrompt = (
         <InputPrompt
             reader={askInput}
+            initial={stdin}
             onRun={(input) => {
                 setAskInput(null);
                 setStdin(input);
@@ -912,7 +955,7 @@ export const CodeWorkspace = ({ fill = false }: { fill?: boolean }) => {
                       : // Fits the screen on phones and short laptop screens, 680px at most.
                         "rounded-xl border border-border h-[min(680px,calc(100dvh-5rem))] min-h-[440px]",
             )}
-            style={{ "--code-font": CODE_FONT } as React.CSSProperties}
+            style={{ "--code-font": codeFont } as React.CSSProperties}
         >
             {/* Toolbar */}
             <div className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-1 border-b border-border bg-muted/60 shrink-0">
@@ -996,6 +1039,22 @@ export const CodeWorkspace = ({ fill = false }: { fill?: boolean }) => {
                                 {EDITOR_THEMES.map((t) => (
                                     <DropdownMenuRadioItem key={t.id} value={t.id}>
                                         {t.label}
+                                    </DropdownMenuRadioItem>
+                                ))}
+                            </DropdownMenuRadioGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel>Editor font</DropdownMenuLabel>
+                            <DropdownMenuRadioGroup
+                                value={font.id}
+                                onValueChange={(v) => setLayout({ font: v as CodeFontId })}
+                            >
+                                {CODE_FONTS.map((f) => (
+                                    <DropdownMenuRadioItem
+                                        key={f.id}
+                                        value={f.id}
+                                        style={{ fontFamily: f.family || SYSTEM_FONT }}
+                                    >
+                                        {f.label}
                                     </DropdownMenuRadioItem>
                                 ))}
                             </DropdownMenuRadioGroup>
@@ -1169,22 +1228,12 @@ export const CodeWorkspace = ({ fill = false }: { fill?: boolean }) => {
                         your computer
                     </span>
                 )}
-                {layout.companion && (
+                {layout.companion && companion === "connected" && (
                     <span
-                        className={cn(
-                            "inline-flex min-w-0 items-center gap-1 truncate rounded px-1",
-                            companion !== "connected" && "bg-amber-500 text-black",
-                        )}
-                        title={
-                            companion === "connected"
-                                ? "Click Competitive Companion's + on a problem to import it"
-                                : `Run: node cph-bridge.mjs (download it from ${location.origin}/cph-bridge.mjs)`
-                        }
+                        className="truncate"
+                        title="Click Competitive Companion's + on a problem to import it"
                     >
-                        ● CPH{" "}
-                        {companion === "connected"
-                            ? "ready"
-                            : `bridge not running (port ${BRIDGE_PORT})`}
+                        ● CPH ready
                     </span>
                 )}
                 <span className="ml-auto flex shrink-0 items-center gap-3">

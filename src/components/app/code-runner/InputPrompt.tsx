@@ -11,24 +11,29 @@ import {
 } from "@/components/ui/dialog";
 
 /**
- * Asked before a run when the code reads input (scanf, cin, input()…) but the
- * Input box is empty — so the program gets its input instead of hitting EOF.
+ * Asked before every run when the code reads input (scanf, cin, input()…), so
+ * the program gets its input instead of hitting EOF. Code without input runs
+ * straight away.
  */
 export const InputPrompt = ({
     reader,
+    initial,
     onRun,
     onRunWithout,
     onCancel,
 }: {
     /** The input call found in the code, or null when closed. */
     reader: string | null;
+    /** Last run's input, so re-running the same case is one keypress. */
+    initial: string;
     onRun: (input: string) => void;
     onRunWithout: () => void;
     onCancel: () => void;
 }) => {
     const [value, setValue] = useState("");
     useEffect(() => {
-        if (reader) setValue("");
+        if (reader) setValue(initial);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only when it opens
     }, [reader]);
 
     const submit = () => {
@@ -75,6 +80,7 @@ export const InputPrompt = ({
                     rows={4}
                     className="w-full resize-none rounded-md border border-border bg-background p-3 font-mono text-base md:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring placeholder:text-muted-foreground/60"
                 />
+                <p className="-mt-2 text-[11px] text-muted-foreground">Ctrl/⌘ + Enter to run</p>
                 <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-0">
                     <Button variant="ghost" onClick={onRunWithout}>
                         Run without input
