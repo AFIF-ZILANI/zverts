@@ -5,7 +5,8 @@ const TIME_LIMIT_MS = 10_000;
 
 type CompilerMsg =
     | { type: "progress"; done: number; total: number }
-    | { type: "ready" }
+    | { type: "ready"; pch: boolean }
+    | { type: "pch"; pch: Uint8Array | null }
     | { type: "error"; error: string }
     | { type: "compiled"; ok: true; wasm: Uint8Array; time: number }
     | { type: "compiled"; ok: false; stderr: string };
@@ -33,6 +34,25 @@ const reset = () => {
     compiler?.terminate();
     compiler = null;
     ready = null;
+    compiled.clear();
+};
+
+const newCompilerWorker = () =>
+    new Worker(new URL("./clang.worker.ts", import.meta.url), { type: "module" });
+
+// The precompiled bits/stdc++.h isn't cached yet (first visit, or a new Clang
+// version): a second compiler worker builds it in the background, then hands it
+// over and goes away. Until then programs compile without it, just slower.
+const buildPch = () => {
+    const helper = newCompilerWorker();
+    helper.onmessage = (e: MessageEvent<CompilerMsg>) => {
+        if (e.data.type !== "pch") return;
+        helper.terminate();
+        const { pch } = e.data;
+        if (pch) compiler?.postMessage({ type: "pch", pch }, [pch.buffer]);
+    };
+    helper.onerror = () => helper.terminate();
+    helper.postMessage({ type: "build-pch" });
 };
 
 // Resolves with the compiler's next reply, reporting download progress on the way.
@@ -54,12 +74,13 @@ export const preloadClang = (): Promise<void> => {
     if (ready) return ready;
     if (typeof WebAssembly === "undefined")
         return Promise.reject(new ClangUnavailable("No WebAssembly"));
-    const w = new Worker(new URL("./clang.worker.ts", import.meta.url), { type: "module" });
+    const w = newCompilerWorker();
     compiler = w;
     ready = reply(w).then((m) => {
         if (m.type !== "ready") {
             throw new ClangUnavailable(m.type === "error" ? m.error : "Compiler failed to load");
         }
+        if (!m.pch) buildPch();
     });
     ready.catch(reset);
     w.postMessage({ type: "load" });
@@ -94,41 +115,93 @@ const describeTrap = (trap: string) => {
     return trap;
 };
 
+// A program ready to run, or the compile error to show for it.
+type Compiled = { module: WebAssembly.Module } | { result: RunResult };
+
+// Same code → same program: running it on several test cases (or re-running with
+// new input) compiles once. A few recent programs are kept.
+const compiled = new Map<string, Promise<Compiled>>();
+const KEEP = 8;
+
+// The compiler worker answers one request at a time.
+let queue: Promise<unknown> = Promise.resolve();
+
+const compile = async (lang: "c" | "cpp", code: string): Promise<Compiled> => {
+    await preloadClang();
+    const w = compiler!;
+    const answer = reply(w);
+    w.postMessage({ type: "compile", lang, code });
+    const m = await withTimeout(answer, COMPILE_LIMIT_MS);
+    if (m === "timeout") {
+        reset();
+        return {
+            result: result({
+                status: { id: 6, description: "Compilation Error" },
+                compileOutput: "Compilation took too long.",
+            }),
+        };
+    }
+    if (m.type === "error") {
+        reset();
+        throw new ClangUnavailable(m.error);
+    }
+    if (m.type !== "compiled") throw new ClangUnavailable("Unexpected compiler reply");
+    if ("stderr" in m) {
+        return {
+            result: result({
+                status: { id: 6, description: "Compilation Error" },
+                compileOutput: m.stderr || "Compilation failed.",
+            }),
+        };
+    }
+    // Compiled to machine code once here; each run only instantiates it.
+    return { module: await WebAssembly.compile(m.wasm as Uint8Array<ArrayBuffer>) };
+};
+
+const compileCached = (lang: "c" | "cpp", code: string) => {
+    const key = `${lang}\0${code}`;
+    let p = compiled.get(key);
+    if (p) {
+        compiled.delete(key); // re-insert: most recently used last
+    } else {
+        p = queue.then(() => compile(lang, code));
+        queue = p.catch(() => {});
+        // A timeout or a lost compiler isn't an answer worth keeping.
+        p.then(
+            (c) => "result" in c && /too long/.test(c.result.compileOutput) && compiled.delete(key),
+            () => compiled.delete(key),
+        );
+    }
+    compiled.set(key, p);
+    while (compiled.size > KEEP) compiled.delete(compiled.keys().next().value!);
+    return p;
+};
+
+// A program worker started ahead of time, so a run doesn't wait for one to boot.
+let spare: Worker | null = null;
+const newProgramWorker = () =>
+    new Worker(new URL("./native.worker.ts", import.meta.url), { type: "module" });
+const takeProgramWorker = () => {
+    const w = spare ?? newProgramWorker();
+    spare = newProgramWorker();
+    return w;
+};
+
 export const runNative = async (
     lang: "c" | "cpp",
     code: string,
     stdin: string,
 ): Promise<RunResult> => {
-    await preloadClang();
-    const w = compiler!;
-    const answer = reply(w);
-    w.postMessage({ type: "compile", lang, code });
-    const compiled = await withTimeout(answer, COMPILE_LIMIT_MS);
-    if (compiled === "timeout") {
-        reset();
-        return result({
-            status: { id: 6, description: "Compilation Error" },
-            compileOutput: "Compilation took too long.",
-        });
-    }
-    if (compiled.type === "error") {
-        reset();
-        throw new ClangUnavailable(compiled.error);
-    }
-    if (compiled.type !== "compiled") throw new ClangUnavailable("Unexpected compiler reply");
-    if ("stderr" in compiled) {
-        return result({
-            status: { id: 6, description: "Compilation Error" },
-            compileOutput: compiled.stderr || "Compilation failed.",
-        });
-    }
+    const c = await compileCached(lang, code);
+    if ("result" in c) return c.result;
 
-    const program = new Worker(new URL("./native.worker.ts", import.meta.url), { type: "module" });
+    // A fresh worker per run, so a timeout can kill it.
+    const program = takeProgramWorker();
     const done = new Promise<ProgramMsg>((resolve, reject) => {
         program.onmessage = (e: MessageEvent<ProgramMsg>) => resolve(e.data);
         program.onerror = (e) => reject(new Error(e.message || "Program crashed"));
     });
-    program.postMessage({ wasm: compiled.wasm, stdin }, [compiled.wasm.buffer]);
+    program.postMessage({ module: c.module, stdin });
     const ran = await withTimeout(done, TIME_LIMIT_MS).finally(() => program.terminate());
 
     if (ran === "timeout") {

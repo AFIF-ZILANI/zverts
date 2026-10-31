@@ -146,18 +146,18 @@ const Box = ({
 export const TestsPanel = ({
     tests,
     verdicts,
-    runningIndex,
+    running,
     onChange,
     onRun,
 }: {
     tests: TestCase[];
     verdicts: (Verdict | undefined)[];
-    /** Index being run, or -1. */
-    runningIndex: number;
+    /** Indexes of the tests still running. */
+    running: number[];
     onChange: (tests: TestCase[]) => void;
     onRun: (index?: number) => void;
 }) => {
-    const busy = runningIndex >= 0;
+    const busy = running.length > 0;
     const [help, setHelp] = useState(false);
     const passed = verdicts.filter((v) => v?.pass).length;
     const done = verdicts.filter(Boolean).length;
@@ -220,7 +220,7 @@ export const TestsPanel = ({
                         <div key={i} className="rounded-lg border border-border bg-muted/20 p-2.5">
                             <div className="flex items-center gap-2 mb-2">
                                 <span className="text-xs font-mono">Test {i + 1}</span>
-                                {runningIndex === i ? (
+                                {running.includes(i) ? (
                                     <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                                 ) : (
                                     v && (

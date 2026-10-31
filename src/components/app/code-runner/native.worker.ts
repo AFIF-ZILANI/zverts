@@ -7,8 +7,9 @@ const MAX_OUTPUT = 1024 * 1024;
 
 class OutputLimit extends Error {}
 
-self.onmessage = async (e: MessageEvent<{ wasm: Uint8Array; stdin: string }>) => {
-    const { wasm, stdin } = e.data;
+// The page sends the program already compiled (WebAssembly.Module): a run only instantiates it.
+self.onmessage = async (e: MessageEvent<{ module: WebAssembly.Module; stdin: string }>) => {
+    const { module, stdin } = e.data;
     const stdout: string[] = [];
     const stderr: string[] = [];
     let written = 0;
@@ -31,12 +32,9 @@ self.onmessage = async (e: MessageEvent<{ wasm: Uint8Array; stdin: string }>) =>
     let exit = 0;
     let trap: string | null = null;
     try {
-        const instance = await WebAssembly.instantiate(
-            await WebAssembly.compile(wasm as Uint8Array<ArrayBuffer>),
-            {
-                wasi_snapshot_preview1: wasi.wasiImport,
-            },
-        );
+        const instance = await WebAssembly.instantiate(module, {
+            wasi_snapshot_preview1: wasi.wasiImport,
+        });
         exit = wasi.start(instance as Parameters<WASI["start"]>[0]);
     } catch (err) {
         trap =

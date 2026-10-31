@@ -313,7 +313,7 @@ export const CodeWorkspace = () => {
     // ---- CP test cases (CPH-style) ----
     const tests = ide.tests(file);
     const [verdicts, setVerdicts] = useState<(Verdict | undefined)[]>([]);
-    const [testIndex, setTestIndex] = useState(-1);
+    const [testsRunning, setTestsRunning] = useState<number[]>([]);
     const [ioMode, setIoMode] = useState<"io" | "tests">("io");
     // A different file's tests: old verdicts don't apply; show its tests if it has any.
     const fileId = file?.id;
@@ -324,46 +324,57 @@ export const CodeWorkspace = () => {
     }, [fileId]);
 
     const runTests = async (only?: number) => {
-        if (running || testIndex >= 0) return;
+        if (running || testsRunning.length) return;
         if (!runnable) return run();
         if (!layout.panel) setLayout({ panel: true });
         setIoMode("tests");
-        const which = only === undefined ? tests.map((_, i) => i) : [only];
+        const queue = only === undefined ? tests.map((_, i) => i) : [only];
         setVerdicts((v) => (only === undefined ? [] : v));
-        for (const i of which) {
-            setTestIndex(i);
-            let v: Verdict;
-            try {
-                const r = await runOnce(tests[i].input);
-                const out = r.stdout ?? "";
-                v =
-                    r.status.id !== ACCEPTED
-                        ? {
-                              label: r.status.description,
-                              pass: false,
-                              got: out + (r.compileOutput || r.stderr || r.message || ""),
-                              time: r.time,
-                          }
-                        : sameOutput(out, tests[i].output)
-                          ? { label: "Passed", pass: true, got: out, time: r.time }
-                          : { label: "Wrong answer", pass: false, got: out, time: r.time };
-            } catch (e) {
-                v = {
-                    label: "Error",
-                    pass: false,
-                    got: e instanceof Error ? e.message : "",
-                    time: null,
-                };
+        setTestsRunning(queue);
+        // C/C++ compile once (clangRunner caches it), then the tests run side by side,
+        // each in its own worker. Python has a single interpreter: one at a time.
+        const lanes =
+            lang === "python"
+                ? 1
+                : Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+        let stop = false;
+        const lane = async () => {
+            for (let i = queue.shift(); i !== undefined && !stop; i = queue.shift()) {
+                let v: Verdict;
+                try {
+                    const r = await runOnce(tests[i].input);
+                    const out = r.stdout ?? "";
+                    v =
+                        r.status.id !== ACCEPTED
+                            ? {
+                                  label: r.status.description,
+                                  pass: false,
+                                  got: out + (r.compileOutput || r.stderr || r.message || ""),
+                                  time: r.time,
+                              }
+                            : sameOutput(out, tests[i].output)
+                              ? { label: "Passed", pass: true, got: out, time: r.time }
+                              : { label: "Wrong answer", pass: false, got: out, time: r.time };
+                } catch (e) {
+                    v = {
+                        label: "Error",
+                        pass: false,
+                        got: e instanceof Error ? e.message : "",
+                        time: null,
+                    };
+                }
+                // A compile error fails every test the same way: show it once and stop.
+                if (v.label === "Compilation Error") stop = true;
+                setVerdicts((all) => {
+                    const next = [...all];
+                    next[i] = v;
+                    return next;
+                });
+                setTestsRunning((r) => r.filter((x) => x !== i && !stop));
             }
-            setVerdicts((all) => {
-                const next = [...all];
-                next[i] = v;
-                return next;
-            });
-            // A compile error fails every test the same way: stop there.
-            if (v.label === "Compilation Error") break;
-        }
-        setTestIndex(-1);
+        };
+        await Promise.all(Array.from({ length: lanes }, lane));
+        setTestsRunning([]);
     };
 
     // A problem from Competitive Companion or the "Send to Zverts" bookmarklet.
@@ -520,7 +531,7 @@ export const CodeWorkspace = () => {
             size="sm"
             className="h-9 md:h-8 px-3 bg-gradient-lime text-primary-foreground shadow-glow"
             onClick={() => runRef.current()}
-            disabled={running || testIndex >= 0}
+            disabled={running || testsRunning.length > 0}
             title={ioMode === "tests" ? "Run all tests (Ctrl/⌘ + Enter)" : "Run (Ctrl/⌘ + Enter)"}
         >
             {running ? (
@@ -775,7 +786,7 @@ export const CodeWorkspace = () => {
                         <TestsPanel
                             tests={tests}
                             verdicts={verdicts}
-                            runningIndex={testIndex}
+                            running={testsRunning}
                             onChange={(next) => {
                                 if (file) ide.setTests(file, next);
                                 setVerdicts([]);
