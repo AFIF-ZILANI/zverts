@@ -4,13 +4,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { TestCase } from "./files";
-import { bookmarkletHref } from "./bookmarklet";
+import { isStandalone } from "@/lib/install";
+import { bookmarkletHref, type BookmarkTarget } from "./bookmarklet";
 
 // How to get problems in: the "Send to Zverts" bookmark (nothing to install).
 // For when dragging the link fails: paste this as a new bookmark's URL.
-const copyBookmark = async () => {
+const copyBookmark = async (target: BookmarkTarget) => {
     try {
-        await navigator.clipboard.writeText(bookmarkletHref(location.origin));
+        await navigator.clipboard.writeText(bookmarkletHref(location.origin, target));
         toast.success("Bookmark code copied", {
             description:
                 "Add a new bookmark (Chrome: Ctrl/⌘ + Shift + O → ⋮ → Add new bookmark; Edge: Ctrl/⌘ + Shift + O → Add favorite), name it “Send to Zverts” and paste this as its URL.",
@@ -21,46 +22,92 @@ const copyBookmark = async () => {
     }
 };
 
-const ImportHelp = () => (
-    <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 text-xs space-y-2">
-        <p className="font-medium text-foreground">Import a problem in one click</p>
-        <ol className="list-decimal pl-4 space-y-1.5 text-muted-foreground">
-            <li>
-                Drag this to your bookmarks bar:{" "}
-                <a
-                    // Set outside React: it warns about javascript: URLs in JSX.
-                    ref={(a) => a?.setAttribute("href", bookmarkletHref(location.origin))}
-                    onClick={(e) => {
-                        e.preventDefault();
-                        toast.info(
-                            "Drag it to your bookmarks bar, then click it on a problem page.",
-                        );
-                    }}
-                    className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-0.5 font-medium text-primary-foreground cursor-grab"
+const ImportHelp = () => {
+    // Inside the installed app, problems should come back to the app.
+    const [target, setTarget] = useState<BookmarkTarget>(() => (isStandalone() ? "app" : "tab"));
+    return (
+        <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 text-xs space-y-2">
+            <p className="font-medium text-foreground">Import a problem in one click</p>
+            <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                Open problems in:
+                <div
+                    className="inline-flex rounded-md border border-border p-0.5"
+                    role="radiogroup"
                 >
-                    ⭐ Send to Zverts
-                </a>
-                <span className="block mt-1.5">
-                    Can't drag it?{" "}
-                    <button
-                        type="button"
-                        onClick={() => void copyBookmark()}
-                        className="inline-flex items-center gap-1 rounded-md border border-primary/50 px-2 py-0.5 font-medium text-primary hover:bg-primary/10"
+                    {(
+                        [
+                            ["app", "Zverts app"],
+                            ["tab", "Browser tab"],
+                        ] as const
+                    ).map(([t, label]) => (
+                        <button
+                            key={t}
+                            type="button"
+                            role="radio"
+                            aria-checked={target === t}
+                            onClick={() => setTarget(t)}
+                            className={cn(
+                                "rounded px-2 py-0.5",
+                                target === t
+                                    ? "bg-primary text-primary-foreground"
+                                    : "hover:text-foreground",
+                            )}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+            {target === "app" && (
+                <p className="text-muted-foreground">
+                    Install Zverts as an app first (browser menu → Install). The first time, the
+                    browser asks to open Zverts: tick “Always allow”. Problems then open in the app
+                    window that's already open.
+                </p>
+            )}
+            <ol className="list-decimal pl-4 space-y-1.5 text-muted-foreground">
+                <li>
+                    Drag this to your bookmarks bar:{" "}
+                    <a
+                        // Set outside React: it warns about javascript: URLs in JSX.
+                        ref={(a) =>
+                            a?.setAttribute("href", bookmarkletHref(location.origin, target))
+                        }
+                        onClick={(e) => {
+                            e.preventDefault();
+                            toast.info(
+                                "Drag it to your bookmarks bar, then click it on a problem page.",
+                            );
+                        }}
+                        className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-0.5 font-medium text-primary-foreground cursor-grab"
                     >
-                        <Copy className="h-3 w-3" /> Copy bookmark code
-                    </button>{" "}
-                    and paste it as a new bookmark's URL.
-                </span>
-            </li>
-            <li>Open a problem on Codeforces, AtCoder or CodeChef.</li>
-            <li>Click the bookmark: a file with the sample tests opens here.</li>
-        </ol>
-        <p className="text-muted-foreground">
-            No bookmarks bar? Press Ctrl/⌘ + Shift + B. Using Competitive Companion instead? Turn it
-            on in the Layout menu.
-        </p>
-    </div>
-);
+                        ⭐ Send to Zverts
+                    </a>
+                    <span className="block mt-1.5">
+                        Can't drag it?{" "}
+                        <button
+                            type="button"
+                            onClick={() => void copyBookmark(target)}
+                            className="inline-flex items-center gap-1 rounded-md border border-primary/50 px-2 py-0.5 font-medium text-primary hover:bg-primary/10"
+                        >
+                            <Copy className="h-3 w-3" /> Copy bookmark code
+                        </button>{" "}
+                        and paste it as a new bookmark's URL.
+                    </span>
+                </li>
+                <li>Open a problem on Codeforces, AtCoder or CodeChef.</li>
+                <li>
+                    Click the bookmark: a file with the sample tests opens in{" "}
+                    {target === "app" ? "the Zverts app" : "a Zverts tab"}.
+                </li>
+            </ol>
+            <p className="text-muted-foreground">
+                No bookmarks bar? Press Ctrl/⌘ + Shift + B. Using Competitive Companion instead?
+                Turn it on in the Layout menu.
+            </p>
+        </div>
+    );
+};
 
 export type Verdict = { label: string; pass: boolean; got: string; time: number | null };
 

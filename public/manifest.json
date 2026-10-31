@@ -5,6 +5,15 @@
     "start_url": "/dashboard?source=pwa",
     "scope": "/",
     "display": "standalone",
+    "launch_handler": {
+        "client_mode": ["focus-existing", "auto"]
+    },
+    "protocol_handlers": [
+        {
+            "protocol": "web+zverts",
+            "url": "/code?cph=%s"
+        }
+    ],
     "background_color": "#121216",
     "theme_color": "#121216",
     "lang": "en",

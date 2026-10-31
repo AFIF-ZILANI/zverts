@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
+import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { FunctionsFetchError } from "@supabase/supabase-js";
 import {
@@ -386,7 +387,9 @@ export const CodeWorkspace = () => {
     const companion = useCompanion(layout.companion, onProblem);
     const onProblemRef = useRef(onProblem);
     onProblemRef.current = onProblem;
-    // The bookmarklet opens /code#cph=… (or changes the hash of the tab it opened before).
+    // The bookmarklet opens /code#cph=… (or changes the hash of the tab it opened before);
+    // in the installed app, AppLaunchHandler navigates here with it.
+    const locationKey = useLocation().key;
     useEffect(() => {
         const take = () => {
             const p = takeHashProblem();
@@ -395,7 +398,7 @@ export const CodeWorkspace = () => {
         take();
         window.addEventListener("hashchange", take);
         return () => window.removeEventListener("hashchange", take);
-    }, []);
+    }, [locationKey]);
 
     const onMount: OnMount = (ed) => {
         // Ctrl/⌘ + Enter runs; with the Tests tab open it runs all test cases, like CPH.

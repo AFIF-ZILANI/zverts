@@ -78,24 +78,54 @@ export function extractProblem(doc: Document, url: string) {
     return { name: (name || clean(doc.title) || "problem").slice(0, 100), url, tests };
 }
 
-/** The bookmark's address: extract on the problem page, then open the Zverts editor tab. */
-export const bookmarkletHref = (origin: string) =>
+/** Registered by the installed app (public/manifest.json protocol_handlers). */
+export const APP_PROTOCOL = "web+zverts";
+
+/** Where the bookmark sends a problem: the installed desktop app, or a browser tab. */
+export type BookmarkTarget = "app" | "tab";
+
+/** The bookmark's address: extract on the problem page, then hand the problem to Zverts. */
+export const bookmarkletHref = (origin: string, target: BookmarkTarget = "tab") =>
     "javascript:" +
     encodeURIComponent(
         `(function(){var p=(${extractProblem.toString()})(document,location.href);` +
             `if(!p.tests.length){alert("Zverts: no sample tests found on this page.");return;}` +
-            // Named window: the first click opens the editor, later clicks reuse that tab.
-            `window.open(${JSON.stringify(`${origin}/code#cph=`)}+encodeURIComponent(JSON.stringify(p)),"zverts-code");})()`,
+            `var d=encodeURIComponent(JSON.stringify(p));` +
+            (target === "app"
+                ? // The OS hands web+zverts: links to the installed app; its open window
+                  // takes them (manifest launch_handler), so no new window or tab.
+                  `location.href=${JSON.stringify(`${APP_PROTOCOL}:`)}+d;`
+                : // Named window: the first click opens the editor, later clicks reuse that tab.
+                  `window.open(${JSON.stringify(`${origin}/code#cph=`)}+d,"zverts-code");`) +
+            `})()`,
     );
 
-/** A problem sent by the bookmarklet in the URL hash, removed from the URL once read. */
+/**
+ * "#cph=<problem>" from a URL the app was opened with: the bookmark's /code#cph=…,
+ * or a protocol launch, /code?cph=web+zverts:<problem>.
+ */
+export const cphHashFrom = (url: string): string | null => {
+    try {
+        const u = new URL(url);
+        const launched = /^web[+ ]zverts:([\s\S]*)$/.exec(u.searchParams.get("cph") ?? "");
+        if (launched) return `#cph=${launched[1]}`;
+        return u.hash.startsWith("#cph=") ? u.hash : null;
+    } catch {
+        return null;
+    }
+};
+
+/** A problem sent by the bookmark in this page's URL, removed from the URL once read. */
 export const takeHashProblem = (): Problem | null => {
-    const m = /^#cph=([\s\S]*)$/.exec(location.hash);
-    if (!m) return null;
-    history.replaceState(null, "", location.pathname + location.search);
+    const hash = cphHashFrom(location.href);
+    if (!hash) return null;
+    const u = new URL(location.href);
+    u.searchParams.delete("cph");
+    // Keep history.state: React Router keeps its own bookkeeping there.
+    history.replaceState(history.state, "", u.pathname + u.search);
     try {
         // Anyone can craft such a link: toProblem keeps only well-formed data.
-        return toProblem(JSON.parse(decodeURIComponent(m[1])));
+        return toProblem(JSON.parse(decodeURIComponent(hash.slice("#cph=".length))));
     } catch {
         return null;
     }
