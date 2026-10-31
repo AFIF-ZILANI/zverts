@@ -671,3 +671,8 @@ export const useIdeFiles = () => {
         importProblem,
     };
 };
+
+/** File icon color per language, like VS Code's file icon theme. */
+export const fileIconColor = (name: string) =>
+    ({ c: "text-sky-500", cpp: "text-blue-500", python: "text-yellow-500" })[langOf(name) ?? ""] ??
+    "text-muted-foreground";

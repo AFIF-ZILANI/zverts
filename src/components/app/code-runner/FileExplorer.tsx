@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { validName, type FolderEntry, type IdeFile } from "./files";
+import { fileIconColor, validName, type FolderEntry, type IdeFile } from "./files";
 
 // What is being named: a browser file (id) or a folder entry (path); new = parent dir.
 type Editing = {
@@ -267,7 +267,9 @@ export const FileExplorer = ({
                                     )}
                                 </>
                             ) : (
-                                <FileCode2 className="ml-5 h-3.5 w-3.5 shrink-0 text-primary" />
+                                <FileCode2
+                                    className={cn("ml-5 h-3.5 w-3.5 shrink-0", fileIconColor(name))}
+                                />
                             )}
                             <span className="truncate">{name}</span>
                             <span className="ml-auto hidden group-hover:flex group-focus-within:flex [@media(pointer:coarse)]:flex">
@@ -419,7 +421,9 @@ export const FileExplorer = ({
                                 style={{ paddingLeft: 12 }}
                                 className={rowClass(f.id === activeId)}
                             >
-                                <FileCode2 className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                <FileCode2
+                                    className={cn("h-3.5 w-3.5 shrink-0", fileIconColor(f.name))}
+                                />
                                 <span className="truncate">{f.name}</span>
                                 {diskName(f.id) && (
                                     <span

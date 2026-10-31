@@ -11,17 +11,13 @@ import { CodeRunner } from "@/components/app/code-runner/CodeRunner";
 const CodePlayground = () => (
     <AppShell>
         <SEO title={PAGE.title} description={PAGE.description} path={PAGE.path} />
-        <section className="container max-w-5xl lg:max-w-7xl py-6 md:py-10 space-y-4">
-            <div>
-                <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                    / code
-                </p>
-                <h1 className="font-display text-3xl md:text-4xl font-semibold tracking-tight mt-1">
+        <section className="px-2 sm:px-4 py-3 md:py-4 space-y-3">
+            <div className="flex items-baseline gap-3 px-1">
+                <h1 className="font-display text-lg md:text-xl font-semibold tracking-tight">
                     Code Playground
                 </h1>
-                <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
-                    Practise C, C++ and Python anytime. Everything runs in your browser — once
-                    downloaded, it works without internet too.
+                <p className="hidden sm:block truncate text-xs text-muted-foreground">
+                    C, C++ and Python — runs in your browser, works offline once downloaded.
                 </p>
             </div>
             <CodeRunner moduleId="playground" alwaysOpen />
