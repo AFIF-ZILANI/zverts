@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
+        "cph": "node public/cph-bridge.mjs",
         "build:dev": "vite build --mode development",
         "dev": "vite",
         "format": "prettier --write --cache .",

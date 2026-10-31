@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
-import { monaco } from "./monaco";
+import { EDITOR_THEMES, monaco, type EditorTheme } from "./monaco";
 import { preloadPython, runPython } from "./pythonRunner";
 import { ClangUnavailable, preloadClang, runNative, setClangProgress } from "./clangRunner";
 import { ACCEPTED, LANGUAGES, type RunLanguage, type RunResult } from "./languages";
@@ -50,7 +50,9 @@ import { InputPrompt } from "./InputPrompt";
 import { OfflineStatus } from "./OfflineStatus";
 import { readsInput } from "./readsInput";
 import { FileExplorer } from "./FileExplorer";
-import { langOf, modelPath, useIdeFiles } from "./files";
+import { canOpenFolder, langOf, modelPath, useIdeFiles } from "./files";
+import { TestsPanel, type Verdict } from "./TestsPanel";
+import { BRIDGE_PORT, sameOutput, useCompanion } from "./companion";
 import "./code-runner.css";
 
 const useMedia = (query: string) => {
@@ -68,9 +70,38 @@ const useMedia = (query: string) => {
 
 // Desktop layout preferences: where the Input/Output panel sits, and what's shown.
 type IoPos = "bottom" | "right" | "left" | "top";
-type Layout = { io: IoPos; swap: boolean; explorer: boolean; panel: boolean };
+type Layout = {
+    io: IoPos;
+    swap: boolean;
+    explorer: boolean;
+    panel: boolean;
+    theme: EditorTheme;
+    fontSize: number;
+    /** Poll the Competitive Companion bridge (public/cph-bridge.mjs). */
+    companion: boolean;
+};
 const LAYOUT_KEY = "zverts.ide.layout";
-const DEFAULT_LAYOUT: Layout = { io: "bottom", swap: false, explorer: true, panel: true };
+const DEFAULT_LAYOUT: Layout = {
+    io: "bottom",
+    swap: false,
+    explorer: true,
+    panel: true,
+    theme: "auto",
+    fontSize: 14,
+    companion: false,
+};
+const FONT_SIZES = [12, 13, 14, 16, 18, 20];
+
+const CPP_TEMPLATE = `#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    return 0;
+}
+`;
 
 // Phones and tablets: only the language choice is remembered; code always starts empty.
 // Laptops/desktops get the file explorer instead (files.ts), which auto-saves.
@@ -210,7 +241,7 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         }
         void execute(stdin);
     };
-    runRef.current = run;
+    runRef.current = () => (desktop && ioMode === "tests" && tests.length ? runTests() : run());
 
     // Ctrl/⌘ + S anywhere in the workspace saves the open file to the computer.
     const saveRef = useRef<() => void>(() => {});
@@ -227,10 +258,45 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         return () => window.removeEventListener("keydown", onKey);
     }, [desktop]);
 
+    // One run of the current code. Throws a readable error instead of toasting,
+    // so the single Run and the CP test runner can report it their own way.
+    const runOnce = async (input: string): Promise<RunResult> => {
+        if (lang === "python") {
+            try {
+                const r = await runPython(code, input);
+                setPyReady(true);
+                return r;
+            } catch (e) {
+                setPyReady(false);
+                throw new Error(
+                    navigator.onLine
+                        ? e instanceof Error
+                            ? e.message
+                            : "Python failed to run"
+                        : NOT_OFFLINE_YET("Python"),
+                );
+            }
+        }
+        if (clang !== "unavailable") {
+            try {
+                const r = await runNative(lang, code, input);
+                setClang("ready");
+                return r;
+            } catch (e) {
+                if (!(e instanceof ClangUnavailable)) throw e;
+                // Offline: the server fallback can't help either.
+                if (!navigator.onLine) throw new Error(NOT_OFFLINE_YET("The C/C++ compiler"));
+                setClang("unavailable");
+            }
+        }
+        return runOnServer(input);
+    };
+
     const execute = async (input: string) => {
         setRunning(true);
         setResult(null);
         setIoTab("output");
+        setIoMode("io");
         if (!layout.panel) setLayout({ panel: true });
         // Phones stack the output under the editor — bring it into view.
         if (isMobile && !fullscreen) {
@@ -238,57 +304,22 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                 ioRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }),
             );
         }
-        if (lang === "python") {
-            try {
-                setResult(await runPython(code, input));
-                setPyReady(true);
-            } catch (e) {
-                setPyReady(false);
-                toast.error(
-                    navigator.onLine
-                        ? e instanceof Error
-                            ? e.message
-                            : "Python failed to run"
-                        : NOT_OFFLINE_YET("Python"),
-                );
-            } finally {
-                setRunning(false);
-            }
-            return;
+        try {
+            setResult(await runOnce(input));
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Run failed");
+        } finally {
+            setRunning(false);
         }
-        if (clang !== "unavailable") {
-            try {
-                setResult(await runNative(lang, code, input));
-                setClang("ready");
-                setRunning(false);
-                return;
-            } catch (e) {
-                if (!(e instanceof ClangUnavailable)) {
-                    setRunning(false);
-                    toast.error(e instanceof Error ? e.message : "Run failed");
-                    return;
-                }
-                // Offline: the server fallback can't help either.
-                if (!navigator.onLine) {
-                    setRunning(false);
-                    toast.error(NOT_OFFLINE_YET("The C/C++ compiler"));
-                    return;
-                }
-                setClang("unavailable");
-            }
-        }
-        await runOnServer(input);
     };
 
-    const runOnServer = async (input: string) => {
+    const runOnServer = async (input: string): Promise<RunResult> => {
         const { data, error } = await supabase.functions.invoke("run-code", {
             body: { language: lang, source: code, stdin: input },
         });
-        setRunning(false);
         if (error instanceof FunctionsFetchError) {
             // Network/CORS failure — usually the run-code function isn't deployed.
-            toast.error("Couldn't reach the code runner. Check your connection and try again.");
-            return;
+            throw new Error("Couldn't reach the code runner. Check your connection and try again.");
         }
         if (error || data?.error) {
             let msg = data?.error ?? error?.message ?? "Run failed";
@@ -296,13 +327,87 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                 ?.json?.()
                 .catch(() => null);
             if (body?.error) msg = body.error;
-            toast.error(msg);
-            return;
+            throw new Error(msg);
         }
-        setResult(data as RunResult);
+        return data as RunResult;
     };
 
+    // ---- CP test cases (CPH-style) ----
+    const tests = ide.tests(file);
+    const [verdicts, setVerdicts] = useState<(Verdict | undefined)[]>([]);
+    const [testIndex, setTestIndex] = useState(-1);
+    const [ioMode, setIoMode] = useState<"io" | "tests">("io");
+    // A different file's tests: old verdicts don't apply; show its tests if it has any.
+    const fileId = file?.id;
+    useEffect(() => {
+        setVerdicts([]);
+        setIoMode(ide.tests(ide.active).length ? "tests" : "io");
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only on file switch
+    }, [fileId]);
+
+    const runTests = async (only?: number) => {
+        if (running || testIndex >= 0) return;
+        if (!runnable) return run();
+        if (!layout.panel) setLayout({ panel: true });
+        setIoMode("tests");
+        const which = only === undefined ? tests.map((_, i) => i) : [only];
+        setVerdicts((v) => (only === undefined ? [] : v));
+        for (const i of which) {
+            setTestIndex(i);
+            let v: Verdict;
+            try {
+                const r = await runOnce(tests[i].input);
+                const out = r.stdout ?? "";
+                v =
+                    r.status.id !== ACCEPTED
+                        ? {
+                              label: r.status.description,
+                              pass: false,
+                              got: out + (r.compileOutput || r.stderr || r.message || ""),
+                              time: r.time,
+                          }
+                        : sameOutput(out, tests[i].output)
+                          ? { label: "Passed", pass: true, got: out, time: r.time }
+                          : { label: "Wrong answer", pass: false, got: out, time: r.time };
+            } catch (e) {
+                v = {
+                    label: "Error",
+                    pass: false,
+                    got: e instanceof Error ? e.message : "",
+                    time: null,
+                };
+            }
+            setVerdicts((all) => {
+                const next = [...all];
+                next[i] = v;
+                return next;
+            });
+            // A compile error fails every test the same way: stop there.
+            if (v.label === "Compilation Error") break;
+        }
+        setTestIndex(-1);
+    };
+
+    const companion = useCompanion(desktop && layout.companion, (p) => {
+        const ext =
+            file && langOf(file.name) ? file.name.slice(file.name.lastIndexOf(".") + 1) : "cpp";
+        const template =
+            ext === "py"
+                ? ""
+                : ext === "c"
+                  ? "#include <stdio.h>\n\nint main(void) {\n\n    return 0;\n}\n"
+                  : CPP_TEMPLATE;
+        void ide.importProblem(p.name, ext, template, p.tests);
+        setVerdicts([]);
+        setIoMode("tests");
+        setLayout({ panel: true });
+        toast.success(
+            `${p.name}: ${p.tests.length} test case${p.tests.length === 1 ? "" : "s"} added`,
+        );
+    });
+
     const onMount: OnMount = (ed) => {
+        // Ctrl/⌘ + Enter runs; with the Tests tab open it runs all test cases, like CPH.
         ed.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => runRef.current());
         setEditor(ed);
     };
@@ -326,11 +431,24 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                 desktop ? file && ide.setContent(file.id, v ?? "") : setCode(v ?? "")
             }
             onMount={onMount}
-            theme={resolvedTheme === "light" ? "vs" : "vs-dark"}
+            theme={
+                desktop && layout.theme !== "auto"
+                    ? layout.theme
+                    : resolvedTheme === "light"
+                      ? "zverts-light"
+                      : "zverts-dark"
+            }
             loading={<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
             options={{
                 placeholder: `Write your ${meta.label} code here…`,
-                fontSize: isMobile ? 13 : 14,
+                fontSize: isMobile ? 13 : desktop ? layout.fontSize : 14,
+                fontLigatures: true,
+                bracketPairColorization: { enabled: true },
+                guides: { bracketPairs: "active", indentation: true },
+                cursorBlinking: "smooth",
+                cursorSmoothCaretAnimation: "on",
+                stickyScroll: { enabled: desktop },
+                mouseWheelZoom: desktop,
                 fontFamily: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
@@ -410,9 +528,13 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         <Button
             size="sm"
             className="h-9 sm:h-8 px-3 bg-gradient-lime text-primary-foreground shadow-glow"
-            onClick={run}
-            disabled={running}
-            title="Run (Ctrl/⌘ + Enter)"
+            onClick={() => runRef.current()}
+            disabled={running || testIndex >= 0}
+            title={
+                desktop && ioMode === "tests"
+                    ? "Run all tests (Ctrl/⌘ + Enter)"
+                    : "Run (Ctrl/⌘ + Enter)"
+            }
         >
             {running ? (
                 <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
@@ -548,18 +670,62 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         );
         const ioPanel = layout.panel && (
             <ResizablePanel id="io" order={ioFirst ? 1 : 2} defaultSize={35} minSize={12}>
-                <ResizablePanelGroup
-                    direction={side ? "vertical" : "horizontal"}
-                    autoSaveId={`zverts.ide.io.${side ? "side" : "stack"}`}
-                >
-                    <ResizablePanel id="io-a" order={1} minSize={15}>
-                        {ioA}
-                    </ResizablePanel>
-                    <ResizableHandle withHandle />
-                    <ResizablePanel id="io-b" order={2} minSize={15}>
-                        {ioB}
-                    </ResizablePanel>
-                </ResizablePanelGroup>
+                <div className="flex h-full flex-col">
+                    <div
+                        className="flex shrink-0 border-b border-border bg-muted/20 font-mono text-xs"
+                        role="tablist"
+                    >
+                        {(
+                            [
+                                ["io", "Input / Output"],
+                                ["tests", `Tests${tests.length ? ` (${tests.length})` : ""}`],
+                            ] as const
+                        ).map(([mode, label]) => (
+                            <button
+                                key={mode}
+                                type="button"
+                                role="tab"
+                                aria-selected={ioMode === mode}
+                                onClick={() => setIoMode(mode)}
+                                className={cn(
+                                    "h-8 px-3 border-b-2 transition-colors",
+                                    ioMode === mode
+                                        ? "border-primary text-foreground"
+                                        : "border-transparent text-muted-foreground hover:text-foreground",
+                                )}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex-1 min-h-0">
+                        {ioMode === "tests" ? (
+                            <TestsPanel
+                                tests={tests}
+                                verdicts={verdicts}
+                                runningIndex={testIndex}
+                                onChange={(next) => {
+                                    if (file) ide.setTests(file, next);
+                                    setVerdicts([]);
+                                }}
+                                onRun={(i) => void runTests(i)}
+                            />
+                        ) : (
+                            <ResizablePanelGroup
+                                direction={side ? "vertical" : "horizontal"}
+                                autoSaveId={`zverts.ide.io.${side ? "side" : "stack"}`}
+                            >
+                                <ResizablePanel id="io-a" order={1} minSize={15}>
+                                    {ioA}
+                                </ResizablePanel>
+                                <ResizableHandle withHandle />
+                                <ResizablePanel id="io-b" order={2} minSize={15}>
+                                    {ioB}
+                                </ResizablePanel>
+                            </ResizablePanelGroup>
+                        )}
+                    </div>
+                </div>
             </ResizablePanel>
         );
 
@@ -610,13 +776,54 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                                     size="sm"
                                     variant="ghost"
                                     className="h-8 w-8 p-0"
-                                    title="Layout"
-                                    aria-label="Layout"
+                                    title="Layout & settings"
+                                    aria-label="Layout & settings"
                                 >
                                     <LayoutGrid className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuContent
+                                align="end"
+                                className="w-60 max-h-[70vh] overflow-y-auto"
+                            >
+                                <DropdownMenuLabel>Editor theme</DropdownMenuLabel>
+                                <DropdownMenuRadioGroup
+                                    value={layout.theme}
+                                    onValueChange={(v) => setLayout({ theme: v as EditorTheme })}
+                                >
+                                    {EDITOR_THEMES.map((t) => (
+                                        <DropdownMenuRadioItem key={t.id} value={t.id}>
+                                            {t.label}
+                                        </DropdownMenuRadioItem>
+                                    ))}
+                                </DropdownMenuRadioGroup>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel>Font size</DropdownMenuLabel>
+                                <div className="flex gap-1 px-2 pb-1.5">
+                                    {FONT_SIZES.map((n) => (
+                                        <button
+                                            key={n}
+                                            type="button"
+                                            onClick={() => setLayout({ fontSize: n })}
+                                            className={cn(
+                                                "h-7 flex-1 rounded text-xs font-mono",
+                                                layout.fontSize === n
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "hover:bg-muted",
+                                            )}
+                                        >
+                                            {n}
+                                        </button>
+                                    ))}
+                                </div>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuCheckboxItem
+                                    checked={layout.companion}
+                                    onCheckedChange={(companion) => setLayout({ companion })}
+                                >
+                                    Competitive Companion (CPH)
+                                </DropdownMenuCheckboxItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuLabel>Input / Output position</DropdownMenuLabel>
                                 <DropdownMenuRadioGroup
                                     value={layout.io}
@@ -686,8 +893,20 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                                 maxSize={40}
                             >
                                 <FileExplorer
-                                    files={ide.files}
+                                    files={ide.files.filter((f) => f.path === undefined)}
                                     activeId={file?.id ?? null}
+                                    activePath={file?.path ?? null}
+                                    folder={ide.folder}
+                                    recentFolder={ide.recentFolder}
+                                    canOpenFolder={canOpenFolder}
+                                    onOpenFolder={() => void ide.openFolder()}
+                                    onReopenFolder={() => void ide.reopenFolder()}
+                                    onCloseFolder={ide.closeFolder}
+                                    onRefreshFolder={() => void ide.refreshFolder()}
+                                    onOpenPath={(p) => void ide.openPath(p)}
+                                    onCreateInFolder={(d, n, k) => void ide.createInFolder(d, n, k)}
+                                    onRenameInFolder={(p, n) => void ide.renameInFolder(p, n)}
+                                    onDeleteInFolder={(p) => void ide.deleteInFolder(p)}
                                     diskName={ide.diskName}
                                     onOpen={ide.openTab}
                                     onCreate={(name) => ide.create(name)}
@@ -728,7 +947,27 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                     </span>
                     {file && ide.diskName(file.id) && (
                         <span className="truncate">
-                            Also saving to {ide.diskName(file.id)} on your computer
+                            Saving to{" "}
+                            {file.path ? `${ide.folder?.name}/${file.path}` : ide.diskName(file.id)}{" "}
+                            on your computer
+                        </span>
+                    )}
+                    {layout.companion && (
+                        <span
+                            className={cn(
+                                "inline-flex items-center gap-1 shrink-0",
+                                companion === "connected" ? "text-primary" : "text-amber-500",
+                            )}
+                            title={
+                                companion === "connected"
+                                    ? "Click Competitive Companion's + on a problem to import it"
+                                    : `Run: node cph-bridge.mjs (download it from ${location.origin}/cph-bridge.mjs)`
+                            }
+                        >
+                            ● CPH{" "}
+                            {companion === "connected"
+                                ? "ready"
+                                : `bridge not running (port ${BRIDGE_PORT})`}
                         </span>
                     )}
                     <span className="ml-auto hidden xl:inline">

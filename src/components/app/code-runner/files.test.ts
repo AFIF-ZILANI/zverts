@@ -38,3 +38,12 @@ describe("uniqueName", () => {
         expect(uniqueName("new.py", [file("main.cpp")])).toBe("new.py");
     });
 });
+
+describe("problemFileName", () => {
+    it("turns a problem title into a file name", async () => {
+        const { problemFileName } = await import("./files");
+        expect(problemFileName("A. Watermelon", "cpp")).toBe("A_Watermelon.cpp");
+        expect(problemFileName("B: Sum / Product?", "py")).toBe("B_Sum_Product.py");
+        expect(problemFileName("...", "c")).toBe("problem.c");
+    });
+});
