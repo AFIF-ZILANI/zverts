@@ -11,7 +11,7 @@ import { CodeRunner } from "@/components/app/code-runner/CodeRunner";
 const CodePlayground = () => (
     <AppShell>
         <SEO title={PAGE.title} description={PAGE.description} path={PAGE.path} />
-        <section className="container max-w-5xl py-6 md:py-10 space-y-4">
+        <section className="container max-w-5xl lg:max-w-7xl py-6 md:py-10 space-y-4">
             <div>
                 <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
                     / code

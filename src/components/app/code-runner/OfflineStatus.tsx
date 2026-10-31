@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, CircleDashed, Download, Loader2, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -64,10 +64,11 @@ const useOnline = () => {
  * RUNNER_CACHE once fetched), with a button to fetch both ahead of time.
  * Hidden without a service worker (dev server, unsupported browsers).
  */
-export const OfflineStatus = () => {
+export const OfflineStatus = ({ auto = false }: { auto?: boolean }) => {
     const online = useOnline();
     const [ready, setReady] = useState<Ready | null>(null);
     const [downloading, setDownloading] = useState(false);
+    const autoStarted = useRef(false);
     const controlled = typeof navigator !== "undefined" && !!navigator.serviceWorker?.controller;
 
     const refresh = useCallback(async () => {
@@ -88,8 +89,6 @@ export const OfflineStatus = () => {
         };
     }, [controlled, refresh]);
 
-    if (!controlled || !ready) return null;
-
     const download = async () => {
         setDownloading(true);
         // Ask the browser not to evict the ~120 MB of runtimes under storage pressure.
@@ -102,6 +101,18 @@ export const OfflineStatus = () => {
         setReady(await readCache().catch(() => null));
         setDownloading(false);
     };
+
+    // Laptops/desktops (auto): fetch the runtimes in the background on first open,
+    // so code runs offline later without anyone pressing the button.
+    const missing = !!ready && !(ready.editor && ready.python && ready.clang);
+    const saveData = (navigator as { connection?: { saveData?: boolean } }).connection?.saveData;
+    useEffect(() => {
+        if (!auto || !missing || !online || saveData || autoStarted.current) return;
+        autoStarted.current = true;
+        void download();
+    });
+
+    if (!controlled || !ready) return null;
 
     const chip = (label: string, ok: boolean) => (
         <span
