@@ -1,7 +1,41 @@
-import { Loader2, Play, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { BookmarkPlus, Loader2, Play, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { TestCase } from "./files";
+import { bookmarkletHref } from "./bookmarklet";
+
+// How to get problems in: the "Send to Zverts" bookmark (nothing to install).
+const ImportHelp = () => (
+    <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 text-xs space-y-2">
+        <p className="font-medium text-foreground">Import a problem in one click</p>
+        <ol className="list-decimal pl-4 space-y-1.5 text-muted-foreground">
+            <li>
+                Drag this to your bookmarks bar:{" "}
+                <a
+                    // Set outside React: it warns about javascript: URLs in JSX.
+                    ref={(a) => a?.setAttribute("href", bookmarkletHref(location.origin))}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        toast.info(
+                            "Drag it to your bookmarks bar, then click it on a problem page.",
+                        );
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-0.5 font-medium text-primary-foreground cursor-grab"
+                >
+                    ⭐ Send to Zverts
+                </a>
+            </li>
+            <li>Open a problem on Codeforces, AtCoder or CodeChef.</li>
+            <li>Click the bookmark: a file with the sample tests opens here.</li>
+        </ol>
+        <p className="text-muted-foreground">
+            No bookmarks bar? Press Ctrl/⌘ + Shift + B. Using Competitive Companion instead? Turn it
+            on in the Layout menu.
+        </p>
+    </div>
+);
 
 export type Verdict = { label: string; pass: boolean; got: string; time: number | null };
 
@@ -52,6 +86,7 @@ export const TestsPanel = ({
     onRun: (index?: number) => void;
 }) => {
     const busy = runningIndex >= 0;
+    const [help, setHelp] = useState(false);
     const passed = verdicts.filter((v) => v?.pass).length;
     const done = verdicts.filter(Boolean).length;
     const update = (i: number, patch: Partial<TestCase>) =>
@@ -71,6 +106,17 @@ export const TestsPanel = ({
                     </span>
                 )}
                 <span className="ml-auto" />
+                {tests.length > 0 && (
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setHelp((h) => !h)}
+                        aria-pressed={help}
+                    >
+                        <BookmarkPlus className="h-3.5 w-3.5 mr-1" /> Import
+                    </Button>
+                )}
                 <Button
                     size="sm"
                     variant="ghost"
@@ -95,12 +141,7 @@ export const TestsPanel = ({
                 </Button>
             </div>
             <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
-                {!tests.length && (
-                    <p className="text-sm text-muted-foreground">
-                        No test cases yet. Add one, or send a problem from Competitive Companion
-                        (Layout menu → Competitive Companion).
-                    </p>
-                )}
+                {(!tests.length || help) && <ImportHelp />}
                 {tests.map((t, i) => {
                     const v = verdicts[i];
                     return (

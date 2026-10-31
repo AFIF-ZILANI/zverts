@@ -52,7 +52,8 @@ import { readsInput } from "./readsInput";
 import { FileExplorer } from "./FileExplorer";
 import { canOpenFolder, langOf, modelPath, useIdeFiles } from "./files";
 import { TestsPanel, type Verdict } from "./TestsPanel";
-import { BRIDGE_PORT, sameOutput, useCompanion } from "./companion";
+import { BRIDGE_PORT, sameOutput, useCompanion, type Problem } from "./companion";
+import { takeHashProblem } from "./bookmarklet";
 import "./code-runner.css";
 
 const useMedia = (query: string) => {
@@ -388,7 +389,8 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         setTestIndex(-1);
     };
 
-    const companion = useCompanion(desktop && layout.companion, (p) => {
+    // A problem from Competitive Companion or the "Send to Zverts" bookmarklet.
+    const onProblem = (p: Problem) => {
         const ext =
             file && langOf(file.name) ? file.name.slice(file.name.lastIndexOf(".") + 1) : "cpp";
         const template =
@@ -404,7 +406,21 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         toast.success(
             `${p.name}: ${p.tests.length} test case${p.tests.length === 1 ? "" : "s"} added`,
         );
-    });
+    };
+    const companion = useCompanion(desktop && layout.companion, onProblem);
+    const onProblemRef = useRef(onProblem);
+    onProblemRef.current = onProblem;
+    // The bookmarklet opens /code#cph=… (or changes the hash of the tab it opened before).
+    useEffect(() => {
+        if (!desktop) return;
+        const take = () => {
+            const p = takeHashProblem();
+            if (p) onProblemRef.current(p);
+        };
+        take();
+        window.addEventListener("hashchange", take);
+        return () => window.removeEventListener("hashchange", take);
+    }, [desktop]);
 
     const onMount: OnMount = (ed) => {
         // Ctrl/⌘ + Enter runs; with the Tests tab open it runs all test cases, like CPH.
@@ -440,7 +456,8 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
             }
             loading={<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
             options={{
-                placeholder: `Write your ${meta.label} code here…`,
+                // Desktop: Monaco keeps a placeholder drawn after switching to a file with text.
+                placeholder: desktop ? undefined : `Write your ${meta.label} code here…`,
                 fontSize: isMobile ? 13 : desktop ? layout.fontSize : 14,
                 fontLigatures: true,
                 bracketPairColorization: { enabled: true },

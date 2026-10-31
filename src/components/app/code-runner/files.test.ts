@@ -45,5 +45,6 @@ describe("problemFileName", () => {
         expect(problemFileName("A. Watermelon", "cpp")).toBe("A_Watermelon.cpp");
         expect(problemFileName("B: Sum / Product?", "py")).toBe("B_Sum_Product.py");
         expect(problemFileName("...", "c")).toBe("problem.c");
+        expect(problemFileName("B - Same Map", "cpp")).toBe("B_Same_Map.cpp");
     });
 });
