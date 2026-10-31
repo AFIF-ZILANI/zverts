@@ -34,6 +34,20 @@ export const CodeRunner = ({
         }
     };
 
+    // The playground page is the IDE itself: no card around it, full height.
+    if (alwaysOpen)
+        return (
+            <Suspense
+                fallback={
+                    <div className="h-[calc(100dvh-9rem)] flex items-center justify-center rounded-xl border border-border">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                }
+            >
+                <CodeWorkspace fill />
+            </Suspense>
+        );
+
     return (
         <div className="rounded-2xl border border-border bg-gradient-card p-3 sm:p-5 shadow-card">
             <div className="flex items-center gap-2">

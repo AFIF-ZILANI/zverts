@@ -17,6 +17,10 @@ import {
     Save,
     X,
     Check,
+    Files,
+    FlaskConical,
+    FileCode2,
+    ChevronRight,
 } from "lucide-react";
 import type * as Monaco from "monaco-editor/editor/editor.api.js";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,7 +47,7 @@ import { InputPrompt } from "./InputPrompt";
 import { OfflineStatus } from "./OfflineStatus";
 import { readsInput } from "./readsInput";
 import { FileExplorer } from "./FileExplorer";
-import { canOpenFolder, langOf, modelPath, useIdeFiles } from "./files";
+import { canOpenFolder, fileIconColor, langOf, modelPath, useIdeFiles } from "./files";
 import { TestsPanel, type Verdict } from "./TestsPanel";
 import { BRIDGE_PORT, sameOutput, useCompanion, type Problem } from "./companion";
 import { takeHashProblem } from "./bookmarklet";
@@ -120,7 +124,24 @@ const write = (k: string, v: string) => {
 const NOT_OFFLINE_YET = (what: string) =>
     `${what} isn't saved for offline use yet. Connect to the internet once and tap "Download for offline".`;
 
-export const CodeWorkspace = () => {
+// Own component so cursor moves re-render only this, not the whole workspace.
+const CursorStatus = ({ editor }: { editor: Monaco.editor.ICodeEditor | null }) => {
+    const [pos, setPos] = useState({ ln: 1, col: 1 });
+    useEffect(() => {
+        const d = editor?.onDidChangeCursorPosition((e) =>
+            setPos({ ln: e.position.lineNumber, col: e.position.column }),
+        );
+        return () => d?.dispose();
+    }, [editor]);
+    return (
+        <span className="shrink-0">
+            Ln {pos.ln}, Col {pos.col}
+        </span>
+    );
+};
+
+/** `fill`: take the whole screen height under the app header (the playground page). */
+export const CodeWorkspace = ({ fill = false }: { fill?: boolean }) => {
     const { resolvedTheme } = useTheme();
     const [stdin, setStdin] = useState("");
     const [running, setRunning] = useState(false);
@@ -715,12 +736,15 @@ export const CodeWorkspace = () => {
                                 // Middle-click closes, like VS Code.
                                 onAuxClick={(e) => e.button === 1 && ide.closeTab(id)}
                                 className={cn(
-                                    "group flex items-center gap-1.5 h-9 pl-3 pr-1 shrink-0 cursor-pointer border-r border-border text-[13px]",
+                                    "group flex items-center gap-1.5 h-9 pl-3 pr-1 shrink-0 cursor-pointer border-r border-border text-[13px] border-t-2",
                                     current
-                                        ? "bg-background text-foreground border-t-2 border-t-primary"
-                                        : "text-muted-foreground hover:text-foreground",
+                                        ? "bg-background text-foreground border-t-primary"
+                                        : "border-t-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground",
                                 )}
                             >
+                                <FileCode2
+                                    className={cn("h-3.5 w-3.5 shrink-0", fileIconColor(f.name))}
+                                />
                                 <span className="max-w-[10rem] truncate">{f.name}</span>
                                 <button
                                     type="button"
@@ -759,7 +783,7 @@ export const CodeWorkspace = () => {
         <ResizablePanel id="io" order={ioFirst ? 1 : 2} defaultSize={narrow ? 42 : 35} minSize={12}>
             <div ref={ioRef} className="flex h-full flex-col scroll-mt-20">
                 <div
-                    className="flex shrink-0 overflow-x-auto border-b border-border bg-muted/20 font-mono text-xs"
+                    className="flex shrink-0 overflow-x-auto border-b border-border bg-muted/20 px-1 text-[11px] font-medium uppercase tracking-wider"
                     role="tablist"
                 >
                     {ioTabs.map(([t, label]) => (
@@ -770,7 +794,7 @@ export const CodeWorkspace = () => {
                             aria-selected={currentTab === t}
                             onClick={() => selectTab(t)}
                             className={cn(
-                                "h-9 md:h-8 px-3 shrink-0 border-b-2 transition-colors",
+                                "h-9 md:h-8 px-2.5 shrink-0 border-b transition-colors",
                                 narrow && "flex-1",
                                 currentTab === t
                                     ? "border-primary text-foreground"
@@ -820,24 +844,84 @@ export const CodeWorkspace = () => {
 
     const explorerShown = narrow ? drawer : layout.explorer;
 
+    // VS Code's activity bar: clicking the active item hides its view.
+    const showPanel = (mode: "io" | "tests") =>
+        layout.panel && ioMode === mode
+            ? setLayout({ panel: false })
+            : (setIoMode(mode), setLayout({ panel: true }));
+    const activityBar = (
+        <nav
+            aria-label="Views"
+            className="flex w-12 shrink-0 flex-col items-center border-r border-border bg-muted/60 py-1"
+        >
+            {(
+                [
+                    [
+                        Files,
+                        "Explorer",
+                        layout.explorer,
+                        () => setLayout({ explorer: !layout.explorer }),
+                    ],
+                    [
+                        Terminal,
+                        "Input / Output",
+                        layout.panel && ioMode === "io",
+                        () => showPanel("io"),
+                    ],
+                    [
+                        FlaskConical,
+                        testsLabel,
+                        layout.panel && ioMode === "tests",
+                        () => showPanel("tests"),
+                    ],
+                ] as const
+            ).map(([Icon, label, active, onClick]) => (
+                <button
+                    key={label}
+                    type="button"
+                    title={label}
+                    aria-label={label}
+                    aria-pressed={active}
+                    onClick={onClick}
+                    className={cn(
+                        "relative flex h-12 w-12 items-center justify-center border-l-2 transition-colors",
+                        active
+                            ? "border-primary text-foreground"
+                            : "border-transparent text-muted-foreground hover:text-foreground",
+                    )}
+                >
+                    <Icon className="h-5 w-5" strokeWidth={1.6} />
+                    {Icon === FlaskConical && tests.length > 0 && (
+                        <span className="absolute bottom-2 right-2 min-w-4 rounded-full bg-primary px-1 text-[9px] font-semibold leading-4 text-primary-foreground">
+                            {tests.length}
+                        </span>
+                    )}
+                </button>
+            ))}
+        </nav>
+    );
+
     return (
         <div
             className={cn(
                 "code-runner flex flex-col overflow-hidden bg-background",
                 fullscreen
                     ? "fixed inset-0 z-50 h-[100dvh] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
-                    : // Fits the screen on phones and short laptop screens, 680px at most.
-                      "rounded-xl border border-border h-[min(680px,calc(100dvh-5rem))] min-h-[440px]",
+                    : fill
+                      ? "rounded-xl border border-border h-[calc(100dvh-9rem)] min-h-[440px]"
+                      : // Fits the screen on phones and short laptop screens, 680px at most.
+                        "rounded-xl border border-border h-[min(680px,calc(100dvh-5rem))] min-h-[440px]",
             )}
             style={{ "--code-font": CODE_FONT } as React.CSSProperties}
         >
             {/* Toolbar */}
-            <div className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 border-b border-border bg-muted/40 shrink-0">
+            <div className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-1 border-b border-border bg-muted/60 shrink-0">
+                {/* Wide screens toggle the Explorer from the activity bar. */}
                 <Button
                     size="sm"
                     variant="ghost"
                     className={cn(
-                        "h-9 w-9 md:h-8 md:w-8 p-0 shrink-0",
+                        "md:hidden h-9 w-9 p-0 shrink-0",
                         explorerShown && "text-primary",
                     )}
                     onClick={() =>
@@ -849,13 +933,20 @@ export const CodeWorkspace = () => {
                 >
                     <PanelLeft className="h-4 w-4" />
                 </Button>
-                <span className="min-w-0 truncate text-[13px]">
-                    {file?.name ?? "No file open"}
+                {/* Breadcrumb, like VS Code's: folder › file */}
+                <span className="flex min-w-0 items-center gap-1 text-[13px] text-muted-foreground">
+                    <span className="hidden sm:inline shrink-0">
+                        {file?.path && ide.folder ? ide.folder.name : "workspace"}
+                    </span>
+                    <ChevronRight className="hidden sm:inline h-3.5 w-3.5 shrink-0" />
                     {file && (
-                        <span className="ml-2 hidden sm:inline text-xs text-muted-foreground">
-                            {runnable ? meta.label : "can't run"}
-                        </span>
+                        <FileCode2
+                            className={cn("h-3.5 w-3.5 shrink-0", fileIconColor(file.name))}
+                        />
                     )}
+                    <span className="truncate text-foreground">
+                        {file?.path ?? file?.name ?? "No file open"}
+                    </span>
                 </span>
                 <div className="ml-auto flex shrink-0 items-center gap-0.5 md:gap-2">
                     <Button
@@ -998,8 +1089,13 @@ export const CodeWorkspace = () => {
                 </div>
             </div>
 
-            <div className="relative flex-1 min-h-0">
-                <ResizablePanelGroup direction="horizontal" autoSaveId="zverts.ide.sidebar">
+            <div className="relative flex flex-1 min-h-0">
+                {!narrow && activityBar}
+                <ResizablePanelGroup
+                    direction="horizontal"
+                    autoSaveId="zverts.ide.sidebar"
+                    className="flex-1 min-w-0"
+                >
                     {!narrow && layout.explorer && (
                         <>
                             <ResizablePanel
@@ -1043,7 +1139,18 @@ export const CodeWorkspace = () => {
             </div>
 
             {/* Status bar */}
-            <div className="flex items-center gap-3 px-3 h-7 shrink-0 border-t border-border bg-muted/40 text-[11px] font-mono text-muted-foreground">
+            <div className="flex items-center gap-3 px-3 h-6 shrink-0 bg-primary text-[11px] text-primary-foreground">
+                {running || testsRunning.length > 0 ? (
+                    <span className="inline-flex shrink-0 items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Running
+                    </span>
+                ) : (
+                    result && (
+                        <span className="hidden sm:inline shrink-0" title={statusText}>
+                            {ok ? "✓" : "✗"} {result.status.description}
+                        </span>
+                    )
+                )}
                 <span className="inline-flex shrink-0 items-center gap-1">
                     {ide.saving ? (
                         <>
@@ -1051,7 +1158,7 @@ export const CodeWorkspace = () => {
                         </>
                     ) : (
                         <>
-                            <Check className="h-3 w-3 text-primary" /> Auto-saved
+                            <Check className="h-3 w-3" /> Auto-saved
                         </>
                     )}
                 </span>
@@ -1065,8 +1172,8 @@ export const CodeWorkspace = () => {
                 {layout.companion && (
                     <span
                         className={cn(
-                            "inline-flex min-w-0 items-center gap-1 truncate",
-                            companion === "connected" ? "text-primary" : "text-amber-500",
+                            "inline-flex min-w-0 items-center gap-1 truncate rounded px-1",
+                            companion !== "connected" && "bg-amber-500 text-black",
                         )}
                         title={
                             companion === "connected"
@@ -1080,8 +1187,12 @@ export const CodeWorkspace = () => {
                             : `bridge not running (port ${BRIDGE_PORT})`}
                     </span>
                 )}
-                <span className="ml-auto hidden xl:inline shrink-0">
-                    Ctrl/⌘ + Enter run · Ctrl/⌘ + S save
+                <span className="ml-auto flex shrink-0 items-center gap-3">
+                    <span className="hidden 2xl:inline">Ctrl/⌘ + Enter run · Ctrl/⌘ + S save</span>
+                    {file && !narrow && <CursorStatus editor={editor} />}
+                    <span className="hidden md:inline">Spaces: 4</span>
+                    <span className="hidden md:inline">UTF-8</span>
+                    {file && <span>{runnable ? meta.label : "Plain Text"}</span>}
                 </span>
             </div>
 
