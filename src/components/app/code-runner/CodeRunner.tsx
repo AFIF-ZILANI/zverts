@@ -66,7 +66,7 @@ export const CodeRunner = ({
                             </div>
                         }
                     >
-                        <CodeWorkspace key={moduleId} moduleId={moduleId} />
+                        <CodeWorkspace />
                     </Suspense>
                 </div>
             )}

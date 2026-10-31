@@ -12,3 +12,8 @@
 .code-runner .monaco-editor .iPadShowKeyboard {
     display: none;
 }
+
+/* Input, output and test boxes use the editor's (VS Code's) code font. */
+.code-runner .code-font {
+    font-family: var(--code-font);
+}

@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { FunctionsFetchError } from "@supabase/supabase-js";
 import {
     Play,
-    RotateCcw,
     Loader2,
     Terminal,
     Keyboard,
@@ -20,19 +19,12 @@ import {
 } from "lucide-react";
 import type * as Monaco from "monaco-editor/editor/editor.api.js";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
+    DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuRadioGroup,
     DropdownMenuRadioItem,
@@ -69,7 +61,8 @@ const useMedia = (query: string) => {
     return match;
 };
 
-// Desktop layout preferences: where the Input/Output panel sits, and what's shown.
+// Layout preferences: where the Input/Output panel sits, and what's shown.
+// Phones (narrow) always stack it under the editor and show the explorer as a drawer.
 type IoPos = "bottom" | "right" | "left" | "top";
 type Layout = {
     io: IoPos;
@@ -104,9 +97,10 @@ int main() {
 }
 `;
 
-// Phones and tablets: only the language choice is remembered; code always starts empty.
-// Laptops/desktops get the file explorer instead (files.ts), which auto-saves.
-const langKey = (moduleId: string) => `zverts.code.${moduleId}.lang`;
+// The same font stack VS Code uses on each OS (Menlo on Mac, Consolas on Windows,
+// Droid Sans Mono on Linux); phones fall back to their own monospace.
+const CODE_FONT = 'Menlo, Monaco, Consolas, "Droid Sans Mono", "Liberation Mono", monospace';
+
 const read = (k: string) => {
     try {
         return localStorage.getItem(k);
@@ -118,22 +112,15 @@ const write = (k: string, v: string) => {
     try {
         localStorage.setItem(k, v);
     } catch {
-        /* storage unavailable — the language choice just won't persist */
+        /* storage unavailable: the layout just won't persist */
     }
 };
-
-const isLang = (v: string | null): v is RunLanguage => LANGUAGES.some((l) => l.id === v);
 
 const NOT_OFFLINE_YET = (what: string) =>
     `${what} isn't saved for offline use yet. Connect to the internet once and tap "Download for offline".`;
 
-export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
+export const CodeWorkspace = () => {
     const { resolvedTheme } = useTheme();
-    const [mobileLang, setLang] = useState<RunLanguage>(() => {
-        const saved = read(langKey(moduleId));
-        return isLang(saved) ? saved : "cpp";
-    });
-    const [mobileCode, setCode] = useState("");
     const [stdin, setStdin] = useState("");
     const [running, setRunning] = useState(false);
     const [result, setResult] = useState<RunResult | null>(null);
@@ -143,14 +130,13 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
     const runRef = useRef<() => void>(() => {});
     const ioRef = useRef<HTMLDivElement>(null);
     const [editor, setEditor] = useState<Monaco.editor.ICodeEditor | null>(null);
-    const isMobile = useIsMobile();
     const touch = useMedia("(pointer: coarse)");
-    const desktop = useMedia("(min-width: 1024px) and (pointer: fine)");
+    const narrow = useMedia("(max-width: 767px)");
     const ide = useIdeFiles();
     const file = ide.active;
-    const lang: RunLanguage = desktop ? ((file ? langOf(file.name) : null) ?? "cpp") : mobileLang;
-    const code = desktop ? (file?.content ?? "") : mobileCode;
-    const runnable = !desktop || (!!file && !!langOf(file.name));
+    const lang: RunLanguage = (file ? langOf(file.name) : null) ?? "cpp";
+    const code = file?.content ?? "";
+    const runnable = !!file && !!langOf(file.name);
     const [layout, setLayoutState] = useState<Layout>(() => {
         try {
             return { ...DEFAULT_LAYOUT, ...JSON.parse(read(LAYOUT_KEY) ?? "{}") };
@@ -167,6 +153,8 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
     const [ioTab, setIoTab] = useState<"input" | "output">("input");
     const [fullscreen, setFullscreen] = useState(false);
     const [askInput, setAskInput] = useState<string | null>(null);
+    // Phones: the explorer slides over the editor instead of taking a column.
+    const [drawer, setDrawer] = useState(false);
 
     // Full screen covers the page: stop the page behind it from scrolling.
     useEffect(() => {
@@ -179,17 +167,6 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
     }, [fullscreen]);
 
     const meta = LANGUAGES.find((l) => l.id === lang)!;
-
-    const switchLang = (next: RunLanguage) => {
-        setLang(next);
-        write(langKey(moduleId), next);
-        setResult(null);
-    };
-
-    const reset = () => {
-        setCode("");
-        setResult(null);
-    };
 
     // Python runs in the browser: start downloading Pyodide as soon as it's picked.
     useEffect(() => {
@@ -242,13 +219,12 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         }
         void execute(stdin);
     };
-    runRef.current = () => (desktop && ioMode === "tests" && tests.length ? runTests() : run());
+    runRef.current = () => (ioMode === "tests" && tests.length ? runTests() : run());
 
     // Ctrl/⌘ + S anywhere in the workspace saves the open file to the computer.
     const saveRef = useRef<() => void>(() => {});
     saveRef.current = () => file && void ide.saveToDisk(file.id);
     useEffect(() => {
-        if (!desktop) return;
         const onKey = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
                 e.preventDefault();
@@ -257,7 +233,7 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [desktop]);
+    }, []);
 
     // One run of the current code. Throws a readable error instead of toasting,
     // so the single Run and the CP test runner can report it their own way.
@@ -300,7 +276,7 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         setIoMode("io");
         if (!layout.panel) setLayout({ panel: true });
         // Phones stack the output under the editor — bring it into view.
-        if (isMobile && !fullscreen) {
+        if (narrow && !fullscreen) {
             requestAnimationFrame(() =>
                 ioRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }),
             );
@@ -407,12 +383,11 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
             `${p.name}: ${p.tests.length} test case${p.tests.length === 1 ? "" : "s"} added`,
         );
     };
-    const companion = useCompanion(desktop && layout.companion, onProblem);
+    const companion = useCompanion(layout.companion, onProblem);
     const onProblemRef = useRef(onProblem);
     onProblemRef.current = onProblem;
     // The bookmarklet opens /code#cph=… (or changes the hash of the tab it opened before).
     useEffect(() => {
-        if (!desktop) return;
         const take = () => {
             const p = takeHashProblem();
             if (p) onProblemRef.current(p);
@@ -420,7 +395,7 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         take();
         window.addEventListener("hashchange", take);
         return () => window.removeEventListener("hashchange", take);
-    }, [desktop]);
+    }, []);
 
     const onMount: OnMount = (ed) => {
         // Ctrl/⌘ + Enter runs; with the Tests tab open it runs all test cases, like CPH.
@@ -438,17 +413,14 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
 
     const editorEl = (
         <Editor
-            // Desktop: one Monaco model per file (keeps undo history); the model owns the text.
-            {...(desktop && file
-                ? { path: modelPath(file.id), defaultValue: file.content }
-                : { value: code })}
-            language={desktop && !runnable ? "plaintext" : meta.monaco}
-            onChange={(v) =>
-                desktop ? file && ide.setContent(file.id, v ?? "") : setCode(v ?? "")
-            }
+            // One Monaco model per file (keeps undo history); the model owns the text.
+            path={modelPath(file?.id ?? "none")}
+            defaultValue={file?.content ?? ""}
+            language={runnable ? meta.monaco : "plaintext"}
+            onChange={(v) => file && ide.setContent(file.id, v ?? "")}
             onMount={onMount}
             theme={
-                desktop && layout.theme !== "auto"
+                layout.theme !== "auto"
                     ? layout.theme
                     : resolvedTheme === "light"
                       ? "zverts-light"
@@ -456,32 +428,31 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
             }
             loading={<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
             options={{
-                // Desktop: Monaco keeps a placeholder drawn after switching to a file with text.
-                placeholder: desktop ? undefined : `Write your ${meta.label} code here…`,
-                fontSize: isMobile ? 13 : desktop ? layout.fontSize : 14,
+                // No placeholder: Monaco keeps it drawn after switching to a file with text.
+                fontSize: narrow ? Math.min(layout.fontSize, 13) : layout.fontSize,
                 fontLigatures: true,
                 bracketPairColorization: { enabled: true },
                 guides: { bracketPairs: "active", indentation: true },
                 cursorBlinking: "smooth",
                 cursorSmoothCaretAnimation: "on",
-                stickyScroll: { enabled: desktop },
-                mouseWheelZoom: desktop,
-                fontFamily: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+                stickyScroll: { enabled: !narrow },
+                mouseWheelZoom: !touch,
+                fontFamily: CODE_FONT,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
                 automaticLayout: true,
                 tabSize: 4,
-                padding: { top: isMobile ? 8 : 12 },
+                padding: { top: narrow ? 8 : 12 },
                 // Phones: wrap long lines and slim the gutter so code
                 // fits the width instead of scrolling sideways.
-                wordWrap: isMobile ? "on" : "off",
-                lineNumbersMinChars: isMobile ? 2 : 5,
-                lineDecorationsWidth: isMobile ? 6 : 10,
-                folding: !isMobile,
+                wordWrap: narrow ? "on" : "off",
+                lineNumbersMinChars: narrow ? 2 : 5,
+                lineDecorationsWidth: narrow ? 6 : 10,
+                folding: !narrow,
                 glyphMargin: false,
                 scrollbar: {
-                    verticalScrollbarSize: isMobile ? 6 : 10,
-                    horizontalScrollbarSize: isMobile ? 6 : 10,
+                    verticalScrollbarSize: narrow ? 6 : 10,
+                    horizontalScrollbarSize: narrow ? 6 : 10,
                 },
                 renderLineHighlight: "all",
                 smoothScrolling: true,
@@ -511,7 +482,7 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
             autoCorrect="off"
             // 16px on phones so iOS doesn't zoom in on focus.
             className={cn(
-                "resize-none bg-transparent p-3 font-mono text-base md:text-sm outline-none placeholder:text-muted-foreground/60",
+                "code-font resize-none bg-transparent p-3 text-base md:text-sm outline-none placeholder:text-muted-foreground/60",
                 className,
             )}
         />
@@ -544,14 +515,10 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
     const runButton = (
         <Button
             size="sm"
-            className="h-9 sm:h-8 px-3 bg-gradient-lime text-primary-foreground shadow-glow"
+            className="h-9 md:h-8 px-3 bg-gradient-lime text-primary-foreground shadow-glow"
             onClick={() => runRef.current()}
             disabled={running || testIndex >= 0}
-            title={
-                desktop && ioMode === "tests"
-                    ? "Run all tests (Ctrl/⌘ + Enter)"
-                    : "Run (Ctrl/⌘ + Enter)"
-            }
+            title={ioMode === "tests" ? "Run all tests (Ctrl/⌘ + Enter)" : "Run (Ctrl/⌘ + Enter)"}
         >
             {running ? (
                 <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
@@ -566,7 +533,7 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         <Button
             size="sm"
             variant="ghost"
-            className="h-9 w-9 p-0 sm:h-8 sm:w-8"
+            className="h-9 w-9 p-0 md:h-8 md:w-8"
             onClick={() => setFullscreen((f) => !f)}
             title={fullscreen ? "Exit full screen" : "Full screen"}
             aria-label={fullscreen ? "Exit full screen" : "Full screen"}
@@ -591,346 +558,444 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
         />
     );
 
-    if (desktop) {
-        const pane = (title: React.ReactNode, body: React.ReactNode) => (
-            <div className="flex h-full min-h-0 min-w-0 flex-col">
+    const pane = (title: React.ReactNode, body: React.ReactNode) => (
+        <div className="flex h-full min-h-0 min-w-0 flex-col">
+            {!narrow && (
                 <div className="flex items-center gap-1.5 px-3 h-8 shrink-0 text-xs font-mono text-muted-foreground border-b border-border">
                     {title}
                 </div>
-                {body}
-            </div>
-        );
-        const inputPane = pane(
-            <>
-                <Keyboard className="h-3.5 w-3.5" /> Input (stdin)
-            </>,
-            inputArea("flex-1 min-h-0"),
-        );
-        const outputPane = pane(
-            <>
-                <Terminal className="h-3.5 w-3.5" /> Output
-                {result && !running && (
-                    <span
-                        className={cn("ml-auto truncate", ok ? "text-primary" : "text-destructive")}
-                    >
-                        {statusText}
-                    </span>
-                )}
-            </>,
-            <pre className="flex-1 min-h-0 overflow-auto p-3 font-mono text-sm whitespace-pre-wrap break-words">
-                {outputBody}
-            </pre>,
-        );
-        const side = layout.io === "left" || layout.io === "right";
-        const ioFirst = layout.io === "left" || layout.io === "top";
-        const [ioA, ioB] = layout.swap ? [outputPane, inputPane] : [inputPane, outputPane];
+            )}
+            {body}
+        </div>
+    );
+    const inputPane = pane(
+        <>
+            <Keyboard className="h-3.5 w-3.5" /> Input (stdin)
+        </>,
+        inputArea("flex-1 min-h-0"),
+    );
+    const outputPane = pane(
+        <>
+            <Terminal className="h-3.5 w-3.5" /> Output
+            {result && !running && (
+                <span className={cn("ml-auto truncate", ok ? "text-primary" : "text-destructive")}>
+                    {statusText}
+                </span>
+            )}
+        </>,
+        <pre className="code-font flex-1 min-h-0 overflow-auto p-3 text-sm whitespace-pre-wrap break-words">
+            {narrow && result && !running && (
+                <span
+                    className={cn("block mb-2 text-xs", ok ? "text-primary" : "text-destructive")}
+                >
+                    {statusText}
+                </span>
+            )}
+            {outputBody}
+        </pre>,
+    );
+    // Phones have no room beside the editor: Input/Output always go below it.
+    const io: IoPos = narrow ? "bottom" : layout.io;
+    const side = io === "left" || io === "right";
+    const ioFirst = io === "left" || io === "top";
+    const [ioA, ioB] = layout.swap ? [outputPane, inputPane] : [inputPane, outputPane];
 
-        const editorPanel = (
-            <ResizablePanel id="editor" order={ioFirst ? 2 : 1} defaultSize={65} minSize={20}>
-                <div className="flex h-full flex-col">
-                    {/* Open file tabs */}
-                    <div
-                        className="flex shrink-0 overflow-x-auto border-b border-border bg-muted/20"
-                        role="tablist"
-                    >
-                        {ide.tabs.map((id) => {
-                            const f = ide.files.find((x) => x.id === id);
-                            if (!f) return null;
-                            const current = f.id === file?.id;
-                            return (
-                                <div
-                                    key={id}
-                                    role="tab"
-                                    aria-selected={current}
-                                    tabIndex={0}
-                                    onClick={() => ide.openTab(id)}
-                                    onKeyDown={(e) => e.key === "Enter" && ide.openTab(id)}
-                                    // Middle-click closes, like VS Code.
-                                    onAuxClick={(e) => e.button === 1 && ide.closeTab(id)}
-                                    className={cn(
-                                        "group flex items-center gap-1.5 h-9 pl-3 pr-1 shrink-0 cursor-pointer border-r border-border font-mono text-xs",
-                                        current
-                                            ? "bg-background text-foreground border-t-2 border-t-primary"
-                                            : "text-muted-foreground hover:text-foreground",
-                                    )}
-                                >
-                                    {f.name}
-                                    <button
-                                        type="button"
-                                        aria-label={`Close ${f.name}`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            ide.closeTab(id);
-                                        }}
-                                        className={cn(
-                                            "h-5 w-5 inline-flex items-center justify-center rounded hover:bg-muted",
-                                            !current && "opacity-0 group-hover:opacity-100",
-                                        )}
-                                    >
-                                        <X className="h-3 w-3" />
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    <div className="flex-1 min-h-0">
-                        {file ? (
-                            editorEl
-                        ) : (
-                            <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                                Open a file from the Explorer, or create a new one.
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </ResizablePanel>
-        );
-        const ioPanel = layout.panel && (
-            <ResizablePanel id="io" order={ioFirst ? 1 : 2} defaultSize={35} minSize={12}>
-                <div className="flex h-full flex-col">
-                    <div
-                        className="flex shrink-0 border-b border-border bg-muted/20 font-mono text-xs"
-                        role="tablist"
-                    >
-                        {(
-                            [
-                                ["io", "Input / Output"],
-                                ["tests", `Tests${tests.length ? ` (${tests.length})` : ""}`],
-                            ] as const
-                        ).map(([mode, label]) => (
-                            <button
-                                key={mode}
-                                type="button"
+    const testsLabel = `Tests${tests.length ? ` (${tests.length})` : ""}`;
+    // Wide: Input and Output side by side in one tab. Phones: one tab each.
+    const ioTabs: [string, React.ReactNode][] = narrow
+        ? [
+              ["input", "Input"],
+              [
+                  "output",
+                  <span key="o" className="inline-flex items-center gap-1.5">
+                      Output
+                      {running ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                          result && (
+                              <span
+                                  className={cn(
+                                      "h-1.5 w-1.5 rounded-full",
+                                      ok ? "bg-primary" : "bg-destructive",
+                                  )}
+                              />
+                          )
+                      )}
+                  </span>,
+              ],
+              ["tests", testsLabel],
+          ]
+        : [
+              ["io", "Input / Output"],
+              ["tests", testsLabel],
+          ];
+    const currentTab = ioMode === "tests" ? "tests" : narrow ? ioTab : "io";
+    const selectTab = (t: string) => {
+        if (t === "tests") return setIoMode("tests");
+        setIoMode("io");
+        if (t === "input" || t === "output") setIoTab(t);
+    };
+
+    const explorer = (
+        <FileExplorer
+            files={ide.files.filter((f) => f.path === undefined)}
+            activeId={file?.id ?? null}
+            activePath={file?.path ?? null}
+            folder={ide.folder}
+            recentFolder={ide.recentFolder}
+            canOpenFolder={canOpenFolder}
+            onOpenFolder={() => void ide.openFolder()}
+            onReopenFolder={() => void ide.reopenFolder()}
+            onCloseFolder={ide.closeFolder}
+            onRefreshFolder={() => void ide.refreshFolder()}
+            onOpenPath={(p) => {
+                setDrawer(false);
+                void ide.openPath(p);
+            }}
+            onCreateInFolder={(d, n, k) => {
+                if (k === "file") setDrawer(false);
+                void ide.createInFolder(d, n, k);
+            }}
+            onRenameInFolder={(p, n) => void ide.renameInFolder(p, n)}
+            onDeleteInFolder={(p) => void ide.deleteInFolder(p)}
+            diskName={ide.diskName}
+            onOpen={(id) => {
+                setDrawer(false);
+                ide.openTab(id);
+            }}
+            onCreate={(name) => {
+                setDrawer(false);
+                ide.create(name);
+            }}
+            onRename={ide.rename}
+            onDelete={ide.remove}
+            onOpenDisk={() => void ide.openFromDisk()}
+        />
+    );
+
+    const editorPanel = (
+        <ResizablePanel
+            id="editor"
+            order={ioFirst ? 2 : 1}
+            defaultSize={narrow ? 58 : 65}
+            minSize={20}
+        >
+            <div className="flex h-full flex-col">
+                {/* Open file tabs */}
+                <div
+                    className="flex shrink-0 overflow-x-auto border-b border-border bg-muted/20 [scrollbar-width:thin]"
+                    role="tablist"
+                >
+                    {ide.tabs.map((id) => {
+                        const f = ide.files.find((x) => x.id === id);
+                        if (!f) return null;
+                        const current = f.id === file?.id;
+                        return (
+                            <div
+                                key={id}
                                 role="tab"
-                                aria-selected={ioMode === mode}
-                                onClick={() => setIoMode(mode)}
+                                aria-selected={current}
+                                tabIndex={0}
+                                onClick={() => ide.openTab(id)}
+                                onKeyDown={(e) => e.key === "Enter" && ide.openTab(id)}
+                                // Middle-click closes, like VS Code.
+                                onAuxClick={(e) => e.button === 1 && ide.closeTab(id)}
                                 className={cn(
-                                    "h-8 px-3 border-b-2 transition-colors",
-                                    ioMode === mode
-                                        ? "border-primary text-foreground"
-                                        : "border-transparent text-muted-foreground hover:text-foreground",
+                                    "group flex items-center gap-1.5 h-9 pl-3 pr-1 shrink-0 cursor-pointer border-r border-border text-[13px]",
+                                    current
+                                        ? "bg-background text-foreground border-t-2 border-t-primary"
+                                        : "text-muted-foreground hover:text-foreground",
                                 )}
                             >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex-1 min-h-0">
-                        {ioMode === "tests" ? (
-                            <TestsPanel
-                                tests={tests}
-                                verdicts={verdicts}
-                                runningIndex={testIndex}
-                                onChange={(next) => {
-                                    if (file) ide.setTests(file, next);
-                                    setVerdicts([]);
-                                }}
-                                onRun={(i) => void runTests(i)}
-                            />
-                        ) : (
-                            <ResizablePanelGroup
-                                direction={side ? "vertical" : "horizontal"}
-                                autoSaveId={`zverts.ide.io.${side ? "side" : "stack"}`}
-                            >
-                                <ResizablePanel id="io-a" order={1} minSize={15}>
-                                    {ioA}
-                                </ResizablePanel>
-                                <ResizableHandle withHandle />
-                                <ResizablePanel id="io-b" order={2} minSize={15}>
-                                    {ioB}
-                                </ResizablePanel>
-                            </ResizablePanelGroup>
-                        )}
-                    </div>
+                                <span className="max-w-[10rem] truncate">{f.name}</span>
+                                <button
+                                    type="button"
+                                    aria-label={`Close ${f.name}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        ide.closeTab(id);
+                                    }}
+                                    className={cn(
+                                        "h-6 w-6 inline-flex items-center justify-center rounded hover:bg-muted",
+                                        // Touch screens can't hover: keep the close button visible.
+                                        !current && !touch && "opacity-0 group-hover:opacity-100",
+                                    )}
+                                >
+                                    <X className="h-3 w-3" />
+                                </button>
+                            </div>
+                        );
+                    })}
                 </div>
-            </ResizablePanel>
-        );
+                {touch && <SymbolBar editor={editor} />}
+                <div className="flex-1 min-h-0">
+                    {file ? (
+                        editorEl
+                    ) : (
+                        <div className="h-full flex items-center justify-center p-4 text-center text-sm text-muted-foreground">
+                            Open a file from the Explorer, or create a new one.
+                        </div>
+                    )}
+                </div>
+            </div>
+        </ResizablePanel>
+    );
 
-        return (
-            <div
-                className={cn(
-                    "code-runner flex flex-col overflow-hidden bg-background",
-                    fullscreen
-                        ? "fixed inset-0 z-50 h-[100dvh]"
-                        : "rounded-xl border border-border h-[680px]",
-                )}
-            >
-                {/* Toolbar */}
-                <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/40 shrink-0">
+    const ioPanel = layout.panel && (
+        <ResizablePanel id="io" order={ioFirst ? 1 : 2} defaultSize={narrow ? 42 : 35} minSize={12}>
+            <div ref={ioRef} className="flex h-full flex-col scroll-mt-20">
+                <div
+                    className="flex shrink-0 overflow-x-auto border-b border-border bg-muted/20 font-mono text-xs"
+                    role="tablist"
+                >
+                    {ioTabs.map(([t, label]) => (
+                        <button
+                            key={t}
+                            type="button"
+                            role="tab"
+                            aria-selected={currentTab === t}
+                            onClick={() => selectTab(t)}
+                            className={cn(
+                                "h-9 md:h-8 px-3 shrink-0 border-b-2 transition-colors",
+                                narrow && "flex-1",
+                                currentTab === t
+                                    ? "border-primary text-foreground"
+                                    : "border-transparent text-muted-foreground hover:text-foreground",
+                            )}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+                <div className="flex-1 min-h-0">
+                    {ioMode === "tests" ? (
+                        <TestsPanel
+                            tests={tests}
+                            verdicts={verdicts}
+                            runningIndex={testIndex}
+                            onChange={(next) => {
+                                if (file) ide.setTests(file, next);
+                                setVerdicts([]);
+                            }}
+                            onRun={(i) => void runTests(i)}
+                        />
+                    ) : narrow ? (
+                        ioTab === "input" ? (
+                            inputPane
+                        ) : (
+                            outputPane
+                        )
+                    ) : (
+                        <ResizablePanelGroup
+                            direction={side ? "vertical" : "horizontal"}
+                            autoSaveId={`zverts.ide.io.${side ? "side" : "stack"}`}
+                        >
+                            <ResizablePanel id="io-a" order={1} minSize={15}>
+                                {ioA}
+                            </ResizablePanel>
+                            <ResizableHandle withHandle />
+                            <ResizablePanel id="io-b" order={2} minSize={15}>
+                                {ioB}
+                            </ResizablePanel>
+                        </ResizablePanelGroup>
+                    )}
+                </div>
+            </div>
+        </ResizablePanel>
+    );
+
+    const explorerShown = narrow ? drawer : layout.explorer;
+
+    return (
+        <div
+            className={cn(
+                "code-runner flex flex-col overflow-hidden bg-background",
+                fullscreen
+                    ? "fixed inset-0 z-50 h-[100dvh] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+                    : // Fits the screen on phones and short laptop screens, 680px at most.
+                      "rounded-xl border border-border h-[min(680px,calc(100dvh-5rem))] min-h-[440px]",
+            )}
+            style={{ "--code-font": CODE_FONT } as React.CSSProperties}
+        >
+            {/* Toolbar */}
+            <div className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 border-b border-border bg-muted/40 shrink-0">
+                <Button
+                    size="sm"
+                    variant="ghost"
+                    className={cn(
+                        "h-9 w-9 md:h-8 md:w-8 p-0 shrink-0",
+                        explorerShown && "text-primary",
+                    )}
+                    onClick={() =>
+                        narrow ? setDrawer((d) => !d) : setLayout({ explorer: !layout.explorer })
+                    }
+                    title="Toggle Explorer"
+                    aria-label="Toggle Explorer"
+                    aria-pressed={explorerShown}
+                >
+                    <PanelLeft className="h-4 w-4" />
+                </Button>
+                <span className="min-w-0 truncate text-[13px]">
+                    {file?.name ?? "No file open"}
+                    {file && (
+                        <span className="ml-2 hidden sm:inline text-xs text-muted-foreground">
+                            {runnable ? meta.label : "can't run"}
+                        </span>
+                    )}
+                </span>
+                <div className="ml-auto flex shrink-0 items-center gap-0.5 md:gap-2">
                     <Button
                         size="sm"
                         variant="ghost"
-                        className={cn("h-8 w-8 p-0", layout.explorer && "text-primary")}
-                        onClick={() => setLayout({ explorer: !layout.explorer })}
-                        title="Toggle Explorer"
-                        aria-label="Toggle Explorer"
-                        aria-pressed={layout.explorer}
+                        className="hidden md:inline-flex h-8 px-2 lg:px-3 text-xs"
+                        onClick={() => saveRef.current()}
+                        disabled={!file}
+                        title="Save to your computer (Ctrl/⌘ + S)"
+                        aria-label="Save to your computer"
                     >
-                        <PanelLeft className="h-4 w-4" />
+                        <Save className="h-3.5 w-3.5 lg:mr-1" />
+                        <span className="hidden lg:inline">Save to computer</span>
                     </Button>
-                    <span className="font-mono text-xs truncate">
-                        {file?.name ?? "No file open"}
-                        {file && (
-                            <span className="ml-2 text-muted-foreground">
-                                {runnable ? meta.label : "can't run"}
-                            </span>
-                        )}
-                    </span>
-                    <div className="ml-auto flex items-center gap-2">
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 px-3 text-xs"
-                            onClick={() => saveRef.current()}
-                            disabled={!file}
-                            title="Save to your computer (Ctrl/⌘ + S)"
-                        >
-                            <Save className="h-3.5 w-3.5 mr-1" /> Save to computer
-                        </Button>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-8 w-8 p-0"
-                                    title="Layout & settings"
-                                    aria-label="Layout & settings"
-                                >
-                                    <LayoutGrid className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                align="end"
-                                className="w-60 max-h-[70vh] overflow-y-auto"
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-9 w-9 md:h-8 md:w-8 p-0"
+                                title="Layout & settings"
+                                aria-label="Layout & settings"
                             >
-                                <DropdownMenuLabel>Editor theme</DropdownMenuLabel>
-                                <DropdownMenuRadioGroup
-                                    value={layout.theme}
-                                    onValueChange={(v) => setLayout({ theme: v as EditorTheme })}
-                                >
-                                    {EDITOR_THEMES.map((t) => (
-                                        <DropdownMenuRadioItem key={t.id} value={t.id}>
-                                            {t.label}
-                                        </DropdownMenuRadioItem>
-                                    ))}
-                                </DropdownMenuRadioGroup>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel>Font size</DropdownMenuLabel>
-                                <div className="flex gap-1 px-2 pb-1.5">
-                                    {FONT_SIZES.map((n) => (
-                                        <button
-                                            key={n}
-                                            type="button"
-                                            onClick={() => setLayout({ fontSize: n })}
-                                            className={cn(
-                                                "h-7 flex-1 rounded text-xs font-mono",
-                                                layout.fontSize === n
-                                                    ? "bg-primary text-primary-foreground"
-                                                    : "hover:bg-muted",
-                                            )}
-                                        >
-                                            {n}
-                                        </button>
-                                    ))}
-                                </div>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuCheckboxItem
-                                    checked={layout.companion}
-                                    onCheckedChange={(companion) => setLayout({ companion })}
-                                >
-                                    Competitive Companion (CPH)
-                                </DropdownMenuCheckboxItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel>Input / Output position</DropdownMenuLabel>
-                                <DropdownMenuRadioGroup
-                                    value={layout.io}
-                                    onValueChange={(v) =>
-                                        setLayout({ io: v as IoPos, panel: true })
-                                    }
-                                >
-                                    {(["bottom", "right", "left", "top"] as const).map((pos) => (
-                                        <DropdownMenuRadioItem
-                                            key={pos}
-                                            value={pos}
-                                            className="capitalize"
-                                        >
-                                            {pos}
-                                        </DropdownMenuRadioItem>
-                                    ))}
-                                </DropdownMenuRadioGroup>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuCheckboxItem
-                                    checked={layout.swap}
-                                    onCheckedChange={(swap) => setLayout({ swap })}
-                                >
-                                    Output before Input
-                                </DropdownMenuCheckboxItem>
-                                <DropdownMenuCheckboxItem
-                                    checked={layout.explorer}
-                                    onCheckedChange={(explorer) => setLayout({ explorer })}
-                                >
-                                    Show Explorer
-                                </DropdownMenuCheckboxItem>
-                                <DropdownMenuCheckboxItem
-                                    checked={layout.panel}
-                                    onCheckedChange={(panel) => setLayout({ panel })}
-                                >
-                                    Show Input / Output
-                                </DropdownMenuCheckboxItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            className={cn("h-8 w-8 p-0", layout.panel && "text-primary")}
-                            onClick={() => setLayout({ panel: !layout.panel })}
-                            title="Toggle Input / Output"
-                            aria-label="Toggle Input / Output"
-                            aria-pressed={layout.panel}
+                                <LayoutGrid className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            align="end"
+                            className="w-60 max-h-[70vh] overflow-y-auto"
                         >
-                            <PanelBottom className="h-4 w-4" />
-                        </Button>
-                        {fullscreenButton}
-                        {runButton}
-                    </div>
+                            {narrow && (
+                                <>
+                                    <DropdownMenuItem
+                                        disabled={!file}
+                                        onSelect={() => saveRef.current()}
+                                    >
+                                        <Save className="h-3.5 w-3.5 mr-2" /> Save to computer
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                </>
+                            )}
+                            <DropdownMenuLabel>Editor theme</DropdownMenuLabel>
+                            <DropdownMenuRadioGroup
+                                value={layout.theme}
+                                onValueChange={(v) => setLayout({ theme: v as EditorTheme })}
+                            >
+                                {EDITOR_THEMES.map((t) => (
+                                    <DropdownMenuRadioItem key={t.id} value={t.id}>
+                                        {t.label}
+                                    </DropdownMenuRadioItem>
+                                ))}
+                            </DropdownMenuRadioGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel>Font size</DropdownMenuLabel>
+                            <div className="flex gap-1 px-2 pb-1.5">
+                                {FONT_SIZES.map((n) => (
+                                    <button
+                                        key={n}
+                                        type="button"
+                                        onClick={() => setLayout({ fontSize: n })}
+                                        className={cn(
+                                            "h-8 flex-1 rounded text-xs font-mono",
+                                            layout.fontSize === n
+                                                ? "bg-primary text-primary-foreground"
+                                                : "hover:bg-muted",
+                                        )}
+                                    >
+                                        {n}
+                                    </button>
+                                ))}
+                            </div>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuCheckboxItem
+                                checked={layout.companion}
+                                onCheckedChange={(companion) => setLayout({ companion })}
+                            >
+                                Competitive Companion (CPH)
+                            </DropdownMenuCheckboxItem>
+                            {!narrow && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuLabel>Input / Output position</DropdownMenuLabel>
+                                    <DropdownMenuRadioGroup
+                                        value={layout.io}
+                                        onValueChange={(v) =>
+                                            setLayout({ io: v as IoPos, panel: true })
+                                        }
+                                    >
+                                        {(["bottom", "right", "left", "top"] as const).map(
+                                            (pos) => (
+                                                <DropdownMenuRadioItem
+                                                    key={pos}
+                                                    value={pos}
+                                                    className="capitalize"
+                                                >
+                                                    {pos}
+                                                </DropdownMenuRadioItem>
+                                            ),
+                                        )}
+                                    </DropdownMenuRadioGroup>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuCheckboxItem
+                                        checked={layout.swap}
+                                        onCheckedChange={(swap) => setLayout({ swap })}
+                                    >
+                                        Output before Input
+                                    </DropdownMenuCheckboxItem>
+                                    <DropdownMenuCheckboxItem
+                                        checked={layout.explorer}
+                                        onCheckedChange={(explorer) => setLayout({ explorer })}
+                                    >
+                                        Show Explorer
+                                    </DropdownMenuCheckboxItem>
+                                </>
+                            )}
+                            <DropdownMenuCheckboxItem
+                                checked={layout.panel}
+                                onCheckedChange={(panel) => setLayout({ panel })}
+                            >
+                                Show Input / Output
+                            </DropdownMenuCheckboxItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        className={cn(
+                            "hidden md:inline-flex h-8 w-8 p-0",
+                            layout.panel && "text-primary",
+                        )}
+                        onClick={() => setLayout({ panel: !layout.panel })}
+                        title="Toggle Input / Output"
+                        aria-label="Toggle Input / Output"
+                        aria-pressed={layout.panel}
+                    >
+                        <PanelBottom className="h-4 w-4" />
+                    </Button>
+                    {fullscreenButton}
+                    {runButton}
                 </div>
+            </div>
 
-                <ResizablePanelGroup
-                    direction="horizontal"
-                    autoSaveId="zverts.ide.sidebar"
-                    className="flex-1 min-h-0"
-                >
-                    {layout.explorer && (
+            <div className="relative flex-1 min-h-0">
+                <ResizablePanelGroup direction="horizontal" autoSaveId="zverts.ide.sidebar">
+                    {!narrow && layout.explorer && (
                         <>
                             <ResizablePanel
                                 id="explorer"
                                 order={1}
-                                defaultSize={20}
-                                minSize={12}
-                                maxSize={40}
+                                defaultSize={22}
+                                minSize={14}
+                                maxSize={45}
                             >
-                                <FileExplorer
-                                    files={ide.files.filter((f) => f.path === undefined)}
-                                    activeId={file?.id ?? null}
-                                    activePath={file?.path ?? null}
-                                    folder={ide.folder}
-                                    recentFolder={ide.recentFolder}
-                                    canOpenFolder={canOpenFolder}
-                                    onOpenFolder={() => void ide.openFolder()}
-                                    onReopenFolder={() => void ide.reopenFolder()}
-                                    onCloseFolder={ide.closeFolder}
-                                    onRefreshFolder={() => void ide.refreshFolder()}
-                                    onOpenPath={(p) => void ide.openPath(p)}
-                                    onCreateInFolder={(d, n, k) => void ide.createInFolder(d, n, k)}
-                                    onRenameInFolder={(p, n) => void ide.renameInFolder(p, n)}
-                                    onDeleteInFolder={(p) => void ide.deleteInFolder(p)}
-                                    diskName={ide.diskName}
-                                    onOpen={ide.openTab}
-                                    onCreate={(name) => ide.create(name)}
-                                    onRename={ide.rename}
-                                    onDelete={ide.remove}
-                                    onOpenDisk={() => void ide.openFromDisk()}
-                                />
+                                {explorer}
                             </ResizablePanel>
                             <ResizableHandle />
                         </>
@@ -938,7 +1003,7 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                     <ResizablePanel id="main" order={2} minSize={40}>
                         <ResizablePanelGroup
                             direction={side ? "horizontal" : "vertical"}
-                            autoSaveId={`zverts.ide.main.${side ? "side" : "stack"}`}
+                            autoSaveId={`zverts.ide.main.${narrow ? "phone" : side ? "side" : "stack"}`}
                         >
                             {ioFirst && ioPanel}
                             {ioFirst && layout.panel && <ResizableHandle withHandle />}
@@ -949,203 +1014,64 @@ export const CodeWorkspace = ({ moduleId }: { moduleId: string }) => {
                     </ResizablePanel>
                 </ResizablePanelGroup>
 
-                {/* Status bar */}
-                <div className="flex items-center gap-3 px-3 h-7 shrink-0 border-t border-border bg-muted/40 text-[11px] font-mono text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                        {ide.saving ? (
-                            <>
-                                <Loader2 className="h-3 w-3 animate-spin" /> Saving…
-                            </>
-                        ) : (
-                            <>
-                                <Check className="h-3 w-3 text-primary" /> Auto-saved
-                            </>
-                        )}
-                    </span>
-                    {file && ide.diskName(file.id) && (
-                        <span className="truncate">
-                            Saving to{" "}
-                            {file.path ? `${ide.folder?.name}/${file.path}` : ide.diskName(file.id)}{" "}
-                            on your computer
-                        </span>
-                    )}
-                    {layout.companion && (
-                        <span
-                            className={cn(
-                                "inline-flex items-center gap-1 shrink-0",
-                                companion === "connected" ? "text-primary" : "text-amber-500",
-                            )}
-                            title={
-                                companion === "connected"
-                                    ? "Click Competitive Companion's + on a problem to import it"
-                                    : `Run: node cph-bridge.mjs (download it from ${location.origin}/cph-bridge.mjs)`
-                            }
-                        >
-                            ● CPH{" "}
-                            {companion === "connected"
-                                ? "ready"
-                                : `bridge not running (port ${BRIDGE_PORT})`}
-                        </span>
-                    )}
-                    <span className="ml-auto hidden xl:inline">
-                        Ctrl/⌘ + Enter run · Ctrl/⌘ + S save
-                    </span>
-                </div>
-
-                <OfflineStatus auto />
-                {inputPrompt}
+                {narrow && drawer && (
+                    <>
+                        <div
+                            className="absolute inset-0 z-20 bg-background/70"
+                            onClick={() => setDrawer(false)}
+                            aria-hidden
+                        />
+                        <div className="absolute inset-y-0 left-0 z-30 w-[min(18rem,85%)] border-r border-border bg-background shadow-xl">
+                            {explorer}
+                        </div>
+                    </>
+                )}
             </div>
-        );
-    }
 
-    return (
-        <div
-            className={cn(
-                "code-runner flex flex-col overflow-hidden bg-background",
-                fullscreen
-                    ? "fixed inset-0 z-50 h-[100dvh] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
-                    : "rounded-xl border border-border",
-            )}
-        >
-            {/* Toolbar */}
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 border-b border-border bg-muted/40 shrink-0">
-                <span className="hidden sm:inline font-mono text-xs px-2 py-1 rounded-md bg-background border border-border">
-                    {meta.file}
+            {/* Status bar */}
+            <div className="flex items-center gap-3 px-3 h-7 shrink-0 border-t border-border bg-muted/40 text-[11px] font-mono text-muted-foreground">
+                <span className="inline-flex shrink-0 items-center gap-1">
+                    {ide.saving ? (
+                        <>
+                            <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+                        </>
+                    ) : (
+                        <>
+                            <Check className="h-3 w-3 text-primary" /> Auto-saved
+                        </>
+                    )}
                 </span>
-                <Select value={lang} onValueChange={(v) => switchLang(v as RunLanguage)}>
-                    <SelectTrigger className="h-9 sm:h-8 w-[96px] sm:w-[110px] text-xs">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {LANGUAGES.map((l) => (
-                            <SelectItem key={l.id} value={l.id} className="text-xs">
-                                {l.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <div className="ml-auto flex items-center gap-1 sm:gap-2">
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-9 w-9 p-0 sm:h-8 sm:w-auto sm:px-3 text-xs"
-                        onClick={reset}
-                        disabled={running}
-                        title="Clear code"
-                        aria-label="Clear code"
-                    >
-                        <RotateCcw className="h-4 w-4 sm:h-3.5 sm:w-3.5 sm:mr-1" />
-                        <span className="hidden sm:inline">Clear</span>
-                    </Button>
-                    {fullscreenButton}
-                    {runButton}
-                </div>
-            </div>
-
-            {touch && <SymbolBar editor={editor} />}
-
-            {/* Editor */}
-            <div
-                className={cn(
-                    fullscreen ? "flex-1 min-h-0" : "h-[320px] sm:h-[340px] lg:h-[420px]",
+                {file && ide.diskName(file.id) && (
+                    <span className="hidden sm:inline truncate">
+                        Saving to{" "}
+                        {file.path ? `${ide.folder?.name}/${file.path}` : ide.diskName(file.id)} on
+                        your computer
+                    </span>
                 )}
-            >
-                {editorEl}
-            </div>
-
-            {/* Input / Output: side by side from md up; tabs on phones. */}
-            <div
-                ref={ioRef}
-                className={cn(
-                    "flex flex-col border-t border-border scroll-mt-20",
-                    fullscreen && "h-[38%] shrink-0",
+                {layout.companion && (
+                    <span
+                        className={cn(
+                            "inline-flex min-w-0 items-center gap-1 truncate",
+                            companion === "connected" ? "text-primary" : "text-amber-500",
+                        )}
+                        title={
+                            companion === "connected"
+                                ? "Click Competitive Companion's + on a problem to import it"
+                                : `Run: node cph-bridge.mjs (download it from ${location.origin}/cph-bridge.mjs)`
+                        }
+                    >
+                        ● CPH{" "}
+                        {companion === "connected"
+                            ? "ready"
+                            : `bridge not running (port ${BRIDGE_PORT})`}
+                    </span>
                 )}
-            >
-                <div className="md:hidden flex shrink-0 border-b border-border text-xs font-mono">
-                    {(["input", "output"] as const).map((tab) => (
-                        <button
-                            key={tab}
-                            type="button"
-                            onClick={() => setIoTab(tab)}
-                            className={cn(
-                                "flex-1 min-w-0 flex items-center justify-center gap-1.5 h-10 px-2 border-b-2 transition-colors",
-                                ioTab === tab
-                                    ? "border-primary text-foreground"
-                                    : "border-transparent text-muted-foreground",
-                            )}
-                        >
-                            {tab === "input" ? (
-                                <>
-                                    <Keyboard className="h-3.5 w-3.5 shrink-0" /> Input
-                                </>
-                            ) : (
-                                <>
-                                    <Terminal className="h-3.5 w-3.5 shrink-0" /> Output
-                                    {running ? (
-                                        <Loader2 className="h-3 w-3 animate-spin shrink-0" />
-                                    ) : (
-                                        result && (
-                                            <span
-                                                className={cn(
-                                                    "truncate",
-                                                    ok ? "text-primary" : "text-destructive",
-                                                )}
-                                            >
-                                                · {statusText}
-                                            </span>
-                                        )
-                                    )}
-                                </>
-                            )}
-                        </button>
-                    ))}
-                </div>
-                <div className="grid md:grid-cols-2 flex-1 min-h-0">
-                    <div
-                        className={cn(
-                            "flex flex-col min-h-0 md:border-r border-border",
-                            ioTab !== "input" && "hidden md:flex",
-                        )}
-                    >
-                        <div className="hidden md:flex items-center gap-1.5 px-3 py-2 text-xs font-mono text-muted-foreground border-b border-border">
-                            <Keyboard className="h-3.5 w-3.5" /> Input (stdin)
-                        </div>
-                        {inputArea("flex-1 min-h-[140px]")}
-                    </div>
-                    <div
-                        className={cn(
-                            "flex flex-col min-w-0 min-h-0",
-                            ioTab !== "output" && "hidden md:flex",
-                        )}
-                    >
-                        <div className="hidden md:flex items-center gap-1.5 px-3 py-2 text-xs font-mono text-muted-foreground border-b border-border">
-                            <Terminal className="h-3.5 w-3.5" />
-                            <span>Output</span>
-                            {result && (
-                                <span
-                                    className={cn(
-                                        "ml-auto",
-                                        ok ? "text-primary" : "text-destructive",
-                                    )}
-                                >
-                                    {statusText}
-                                </span>
-                            )}
-                        </div>
-                        <pre
-                            className={cn(
-                                "flex-1 min-h-[140px] overflow-auto p-3 font-mono text-sm whitespace-pre-wrap break-words",
-                                !fullscreen && "max-h-[280px]",
-                            )}
-                        >
-                            {outputBody}
-                        </pre>
-                    </div>
-                </div>
+                <span className="ml-auto hidden xl:inline shrink-0">
+                    Ctrl/⌘ + Enter run · Ctrl/⌘ + S save
+                </span>
             </div>
 
-            <OfflineStatus />
-
+            <OfflineStatus auto={!touch} />
             {inputPrompt}
         </div>
     );
