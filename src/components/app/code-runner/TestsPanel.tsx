@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookmarkPlus, Loader2, Play, Plus, Trash2 } from "lucide-react";
+import { BookmarkPlus, Copy, Loader2, Play, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,20 @@ import type { TestCase } from "./files";
 import { bookmarkletHref } from "./bookmarklet";
 
 // How to get problems in: the "Send to Zverts" bookmark (nothing to install).
+// For when dragging the link fails: paste this as a new bookmark's URL.
+const copyBookmark = async () => {
+    try {
+        await navigator.clipboard.writeText(bookmarkletHref(location.origin));
+        toast.success("Bookmark code copied", {
+            description:
+                "Add a new bookmark (Chrome: Ctrl/⌘ + Shift + O → ⋮ → Add new bookmark; Edge: Ctrl/⌘ + Shift + O → Add favorite), name it “Send to Zverts” and paste this as its URL.",
+            duration: 12000,
+        });
+    } catch {
+        toast.error("Couldn't copy. Right-click “Send to Zverts” and choose Copy link address.");
+    }
+};
+
 const ImportHelp = () => (
     <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 text-xs space-y-2">
         <p className="font-medium text-foreground">Import a problem in one click</p>
@@ -26,6 +40,17 @@ const ImportHelp = () => (
                 >
                     ⭐ Send to Zverts
                 </a>
+                <span className="block mt-1.5">
+                    Can't drag it?{" "}
+                    <button
+                        type="button"
+                        onClick={() => void copyBookmark()}
+                        className="inline-flex items-center gap-1 rounded-md border border-primary/50 px-2 py-0.5 font-medium text-primary hover:bg-primary/10"
+                    >
+                        <Copy className="h-3 w-3" /> Copy bookmark code
+                    </button>{" "}
+                    and paste it as a new bookmark's URL.
+                </span>
             </li>
             <li>Open a problem on Codeforces, AtCoder or CodeChef.</li>
             <li>Click the bookmark: a file with the sample tests opens here.</li>
