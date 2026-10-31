@@ -74,7 +74,7 @@ export const uniqueName = (name: string, files: { name: string }[]) => {
 export const problemFileName = (title: string, ext: string) =>
     `${
         title
-            .replace(/[\\/:*?"<>|.]+/g, " ")
+            .replace(/[\\/:*?"<>|.]+|\s-\s/g, " ")
             .trim()
             .replace(/\s+/g, "_")
             .slice(0, 50) || "problem"
