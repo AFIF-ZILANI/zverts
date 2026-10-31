@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bookmarkletHref, extractProblem, takeHashProblem } from "./bookmarklet";
+import { bookmarkletHref, cphHashFrom, extractProblem, takeHashProblem } from "./bookmarklet";
 
 const page = (html: string, title = "") => {
     const doc = document.implementation.createHTMLDocument(title);
@@ -88,12 +88,44 @@ describe("bookmarkletHref", () => {
     });
 });
 
+describe("app bookmark", () => {
+    it("hands the problem to the installed app's protocol instead of a tab", () => {
+        const code = decodeURIComponent(
+            bookmarkletHref("https://zverts.test", "app").slice("javascript:".length),
+        );
+        expect(code).toContain('location.href="web+zverts:"');
+        expect(code).not.toContain("window.open");
+        expect(() => new Function(code)).not.toThrow();
+    });
+});
+
+describe("cphHashFrom", () => {
+    const payload = encodeURIComponent(JSON.stringify({ name: "A", tests: [] }));
+    it("reads a protocol launch (the browser escapes the whole web+zverts: URL once more)", () => {
+        const launched = `https://z.test/code?cph=${encodeURIComponent(`web+zverts:${payload}`)}`;
+        expect(cphHashFrom(launched)).toBe(`#cph=${payload}`);
+    });
+    it("reads the tab bookmark's hash, and nothing else", () => {
+        expect(cphHashFrom(`https://z.test/code#cph=${payload}`)).toBe(`#cph=${payload}`);
+        expect(cphHashFrom("https://z.test/code?cph=http://evil")).toBeNull();
+        expect(cphHashFrom("https://z.test/dashboard")).toBeNull();
+        expect(cphHashFrom("not a url")).toBeNull();
+    });
+});
+
 describe("takeHashProblem", () => {
     it("reads and clears the problem from the hash", () => {
         const p = { name: "A. Sum", url: "u", tests: [{ input: "1\n", output: "1\n" }] };
         history.replaceState(null, "", `/code#cph=${encodeURIComponent(JSON.stringify(p))}`);
         expect(takeHashProblem()).toEqual(p);
         expect(location.hash).toBe("");
+    });
+    it("reads a protocol launch and drops it from the URL", () => {
+        const p = { name: "B", url: "u", tests: [{ input: "2\n", output: "4\n" }] };
+        const launch = `web+zverts:${encodeURIComponent(JSON.stringify(p))}`;
+        history.replaceState(null, "", `/code?x=1&cph=${encodeURIComponent(launch)}`);
+        expect(takeHashProblem()).toEqual(p);
+        expect(location.search).toBe("?x=1");
     });
     it("ignores junk", () => {
         history.replaceState(null, "", "/code#cph=%7Bnot-json");
