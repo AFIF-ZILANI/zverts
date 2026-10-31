@@ -61,7 +61,7 @@ const Box = ({
             spellCheck={false}
             rows={Math.min(8, Math.max(2, value.split("\n").length))}
             className={cn(
-                "mt-1 w-full resize-y rounded-md border bg-background/60 px-2 py-1.5 font-mono text-xs outline-none focus:border-primary",
+                "code-font mt-1 w-full resize-y rounded-md border bg-background/60 px-2 py-1.5 text-base md:text-xs outline-none focus:border-primary",
                 tone === "pass" && "border-primary/50",
                 tone === "fail" && "border-destructive/60",
                 !tone && "border-border",
@@ -187,7 +187,7 @@ export const TestsPanel = ({
                                     <Trash2 className="h-3 w-3" />
                                 </button>
                             </div>
-                            <div className="grid gap-2 sm:grid-cols-2">
+                            <div className="grid gap-2 grid-cols-[repeat(auto-fit,minmax(11rem,1fr))]">
                                 <Box
                                     label="Input"
                                     value={t.input}

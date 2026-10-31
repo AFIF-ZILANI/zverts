@@ -54,7 +54,7 @@ const baseOf = (path: string) => path.slice(path.lastIndexOf("/") + 1);
 
 const rowClass = (active: boolean) =>
     cn(
-        "group flex items-center gap-1.5 pr-1 h-7 cursor-pointer font-mono text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring",
+        "group flex items-center gap-1.5 pr-1 h-9 md:h-7 cursor-pointer text-[13px] outline-none focus-visible:ring-1 focus-visible:ring-ring",
         active
             ? "bg-primary/10 text-foreground"
             : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -270,7 +270,7 @@ export const FileExplorer = ({
                                 <FileCode2 className="ml-5 h-3.5 w-3.5 shrink-0 text-primary" />
                             )}
                             <span className="truncate">{name}</span>
-                            <span className="ml-auto hidden group-hover:flex group-focus-within:flex">
+                            <span className="ml-auto hidden group-hover:flex group-focus-within:flex [@media(pointer:coarse)]:flex">
                                 {isDir && (
                                     <IconButton
                                         label={`New file in ${name}`}
@@ -428,7 +428,7 @@ export const FileExplorer = ({
                                         <HardDrive className="h-3 w-3 shrink-0 text-primary/70" />
                                     </span>
                                 )}
-                                <span className="ml-auto hidden group-hover:flex group-focus-within:flex">
+                                <span className="ml-auto hidden group-hover:flex group-focus-within:flex [@media(pointer:coarse)]:flex">
                                     <IconButton label={`Rename ${f.name}`} onClick={rename}>
                                         <Pencil className="h-3 w-3" />
                                     </IconButton>
